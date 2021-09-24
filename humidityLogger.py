@@ -5,7 +5,7 @@ import Adafruit_DHT
 DHT_SENSOR = Adafruit_DHT.DHT22
 DHT_PIN = 4
 
-filepath = '/home/pi/pi-humidity/DHT22_data.csv'
+filepath = '/home/pi/pi-humidity/data/DHT22_data.csv'
 
 try:
     f = open(filepath, 'a+')
