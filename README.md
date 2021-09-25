@@ -18,6 +18,7 @@ Repo containing code for pi humidity monitoring
   - Be able to easily access certain times
     - What datastructures do I need... will csv do?
     - Maybe store one csv per week, as querying a large csv might be difficult
+  - Measure room humidity and temp as well
 
 
 ### Display
