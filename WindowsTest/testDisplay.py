@@ -26,7 +26,7 @@ data = dd.read_csv(filepath)
 data["Datetime"] = dd.to_datetime(data["Datetime"])
 
 # The amount of time history shown in the graph
-history_timedelta = datetime.timedelta(seconds=20)
+history_timedelta = datetime.timedelta(minutes=2)
 
 current_time = datetime.datetime.now()
 window_end = current_time
@@ -41,16 +41,6 @@ D = deque(data["Datetime"].loc[window_start_idx:window_end_idx].compute())
 H = deque(data["Humidity"].loc[window_start_idx:window_end_idx].compute())
 T = deque(data["Temperature"].loc[window_start_idx:window_end_idx].compute())
 
-# Initial plot
-fig, ax = plt.subplots()
-(L,) = ax.plot(D, H)
-
-# Set x and y axes limits
-ax.set_xlim(D[0], D[-1])
-ylim = [np.min(H), np.max(H)] # Store ylim in a list to do efficiently (don't repeatedly call max/min on the whole deque)
-ax.set_ylim(ylim)
-
-
 def updateQueues(history_timedelta: datetime.timedelta) -> Tuple[deque, deque, deque]:
     # Update D, H and T from the csv file
     # Also return the new additions to D, H and T (e.g. if we want to use them to update ylim)
@@ -64,8 +54,8 @@ def updateQueues(history_timedelta: datetime.timedelta) -> Tuple[deque, deque, d
             # Read line by line (from the end backwards) until we reach the date we have at the end of D
             line = next(f_end)
             D_proposed = pd.Timestamp(datetime.datetime.strptime(line["Datetime"], "%Y-%m-%d %H:%M:%S"))
-            H_proposed = line["Humidity"]
-            T_proposed = line["Temperature"]
+            H_proposed = float(line["Humidity"])
+            T_proposed = float(line["Temperature"])
             if D_proposed <= D[-1]:
                 D.extend(D_end)
                 H.extend(H_end)
@@ -88,23 +78,37 @@ def updateQueues(history_timedelta: datetime.timedelta) -> Tuple[deque, deque, d
     return D_end, H_end, T_end # Return the newly added deques
 
 
-# plt.show()
+# Initial plot
+plt.ion() # Turn on interactive mode
+fig, ax = plt.subplots()
+(L_humidity,) = ax.plot(D, H)
+
+# Set x and y axes limits
+ax.set_xlim(D[0], D[-1])
+ylim = [np.min(H), np.max(H)] # Store ylim in a list to do efficiently (don't repeatedly call max/min on the whole deque)
+ax.set_ylim(ylim)
+
 while True:
     D_end, H_end, T_end = updateQueues(history_timedelta)
-    L.set_data(D, H) # Can I append to L instead of setting?
 
     # Set new limits
     if D_end: # If not empty
-        ax.set_xlim(D[0], D[-1])
         min_H_end = np.min(np.array(H_end).astype(np.float))
         max_H_end = np.max(np.array(H_end).astype(np.float))
         if min_H_end < ylim[0]:
-            ylim[0] = min_H_end
+            ylim[0] = min_H_end - 5
         if max_H_end > ylim[1]:
-            ylim[1] = max_H_end
-        ax.set_ylim(ylim)
+            ylim[1] = max_H_end + 5
 
-    plt.pause(0.5)
+    ax.set_xlim(D[0], D[-1])
+    ax.set_ylim(ylim)
+    L_humidity.set_xdata(D)
+    L_humidity.set_ydata(H) # Can I append to L instead of setting?
+
+    fig.canvas.draw()
+    fig.canvas.flush_events()
+
+    time.sleep(0.2)
     
 
 
