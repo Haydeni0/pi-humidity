@@ -2,6 +2,8 @@ import pandas as pd
 import numpy as np
 import datetime
 import dask.dataframe as dd
+import os
+
 
 
 def binSearchDatetime(
@@ -25,6 +27,7 @@ def binSearchDatetime(
 
     assert L < target_datetime < R
 
+    # Binary search
     while idx_width > 1:
         M_idx = np.ceil(np.mean([L_idx, R_idx]))
         M = Datetime.loc[M_idx].compute().item()
@@ -41,16 +44,29 @@ def binSearchDatetime(
 
         idx_width = R_idx - L_idx
 
-    return L_idx
+    return int(L_idx)
 
 
-# filepath = "./WindowsTest/TestData.csv"
-# dask_data = dask.dataframe.read_csv(filepath)
-# dask_data["Datetime"] = dask.dataframe.to_datetime(dask_data["Datetime"])
+# Based on SO post https://stackoverflow.com/questions/10933838/how-to-read-a-csv-file-in-reverse-order-in-python
+def reversed_lines(f):
+    # Generate the lines of file in reverse order
+    part = ""
+    for block in reversed_blocks(f):
+        for c in reversed(block):
+            if c == "\n" and part:
+                yield part[::-1]
+                part = ""
+            part += c
+    if part:
+        yield part[::-1]
 
-# current_time = datetime.datetime.now()
-# current_time = current_time.replace(microsecond=0)
-# history_window = datetime.timedelta(minutes=30)
-# old_time = current_time - history_window
 
-# print(binSearchDatetime(dask_data["Datetime"], old_time))
+def reversed_blocks(f, blocksize=4096):
+    # Generate blocks of file's contents in reverse order
+    f.seek(0, os.SEEK_END)
+    here = f.tell()
+    while 0 < here:
+        delta = min(blocksize, here)
+        here -= delta
+        f.seek(here, os.SEEK_SET)
+        yield f.read(delta)
