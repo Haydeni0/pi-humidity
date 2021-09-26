@@ -17,7 +17,9 @@ Repo containing code for pi humidity monitoring
   - Run logger in background at launch
   - Be able to easily access certain times
     - What datastructures do I need... will csv do?
-    - Maybe store one csv per week, as querying a large csv might be difficult
+  - Store one csv per month, as querying a large csv might be difficult
+    - One year of data (2 second rate) is 15,768,000 rows (31 characters per row) -> 488,808,000‬ bytes
+    - 
   - Measure room humidity and temp as well
 
 
