@@ -26,11 +26,11 @@ data = dd.read_csv(filepath)
 data["Datetime"] = dd.to_datetime(data["Datetime"])
 
 # The amount of time history shown in the graph
-history_window = datetime.timedelta(seconds=20)
+history_timedelta = datetime.timedelta(seconds=20)
 
 current_time = datetime.datetime.now()
 window_end = current_time
-window_start = window_end - history_window
+window_start = window_end - history_timedelta
 # Use a binary search to find the initial start window indices
 window_start_idx = binSearchDatetime(data["Datetime"], window_start)
 window_end_idx = len(data) - 1
@@ -43,15 +43,15 @@ T = deque(data["Temperature"].loc[window_start_idx:window_end_idx].compute())
 
 # Initial plot
 fig, ax = plt.subplots()
-(l,) = ax.plot(D, H)
+(L,) = ax.plot(D, H)
 
 # Set x and y axes limits
 ax.set_xlim(D[0], D[-1])
-ylim = [np.min(H), np.max(H)] # Store ylim in a list to do efficiently (don't repeatedly call max/min)
+ylim = [np.min(H), np.max(H)] # Store ylim in a list to do efficiently (don't repeatedly call max/min on the whole deque)
 ax.set_ylim(ylim)
 
 
-def updateQueues() -> Tuple[deque, deque, deque]:
+def updateQueues(history_timedelta: datetime.timedelta) -> Tuple[deque, deque, deque]:
     # Update D, H and T from the csv file
     # Also return the new additions to D, H and T (e.g. if we want to use them to update ylim)
     with open(filepath, "r") as textfile:
@@ -70,17 +70,28 @@ def updateQueues() -> Tuple[deque, deque, deque]:
                 D.extend(D_end)
                 H.extend(H_end)
                 T.extend(T_end)
-                return D_end, H_end, T_end # Return the newly added deques
+                break 
             else:
                 D_end.appendleft(D_proposed)
                 H_end.appendleft(H_proposed)
                 T_end.appendleft(T_proposed)
-                
+
+    # Remove old values from D
+    old_time = datetime.datetime.now() - history_timedelta
+    while True:
+        if D[0] < old_time:
+            D.popleft()
+            H.popleft()
+            T.popleft()
+        else:
+            break
+    return D_end, H_end, T_end # Return the newly added deques
+
 
 # plt.show()
 while True:
-    D_end, H_end, T_end = updateQueues()
-    l.set_data(D, H) # Can I append to l instead of setting?
+    D_end, H_end, T_end = updateQueues(history_timedelta)
+    L.set_data(D, H) # Can I append to L instead of setting?
 
     # Set new limits
     if D_end: # If not empty

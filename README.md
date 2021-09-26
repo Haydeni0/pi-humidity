@@ -24,10 +24,8 @@ Repo containing code for pi humidity monitoring
 
 
 ### Display
-- Pull data from the last two days to display on screen
-- Figure out how to do that...
-  - Use matplotlib.animation
-  - Test using randomly generated time series data on windows (in the same csv format)
+- Throw away old data
+- Figure out how to append to the line rather than set
 
 ### Fan
 - Solder fan to a usb so it runs on 5v from usb rather than wall plug 5v transformer
