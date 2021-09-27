@@ -24,8 +24,8 @@ Repo containing code for pi humidity monitoring
 
 
 ### Display
-- Throw away old data
-- Figure out how to append to the line rather than set
+- Figure out how to append to the line L_humidity rather than set_xdata...
+- NaN handling
 
 ### Fan
 - Solder fan to a usb so it runs on 5v from usb rather than wall plug 5v transformer
