@@ -1,22 +1,19 @@
 # %matplotlib notebook
-import dask.dataframe as dd
-import pandas as pd
 import csv
-from collections import deque
-import numpy as np
-
+import datetime
 import os
 import time
-import datetime
+from collections import deque
 from itertools import count
-
 from typing import Tuple
 
-from utils import binSearchDatetime, reversed_lines
-
-import seaborn as sns
+import dask.dataframe as dd
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
+import numpy as np
+import pandas as pd
+import seaborn as sns
+
+from utils import binSearchDatetime, reversed_lines
 
 # filepath = "data/DHT22_data.csv"
 filepath = "WindowsTest/TestData_inside.csv"
@@ -82,6 +79,7 @@ def updateQueues(history_timedelta: datetime.timedelta) -> Tuple[deque, deque, d
 # Initial plot
 plt.ion() # Turn on interactive mode
 fig, ax = plt.subplots()
+fig.tight_layout()
 (L_humidity,) = ax.plot(D, H)
 
 # Set x and y axes limits
