@@ -26,6 +26,8 @@ Repo containing code for pi humidity monitoring
 ### Display
 - Figure out how to append to the line L_humidity rather than set_xdata...
 - NaN handling
+- Show two lines, one for inside and one for outside, with legend
+- Plot a dashed line with observation carried forward if the last observation is old (older than 2 mins or 1 hour or ...?)
 
 ### Fan
 - Solder fan to a usb so it runs on 5v from usb rather than wall plug 5v transformer

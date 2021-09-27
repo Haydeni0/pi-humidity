@@ -19,20 +19,25 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 
 # filepath = "data/DHT22_data.csv"
-filepath = "WindowsTest/TestData.csv"
+filepath = "WindowsTest/TestData_inside.csv"
 
 # Use a dask dataframe for better & faster memory management when reading the whole csv
 data = dd.read_csv(filepath)
 data["Datetime"] = dd.to_datetime(data["Datetime"])
 
 # The amount of time history shown in the graph
-history_timedelta = datetime.timedelta(minutes=2)
+history_timedelta = datetime.timedelta(minutes=25)
 
 current_time = datetime.datetime.now()
 window_end = current_time
 window_start = window_end - history_timedelta
-# Use a binary search to find the initial start window indices
-window_start_idx = binSearchDatetime(data["Datetime"], window_start)
+if window_start < data["Datetime"].loc[0].compute().item():
+    # Use a binary search to find the initial start window indices
+    window_start_idx = binSearchDatetime(data["Datetime"], window_start)
+else:
+    # If there is not enough history, start at the latest recorded date
+    window_start_idx = 0
+
 window_end_idx = len(data) - 1
 assert window_start_idx < window_end_idx
 
@@ -68,13 +73,10 @@ def updateQueues(history_timedelta: datetime.timedelta) -> Tuple[deque, deque, d
 
     # Remove old values from D
     old_time = datetime.datetime.now() - history_timedelta
-    while True:
-        if D[0] < old_time:
-            D.popleft()
-            H.popleft()
-            T.popleft()
-        else:
-            break
+    while D[0] < old_time and len(D) > 1:
+        D.popleft()
+        H.popleft()
+        T.popleft()
     return D_end, H_end, T_end # Return the newly added deques
 
 
@@ -84,31 +86,51 @@ fig, ax = plt.subplots()
 (L_humidity,) = ax.plot(D, H)
 
 # Set x and y axes limits
+ylim_buffer = 5 # The amount to add on to the top and bottom of the limits
 ax.set_xlim(D[0], D[-1])
-ylim = [np.min(H), np.max(H)] # Store ylim in a list to do efficiently (don't repeatedly call max/min on the whole deque)
+ylim = [np.min(H) - ylim_buffer, np.max(H) + ylim_buffer] # Store ylim in a list to do efficiently (don't repeatedly call max/min on the whole deque)
 ax.set_ylim(ylim)
 
+decay_counter = count()
+update_interval = 0.2 # The time (seconds) to wait before each update
 while True:
     D_end, H_end, T_end = updateQueues(history_timedelta)
 
-    # Set new limits
+    # Find new y limits
     if D_end: # If not empty
         min_H_end = np.min(np.array(H_end).astype(np.float))
         max_H_end = np.max(np.array(H_end).astype(np.float))
         if min_H_end < ylim[0]:
-            ylim[0] = min_H_end - 5
+            ylim[0] = min_H_end - ylim_buffer
         if max_H_end > ylim[1]:
-            ylim[1] = max_H_end + 5
+            ylim[1] = max_H_end + ylim_buffer
 
+    # Every once in a while, check if the y limits have become too large
+    # And if so, slowly decay them
+    decay_interval = 20 # The time period to wait (seconds)
+    ylim_decay = 0.1 # Proportion to decay each time
+    if next(decay_counter) == int(decay_interval/update_interval):
+        decay_counter = count() # Reset counter
+        ideal_ymin = np.min(np.array(H).astype(np.float)) - ylim_buffer
+        ideal_ymax = np.max(np.array(H).astype(np.float)) + ylim_buffer
+        if ideal_ymin > ylim[0]:
+            ylim[0] = ylim[0] + ylim_decay*abs(ylim[0] - ideal_ymin)
+        
+        if ideal_ymax < ylim[1]:
+            ylim[1] = ylim[1] - ylim_decay*abs(ylim[1] - ideal_ymax)
+
+    # Set new y limits
     ax.set_xlim(D[0], D[-1])
     ax.set_ylim(ylim)
+
+    # Set new data
     L_humidity.set_xdata(D)
-    L_humidity.set_ydata(H) # Can I append to L instead of setting?
+    L_humidity.set_ydata(H) # Can I append/pop L instead of setting?
 
     fig.canvas.draw()
     fig.canvas.flush_events()
 
-    time.sleep(0.2)
+    time.sleep(update_interval)
     
 
 

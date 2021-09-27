@@ -25,6 +25,7 @@ def binSearchDatetime(
 
     idx_width = R_idx - L_idx
 
+    # The date we are searching for must be within the left and right limits
     assert L < target_datetime < R
 
     # Binary search
