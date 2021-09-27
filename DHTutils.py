@@ -8,8 +8,11 @@ def read_retry_inout(sensor, pin_inside, pin_outside, retries=10, delay_seconds=
     Unlike the read function, this read_retry function will attempt to read
     multiple times (up to the specified max retries) until a good reading can be
     found. If a good reading cannot be found after the amount of retries, a tuple
-    of (None, None) is returned. The delay between retries is by default 2
+    of (None, None) is returned. The delay between retries is by default 1
     seconds, but can be overridden.
+
+    This has been modified from Adafruit_DHT source to allow reading of two sensors at 
+    once without queueing their retries (which adds latency)
     """
     done_inside = False
     done_outside = False
