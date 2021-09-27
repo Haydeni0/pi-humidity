@@ -16,7 +16,7 @@ temperature_outside = [np.random.normal(0, 0.5)]
 
 
 log_interval = 1
-AR_time_constant = 10 # Time constant of the AR(1) processes (in seconds)
+AR_time_constant = 5*60 # Time constant of the AR(1) processes (in seconds)
 C = math.exp(-log_interval/AR_time_constant)
 sigma_H = 10
 sigma_T = 4

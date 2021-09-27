@@ -23,7 +23,7 @@ data = dd.read_csv(filepath)
 data["Datetime"] = dd.to_datetime(data["Datetime"])
 
 # The amount of time history shown in the graph
-history_timedelta = datetime.timedelta(minutes=25)
+history_timedelta = datetime.timedelta(hours=25)
 
 current_time = datetime.datetime.now()
 window_start = current_time - history_timedelta
@@ -88,8 +88,10 @@ ax.set_xlim(D[0], D[-1])
 ylim = [np.min(H) - ylim_buffer, np.max(H) + ylim_buffer] # Store ylim in a list to do efficiently (don't repeatedly call max/min on the whole deque)
 ax.set_ylim(ylim)
 
-decay_counter = count()
-update_interval = 0.2 # The time (seconds) to wait before each update
+frame_counter = count()
+old_time = int(time.time())
+decay_counter = count() # Initialise counter for use with the y limit decay
+update_interval = 0.000002 # The time (seconds) to wait before each update
 while True:
     D_end, H_end, T_end = updateQueues(history_timedelta)
 
@@ -104,7 +106,8 @@ while True:
 
     # Every once in a while, check if the y limits have become too large
     # And if so, slowly decay them
-    decay_interval = 20 # The time period to wait (seconds)
+    # The time period to wait (seconds)
+    decay_interval = 20 # Probably have this large ish so that we dont have to run np.max/min on the whole deque too often
     ylim_decay = 0.1 # Proportion to decay each time
     if next(decay_counter) == int(decay_interval/update_interval):
         decay_counter = count() # Reset counter
@@ -120,24 +123,24 @@ while True:
     ax.set_xlim(D[0], D[-1])
     ax.set_ylim(ylim)
 
+    # These are the costly lines, runs at about 10 fps maybe
+    #########
     # Set new data
     L_humidity.set_xdata(D)
     L_humidity.set_ydata(H) # Can I append/pop L instead of setting?
 
     fig.canvas.draw()
     fig.canvas.flush_events()
+    #########
 
-    time.sleep(update_interval)
+    # Check FPS
     
+    if old_time < int(time.time()):
+        old_time = int(time.time())
+        print(f"FPS: {next(frame_counter)}")
+        frame_counter = count()
+    else:
+        next(frame_counter)
 
-
-
-# plt.axis([0, 10, 0, 1])
-
-# for i in range(10000):
-#     updatePlot(i)
-#     plt.pause(0.01)
-
-# plt.show()
-# updatePlot(data)
-
+    # time.sleep(update_interval)
+    
