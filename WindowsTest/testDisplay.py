@@ -29,9 +29,8 @@ data["Datetime"] = dd.to_datetime(data["Datetime"])
 history_timedelta = datetime.timedelta(minutes=25)
 
 current_time = datetime.datetime.now()
-window_end = current_time
-window_start = window_end - history_timedelta
-if window_start < data["Datetime"].loc[0].compute().item():
+window_start = current_time - history_timedelta
+if data["Datetime"].loc[0].compute().item() < window_start:
     # Use a binary search to find the initial start window indices
     window_start_idx = binSearchDatetime(data["Datetime"], window_start)
 else:
