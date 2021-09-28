@@ -23,7 +23,7 @@ data = dd.read_csv(filepath)
 data["Datetime"] = dd.to_datetime(data["Datetime"])
 
 # The amount of time history shown in the graph
-history_timedelta = datetime.timedelta(minutes=1)
+history_timedelta = datetime.timedelta(hours=4)
 
 current_time = datetime.datetime.now()
 window_start = current_time - history_timedelta
@@ -81,10 +81,11 @@ fig = plt.figure()
 ax_H = fig.add_subplot(2, 1, 1)
 ax_T = fig.add_subplot(2, 1, 2)
 # fig.tight_layout()
-# line_H, = ax_H.plot(D, H)
-# line_T, = ax_T.plot(D, T)
 line_H, = ax_H.plot([], [])
 line_T, = ax_T.plot([], [])
+
+# Make the frametime text object
+frametime_text = ax_H.text(D[0],66, "")
 
 # Set x and y axes limits
 ylim_H_buffer = 5 # The amount to add on to the top and bottom of the limits
@@ -96,17 +97,10 @@ ylim_T = [np.min(T) - ylim_T_buffer, np.max(T) + ylim_T_buffer]
 ax_H.set_ylim(ylim_H)
 ax_T.set_ylim(ylim_T)
 
-# Set the fps counter
-frametime_text = ax_H.text(100,0, "")
+
 
 # Draw the initial figure before setting the data
 fig.canvas.draw()
-
-blit = True # Whether to use blit or not (True means faster plotting)
-if blit:
-    # Cache the background
-    ax_H_background = fig.canvas.copy_from_bbox(ax_H.bbox)
-    ax_T_background = fig.canvas.copy_from_bbox(ax_T.bbox)
 
 plt.show(block=False)
 
@@ -148,25 +142,22 @@ while True:
     line_T.set_data(D, T)
     # Set frametime text
     frametime_text.set_text(frametime_old)
-    if blit:
-        # Restore background
-        fig.canvas.restore_region(ax_H_background)
-        fig.canvas.restore_region(ax_T_background)
-        # Redraw just the points
-        ax_H.draw_artist(line_H)
-        ax_T.draw_artist(line_T)
-        ax_H.draw_artist(frametime_text)
-        # Fill in the axes rectangle
-        fig.canvas.blit(ax_H.bbox)
-        fig.canvas.blit(ax_T.bbox)
-    else:
-        # Redraw everything
-        fig.canvas.draw()
+    frametime_text.set_x(D[0]) # Make sure the frametime counter stays in the axis limits
+    frametime_text.set_y(ylim_H[1] + 1) # Make sure the frametime counter stays in the axis limits
+
+
+    # Redraw just the points
+    ax_H.draw_artist(line_H)
+    ax_T.draw_artist(line_T)
+    ax_H.draw_artist(frametime_text)
+
+    # Redraw everything
+    fig.canvas.draw()
 
     fig.canvas.flush_events()
 
     # Get current frametime to display on the next frame
-    frametime_old = f"Frame time: {time.time() - frame_start_time}"
+    frametime_old = f"Frame time (s): {time.time() - frame_start_time: 0.3f}"
 
     # time.sleep(update_interval)
 
