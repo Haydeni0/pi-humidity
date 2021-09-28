@@ -26,7 +26,6 @@ Repo containing code for pi humidity monitoring
 ### Display
 - Figure out how to append to the line L_humidity rather than set_xdata...
   - Find some way to benchmark how fast it's working currently
-  - https://stackoverflow.com/questions/61683304/progressively-append-and-plot-new-data-to-a-matplotlib-line
   - https://stackoverflow.com/questions/40126176/fast-live-plotting-in-matplotlib-pyplot
 - NaN handling
 - Plot a dashed line with observation carried forward if the last observation is old (older than 2 mins or 1 hour or ...?)

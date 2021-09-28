@@ -4,6 +4,7 @@ import os
 import dask.dataframe as dd
 import numpy as np
 import pandas as pd
+from collections import deque
 
 
 def binSearchDatetime(
@@ -71,3 +72,13 @@ def reversed_blocks(f, blocksize=4096):
         here -= delta
         f.seek(here, os.SEEK_SET)
         yield f.read(delta)
+
+def decayLimits(timeseries: deque, ylim: list, ylim_decay: float, ylim_buffer: float):
+    # Decays ylim (mutate)
+    ideal_ymin = np.min(np.array(timeseries).astype(np.float)) - ylim_buffer
+    ideal_ymax = np.max(np.array(timeseries).astype(np.float)) + ylim_buffer
+    if ideal_ymin > ylim[0]:
+        ylim[0] = ylim[0] + ylim_decay*abs(ylim[0] - ideal_ymin)
+    
+    if ideal_ymax < ylim[1]:
+        ylim[1] = ylim[1] - ylim_decay*abs(ylim[1] - ideal_ymax)

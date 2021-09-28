@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 
-from utils import binSearchDatetime, reversed_lines
+from utils import binSearchDatetime, reversed_lines, decayLimits
 
 # filepath = "data/DHT22_data.csv"
 filepath = "WindowsTest/TestData_inside.csv"
@@ -23,7 +23,7 @@ data = dd.read_csv(filepath)
 data["Datetime"] = dd.to_datetime(data["Datetime"])
 
 # The amount of time history shown in the graph
-history_timedelta = datetime.timedelta(hours=25)
+history_timedelta = datetime.timedelta(hours=1)
 
 current_time = datetime.datetime.now()
 window_start = current_time - history_timedelta
@@ -77,21 +77,38 @@ def updateQueues(history_timedelta: datetime.timedelta) -> Tuple[deque, deque, d
 
 
 # Initial plot
-plt.ion() # Turn on interactive mode
-fig, ax = plt.subplots()
-fig.tight_layout()
-(L_humidity,) = ax.plot(D, H)
+fig = plt.figure()
+ax_H = fig.add_subplot(2, 1, 1)
+ax_T = fig.add_subplot(2, 1, 2)
+# fig.tight_layout()
+line_H, = ax_H.plot(D, H)
+line_T, = ax_T.plot(D, T)
 
 # Set x and y axes limits
-ylim_buffer = 5 # The amount to add on to the top and bottom of the limits
-ax.set_xlim(D[0], D[-1])
-ylim = [np.min(H) - ylim_buffer, np.max(H) + ylim_buffer] # Store ylim in a list to do efficiently (don't repeatedly call max/min on the whole deque)
-ax.set_ylim(ylim)
+ylim_H_buffer = 5 # The amount to add on to the top and bottom of the limits
+ylim_T_buffer = 3 
+ax_H.set_xlim(D[0], D[-1])
+ax_T.set_xlim(D[0], D[-1])
+ylim_H = [np.min(H) - ylim_H_buffer, np.max(H) + ylim_H_buffer] # Store ylim in a list to do efficiently (don't repeatedly call max/min on the whole deque)
+ylim_T = [np.min(T) - ylim_T_buffer, np.max(T) + ylim_T_buffer] 
+ax_H.set_ylim(ylim_H)
+ax_T.set_ylim(ylim_T)
+
+# Draw the initial plots
+fig.canvas.draw()
+
+blit = True # Whether to use blit or not (True means faster plotting)
+if blit:
+    ax_H_background = fig.canvas.copy_from_bbox(ax_H.bbox)
+    ax_T_background = fig.canvas.copy_from_bbox(ax_T.bbox)
+
+plt.show(block=False)
 
 frame_counter = count()
 old_time = int(time.time())
 decay_counter = count() # Initialise counter for use with the y limit decay
-update_interval = 0.000002 # The time (seconds) to wait before each update
+update_interval = 2 # The time (seconds) to wait before each update
+
 while True:
     D_end, H_end, T_end = updateQueues(history_timedelta)
 
@@ -99,37 +116,44 @@ while True:
     if D_end: # If not empty
         min_H_end = np.min(np.array(H_end).astype(np.float))
         max_H_end = np.max(np.array(H_end).astype(np.float))
-        if min_H_end < ylim[0]:
-            ylim[0] = min_H_end - ylim_buffer
-        if max_H_end > ylim[1]:
-            ylim[1] = max_H_end + ylim_buffer
+        if min_H_end < ylim_H[0]:
+            ylim_H[0] = min_H_end - ylim_H_buffer
+        if max_H_end > ylim_H[1]:
+            ylim_H[1] = max_H_end + ylim_H_buffer
 
     # Every once in a while, check if the y limits have become too large
     # And if so, slowly decay them
-    # The time period to wait (seconds)
     decay_interval = 20 # Probably have this large ish so that we dont have to run np.max/min on the whole deque too often
     ylim_decay = 0.1 # Proportion to decay each time
     if next(decay_counter) == int(decay_interval/update_interval):
         decay_counter = count() # Reset counter
-        ideal_ymin = np.min(np.array(H).astype(np.float)) - ylim_buffer
-        ideal_ymax = np.max(np.array(H).astype(np.float)) + ylim_buffer
-        if ideal_ymin > ylim[0]:
-            ylim[0] = ylim[0] + ylim_decay*abs(ylim[0] - ideal_ymin)
-        
-        if ideal_ymax < ylim[1]:
-            ylim[1] = ylim[1] - ylim_decay*abs(ylim[1] - ideal_ymax)
+        decayLimits(H, ylim_H, ylim_decay, ylim_H_buffer)
+        decayLimits(T, ylim_T, ylim_decay, ylim_T_buffer)
 
     # Set new y limits
-    ax.set_xlim(D[0], D[-1])
-    ax.set_ylim(ylim)
+    ax_H.set_xlim(D[0], D[-1])
+    ax_T.set_xlim(D[0], D[-1])
+    ax_H.set_ylim(ylim_H)
+    ax_T.set_ylim(ylim_T)
 
     # These are the costly lines, runs at about 10 fps maybe
     #########
     # Set new data
-    L_humidity.set_xdata(D)
-    L_humidity.set_ydata(H) # Can I append/pop L instead of setting?
+    line_H.set_data(D, H)
+    line_T.set_data(D, T)
 
-    fig.canvas.draw()
+    if blit:
+        fig.canvas.restore_region(ax_H_background)
+        fig.canvas.restore_region(ax_T_background)
+
+        ax_H.draw_artist(line_H)
+        ax_T.draw_artist(line_T)
+
+        fig.canvas.blit(ax_H.bbox)
+        fig.canvas.blit(ax_T.bbox)
+    else:
+        fig.canvas.draw()
+
     fig.canvas.flush_events()
     #########
 
@@ -143,4 +167,8 @@ while True:
         next(frame_counter)
 
     # time.sleep(update_interval)
-    
+
+
+
+
+
