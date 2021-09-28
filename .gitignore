@@ -3,3 +3,4 @@
 #WindowsTest
 
 WindowsTest/TestData*
+*.pyc
