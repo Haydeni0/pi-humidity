@@ -1,3 +1,5 @@
 # Don't put the data logging on git
 #data
 #WindowsTest
+
+WindowsTest/TestData*
