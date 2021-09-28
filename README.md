@@ -24,9 +24,11 @@ Repo containing code for pi humidity monitoring
 
 
 ### Display
-- Figure out how to append to the line L_humidity rather than set_xdata...
-  - Find some way to benchmark how fast it's working currently
-  - https://stackoverflow.com/questions/40126176/fast-live-plotting-in-matplotlib-pyplot
+- Speed up plotting, currently very very slow
+  - blit technique https://stackoverflow.com/questions/40126176/fast-live-plotting-in-matplotlib-pyplot
+    - Probably not that useful as we need to draw the changing x ticks as well, pretty much everything
+  - Could do smoothing to the data, then take a subset to use less points in the plotting
+  - Could try a method that only plots D_end, H_end, T_end, and just shifts the x limits without redrawing the whole thing
 - NaN handling
 - Plot a dashed line with observation carried forward if the last observation is old (older than 2 mins or 1 hour or ...?)
 - Show two lines, one for inside and one for outside, with legend
