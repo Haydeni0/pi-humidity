@@ -5,18 +5,16 @@ import os
 import time
 from collections import deque
 from itertools import count
-from typing import Tuple
 
 import dask.dataframe as dd
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import seaborn as sns
 
 from utils import binSearchDatetime, decayLimits, updateQueues
 
 # filepath = "data/DHT22_data.csv"
-filepath = "WindowsTest/TestData_inside.csv"
+filepath = "WindowsTest/TestData/inside.csv"
 
 # Use a dask dataframe for better & faster memory management when reading the whole csv
 data = dd.read_csv(filepath)
@@ -86,6 +84,12 @@ while True:
             ylim_H[0] = min_H_end - ylim_H_buffer
         if max_H_end > ylim_H[1]:
             ylim_H[1] = max_H_end + ylim_H_buffer
+        min_T_end = np.min(np.array(T_end).astype(np.float))
+        max_T_end = np.max(np.array(T_end).astype(np.float))
+        if min_T_end < ylim_T[0]:
+            ylim_T[0] = min_T_end - ylim_T_buffer
+        if max_T_end > ylim_T[1]:
+            ylim_T[1] = max_T_end + ylim_T_buffer
 
     # Set new y limits
     ax_H.set_xlim(D[0], D[-1])
@@ -103,11 +107,6 @@ while True:
     # Set new data
     line_H.set_data(D, H)
     line_T.set_data(D, T)
-
-    # Redraw just the points
-    # ax_H.draw_artist(line_H)
-    # ax_T.draw_artist(line_T)
-    # ax_H.draw_artist(frametime_text)
 
     # Redraw everything, as we need changing x ticks as well as the line and frametimes
     fig.canvas.draw()
@@ -127,4 +126,4 @@ while True:
     # Get current frametime to display on the next frame
     frametime_old = f"Frame time (s): {time.time() - frame_start_time: 0.3f}"
 
-    # time.sleep(update_interval)
+    time.sleep(update_interval)

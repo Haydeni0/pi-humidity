@@ -6,8 +6,8 @@ import math
 import numpy as np
 import pandas as pd
 
-filepath_inside = "WindowsTest/TestData_inside.csv"
-filepath_outside = "WindowsTest/TestData_outside.csv"
+filepath_inside = "WindowsTest/TestData/inside.csv"
+filepath_outside = "WindowsTest/TestData/outside.csv"
 
 humidity_inside = [np.random.normal(0, 2)]
 temperature_inside = [np.random.normal(0, 0.5)]

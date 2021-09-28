@@ -88,7 +88,7 @@ def decayLimits(timeseries: deque, ylim: list, ylim_decay: float, ylim_buffer: f
 
 
 def updateQueues(D: deque, H: deque, T: deque, filepath: str, history_timedelta: datetime.timedelta) -> Tuple[deque, deque, deque]:
-    # Update D, H and T from the csv file
+    # Update D, H and T (passed by reference) from the csv file
     # Also return the new additions to D, H and T (e.g. if we want to use them to update ylim)
     with open(filepath, "r") as textfile:
         # Open and read the file in reverse order
@@ -120,4 +120,4 @@ def updateQueues(D: deque, H: deque, T: deque, filepath: str, history_timedelta:
         D.popleft()
         H.popleft()
         T.popleft()
-    return D_end, H_end, T_end  # Return the newly added deques
+    return D_end, H_end, T_end  # Return the new deques

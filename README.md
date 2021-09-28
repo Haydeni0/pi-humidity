@@ -32,6 +32,7 @@ Repo containing code for pi humidity monitoring
 - NaN handling
 - Plot a dashed line with observation carried forward if the last observation is old (older than 2 mins or 1 hour or ...?)
 - Show two lines, one for inside and one for outside, with legend
+  - Do this after everything is fully sorted with just one set of lines
 
 ### Fan
 - Solder fan to a usb so it runs on 5v from usb rather than wall plug 5v transformer

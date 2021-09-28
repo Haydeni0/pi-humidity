@@ -2,5 +2,5 @@
 #data
 #WindowsTest
 
-WindowsTest/TestData*
+WindowsTest/TestData
 *.pyc
