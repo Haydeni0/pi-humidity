@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 from collections import deque
 
+from typing import Tuple
+import csv
 
 def binSearchDatetime(
     Datetime: dd.core.Series, target_datetime: datetime.datetime
@@ -73,12 +75,49 @@ def reversed_blocks(f, blocksize=4096):
         f.seek(here, os.SEEK_SET)
         yield f.read(delta)
 
+
 def decayLimits(timeseries: deque, ylim: list, ylim_decay: float, ylim_buffer: float):
     # Decays ylim (mutate)
     ideal_ymin = np.min(np.array(timeseries).astype(np.float)) - ylim_buffer
     ideal_ymax = np.max(np.array(timeseries).astype(np.float)) + ylim_buffer
     if ideal_ymin > ylim[0]:
         ylim[0] = ylim[0] + ylim_decay*abs(ylim[0] - ideal_ymin)
-    
+
     if ideal_ymax < ylim[1]:
         ylim[1] = ylim[1] - ylim_decay*abs(ylim[1] - ideal_ymax)
+
+
+def updateQueues(D: deque, H: deque, T: deque, filepath: str, history_timedelta: datetime.timedelta) -> Tuple[deque, deque, deque]:
+    # Update D, H and T from the csv file
+    # Also return the new additions to D, H and T (e.g. if we want to use them to update ylim)
+    with open(filepath, "r") as textfile:
+        # Open and read the file in reverse order
+        f_end = csv.DictReader(reversed_lines(textfile), fieldnames=[
+                               "Datetime", "Temperature", "Humidity"])
+        D_end = deque()
+        H_end = deque()
+        T_end = deque()
+        while True:
+            # Read line by line (from the end backwards) until we reach the date we have at the end of D
+            line = next(f_end)
+            D_proposed = pd.Timestamp(datetime.datetime.strptime(
+                line["Datetime"], "%Y-%m-%d %H:%M:%S"))
+            H_proposed = float(line["Humidity"])
+            T_proposed = float(line["Temperature"])
+            if D_proposed <= D[-1]:
+                D.extend(D_end)
+                H.extend(H_end)
+                T.extend(T_end)
+                break
+            else:
+                D_end.appendleft(D_proposed)
+                H_end.appendleft(H_proposed)
+                T_end.appendleft(T_proposed)
+
+    # Remove old values from D
+    old_time = datetime.datetime.now() - history_timedelta
+    while D[0] < old_time and len(D) > 1:
+        D.popleft()
+        H.popleft()
+        T.popleft()
+    return D_end, H_end, T_end  # Return the newly added deques
