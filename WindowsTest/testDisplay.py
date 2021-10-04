@@ -1,4 +1,3 @@
-# %matplotlib notebook
 import csv
 import datetime
 import os
@@ -11,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-from utils import binSearchDatetime, decayLimits, updateQueues
+from utils import binSearchDatetime, decayLimits, updateQueues, smoothInterp
 
 # filepath = "data/DHT22_data.csv"
 filepath = "WindowsTest/TestData/inside.csv"
@@ -41,10 +40,18 @@ else:
 
 assert window_start_idx <= window_end_idx
 
-# Use a deque for fast append/pop
-D = deque(data["Datetime"].loc[window_start_idx:window_end_idx].compute())
-H = deque(data["Humidity"].loc[window_start_idx:window_end_idx].compute())
-T = deque(data["Temperature"].loc[window_start_idx:window_end_idx].compute())
+# Use an np.array before smoothing and interpolation
+D_bulk = np.array(data["Datetime"].loc[window_start_idx:window_end_idx].compute())
+H_bulk = np.array(data["Humidity"].loc[window_start_idx:window_end_idx].compute())
+T_bulk = np.array(data["Temperature"].loc[window_start_idx:window_end_idx].compute())
+
+# Smooth and interpolate data, for better and faster plotting
+num_interp = 1000 # Number of data points after interpolation (this increases the resolution of the line)
+window_halflength = 10 # Number of array elements to use as the window halflength for moving median smoothing (this increases the smoothness of the line)
+num_interp = np.min([num_interp, len(D_bulk)]) # Just in case there are fewer data than num_interp
+D, H = smoothInterp(D_bulk, H_bulk, num_interp, window_halflength)
+T = smoothInterp(D_bulk, T_bulk, num_interp, window_halflength)[1]
+# D, H and T are deques for fast append/pop
 
 # Initial plot
 fig = plt.figure()

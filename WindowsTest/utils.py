@@ -1,13 +1,14 @@
+import csv
 import datetime
 import os
+from collections import deque
+from typing import Tuple
 
 import dask.dataframe as dd
 import numpy as np
 import pandas as pd
-from collections import deque
+import scipy.signal
 
-from typing import Tuple
-import csv
 
 def binSearchDatetime(
     Datetime: dd.core.Series, target_datetime: datetime.datetime
@@ -52,6 +53,7 @@ def binSearchDatetime(
 
 
 # Based on SO post https://stackoverflow.com/questions/10933838/how-to-read-a-csv-file-in-reverse-order-in-python
+#################################################################################################################
 def reversed_lines(f):
     # Generate the lines of file in reverse order
     part = ""
@@ -74,6 +76,7 @@ def reversed_blocks(f, blocksize=4096):
         here -= delta
         f.seek(here, os.SEEK_SET)
         yield f.read(delta)
+#################################################################################################################
 
 
 def decayLimits(timeseries: deque, ylim: list, ylim_decay: float, ylim_buffer: float):
@@ -121,3 +124,19 @@ def updateQueues(D: deque, H: deque, T: deque, filepath: str, history_timedelta:
         H.popleft()
         T.popleft()
     return D_end, H_end, T_end  # Return the new deques
+
+
+def smoothInterp(t: np.array, x: np.array, n: int, window_halflength: int) -> Tuple[deque, deque]:
+    # Given values x occurring at times t, interpolate regularly between the start and end times and smooth to give a deque of length n
+    # Use moving average smoothing (median)
+    # The window_halflength is the half length of the window used for the moving average
+    assert(len(t) == len(x))
+    N = len(t)
+    assert(N >= n)
+
+    # Subset the indices evenly
+    idx = np.linspace(0, N-1, n, dtype=int)
+    T = deque(pd.to_datetime(t[idx]))
+    X = deque(scipy.signal.medfilt(x, 2*window_halflength+1)[idx])
+
+    return T, X
