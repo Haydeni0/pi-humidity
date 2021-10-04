@@ -25,15 +25,21 @@ history_timedelta = datetime.timedelta(minutes=2)
 
 current_time = datetime.datetime.now()
 window_start = current_time - history_timedelta
-if data["Datetime"].loc[0].compute().item() < window_start:
-    # Use a binary search to find the initial start window indices
-    window_start_idx = binSearchDatetime(data["Datetime"], window_start)
+
+window_end_idx = len(data) - 1
+
+if data["Datetime"].loc[0].compute().item() < window_start: 
+    # Check if the desired start time 
+    if window_start > data["Datetime"].loc[len(data)-1].compute().item():
+        window_start_idx = window_end_idx
+    else:
+        # Use a binary search to find the initial start window indices
+        window_start_idx = binSearchDatetime(data["Datetime"], window_start)
 else:
     # If there is not enough history, start at the latest recorded date
     window_start_idx = 0
 
-window_end_idx = len(data) - 1
-assert window_start_idx < window_end_idx
+assert window_start_idx <= window_end_idx
 
 # Use a deque for fast append/pop
 D = deque(data["Datetime"].loc[window_start_idx:window_end_idx].compute())
