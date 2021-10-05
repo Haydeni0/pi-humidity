@@ -4,3 +4,4 @@
 
 WindowsTest/TestData
 *.pyc
+__pycache__
