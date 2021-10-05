@@ -108,9 +108,6 @@ def updateQueues(D: deque, H: deque, T: deque, filepath: str, history_timedelta:
             H_proposed = float(line["Humidity"])
             T_proposed = float(line["Temperature"])
             if D_proposed <= D[-1]:
-                D.extend(D_end)
-                H.extend(H_end)
-                T.extend(T_end)
                 break
             else:
                 D_end.appendleft(D_proposed)
@@ -119,16 +116,24 @@ def updateQueues(D: deque, H: deque, T: deque, filepath: str, history_timedelta:
 
     # Remove old values from D
     old_time = datetime.datetime.now() - history_timedelta
+    num_removed = 0 # Count how many elements we remove
     while D[0] < old_time and len(D) > 1:
         D.popleft()
         H.popleft()
         T.popleft()
-    return D_end, H_end, T_end  # Return the new deques
+        num_removed += 1
+
+    # Update deques
+    D.extend(D_end)
+    H.extend(H_end)
+    T.extend(T_end)
+
+    return D_end, H_end, T_end  # Also return the end deques to help with changing axis limits
 
 
 def smoothInterp(t: np.array, x: np.array, n: int, window_halflength: int) -> Tuple[deque, deque]:
     # Given values x occurring at times t, interpolate regularly between the start and end times and smooth to give a deque of length n
-    # Use moving average smoothing (median)
+    # Use moving average smoothing (median), as the data can have spikes
     # The window_halflength is the half length of the window used for the moving average
     assert(len(t) == len(x))
     N = len(t)

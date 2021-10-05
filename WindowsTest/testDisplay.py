@@ -14,13 +14,14 @@ from utils import binSearchDatetime, decayLimits, updateQueues, smoothInterp
 
 # filepath = "data/DHT22_data.csv"
 filepath = "WindowsTest/TestData/inside.csv"
+# filepath = "data/DHT22_inside.csv"
 
 # Use a dask dataframe for better & faster memory management when reading the whole csv
 data = dd.read_csv(filepath)
 data["Datetime"] = dd.to_datetime(data["Datetime"])
 
 # The amount of time history shown in the graph
-history_timedelta = datetime.timedelta(minutes=2)
+history_timedelta = datetime.timedelta(minutes=6)
 
 current_time = datetime.datetime.now()
 window_start = current_time - history_timedelta
@@ -52,6 +53,9 @@ num_interp = np.min([num_interp, len(D_bulk)]) # Just in case there are fewer da
 D, H = smoothInterp(D_bulk, H_bulk, num_interp, window_halflength)
 T = smoothInterp(D_bulk, T_bulk, num_interp, window_halflength)[1]
 # D, H and T are deques for fast append/pop
+
+# Remove bulk arrays from memory, otherwise they will persist for no reason
+del D_bulk, H_bulk, T_bulk
 
 # Initial plot
 fig = plt.figure()
