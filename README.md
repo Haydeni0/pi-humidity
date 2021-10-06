@@ -18,6 +18,8 @@ Repo containing code for pi humidity monitoring
 - Do smoothing to the data, then take a subset to use less points in the plotting
   - smoothing and interpolating
   - Could do a batch smoothInterp then run a recursive filter?
+  - Use the deque's max_length attribute to make sure it doesn't get bloated when adding data?
+    - Maybe not, as we still want a certain amount of time history...
 
 ### Codebase
 - Do profiling to see what takes most time
