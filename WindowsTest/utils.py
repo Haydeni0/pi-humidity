@@ -29,7 +29,7 @@ class SensorData:
     def __init__(self, filepath: str):
         self.filepath = filepath
         # Load D, H and T from file, also keep track of the length of these data
-        self.D, self.H, self.T, self.length = self.loadInitialData(SensorData.ideal_length)
+        self.D, self.H, self.T, self.length = self.loadInitialData()
         # Initialise deques to hold unsmoothed new data
         self.D_buffer = deque()
         self.H_buffer = deque()
@@ -40,7 +40,7 @@ class SensorData:
         SensorData.updateYlim(
             SensorData.ylim_T, SensorData.ylim_T_buffer, self.T)
 
-    def loadInitialData(self, num_thin: int) -> Tuple[deque, deque, deque, int]:
+    def loadInitialData(self) -> Tuple[deque, deque, deque, int]:
         # Inputs:
         #   num_thin - Number of data points after thinning (this increases the resolution
         #       of the line)
@@ -82,7 +82,7 @@ class SensorData:
 
         # Smooth and thin data, for better and faster plotting
         # Just in case there are fewer data than num_thin
-        num_thin = np.min([num_thin, len(D_bulk)])
+        num_thin = np.min([SensorData.ideal_length, len(D_bulk)])
         D, H = smoothThin(D_bulk, H_bulk, num_thin, SensorData.bulk_smooth_window_halfwidth)
         T = smoothThin(D_bulk, T_bulk, num_thin, SensorData.bulk_smooth_window_halfwidth)[1]
         # D, H and T are deques for fast append/pop
@@ -127,17 +127,18 @@ class SensorData:
         # self.H_buffer.extend(H_end)
         # self.T_buffer.extend(T_end)
 
-        # Update deques (once smoothed)
-        self.D.extend(D_end)
-        self.H.extend(H_end)
-        self.T.extend(T_end)
-        self.length += len(D_end)
+        if len(D_end) >= 1:
+            # Update deques (once smoothed)
+            self.D.extend(D_end)
+            self.H.extend(H_end)
+            self.T.extend(T_end)
+            self.length += len(D_end)
 
-        # Update y limits, using the smaller ._end deques
-        SensorData.updateYlim(
-            SensorData.ylim_H, SensorData.ylim_H_buffer, H_end)
-        SensorData.updateYlim(
-            SensorData.ylim_T, SensorData.ylim_T_buffer, T_end)
+            # Update y limits, using the smaller ._end deques
+            SensorData.updateYlim(
+                SensorData.ylim_H, SensorData.ylim_H_buffer, H_end)
+            SensorData.updateYlim(
+                SensorData.ylim_T, SensorData.ylim_T_buffer, T_end)
 
     @staticmethod
     def decayLimits(ylim: list, buffer: float, *data: deque):

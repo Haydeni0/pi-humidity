@@ -12,10 +12,16 @@ import seaborn as sns
 
 from utils import SensorData
 
-filepath = "WindowsTest/TestData/inside.csv"
 # filepath = "data/DHT22_inside.csv"
+# filepath = "WindowsTest/TestData/inside.csv"
+filepath = "WindowsTest/TestData/inside_old.csv"
+# filepath = "WindowsTest/TestData/nonexistent.csv"
 
-inside_sensor = SensorData("WindowsTest/TestData/inside.csv")
+
+if not os.path.exists(filepath):
+    raise FileNotFoundError(filepath)
+
+inside_sensor = SensorData(filepath)
 
 # Initial plot
 fig = plt.figure()
