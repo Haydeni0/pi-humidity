@@ -20,12 +20,10 @@ Repo containing code for pi humidity monitoring
   - Could do a batch smoothInterp then run a recursive filter?
   - Use the deque's max_length attribute to make sure it doesn't get bloated when adding data?
     - Maybe not, as we still want a certain amount of time history...
+  - Do we need a secondary smoothing? rolling mean?
 
 ### Codebase
 - Do profiling to see what takes most time
-- Implement SensorData as a class with methods for updating, processing and getting data
-  - Contains D H and T
-  - Then we can have separate sets of sensor data for inside and outside easily contained within objects
 
 ### Visualisation
 - Plot a dashed line with observation carried forward if the last observation is old (older than 2 mins or 1 hour or ...?)

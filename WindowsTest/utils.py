@@ -12,61 +12,37 @@ import scipy.signal
 
 class SensorData:
     history_timedelta = datetime.timedelta(minutes=6)
+    # Y axes limits are also contained within this class as a static variable
     ylim_H_buffer = 5  # The amount to add on to the top and bottom of the limits
     ylim_T_buffer = 3
     # Store ylim in a list to do efficiently (don't repeatedly call max/min on the whole deque)
     ylim_H = []
     ylim_T = []
+    # What length should the data be, after thinning
+    ideal_length = 1000
+    # Median smoothing window halfwidth 
+    bulk_smooth_window_halfwidth = 10
+    buffer_smooth_window_halfwidth = 3
+    # New data smoothing buffer size
+    smooth_buffer_size = buffer_smooth_window_halfwidth + 1
 
     def __init__(self, filepath: str):
         self.filepath = filepath
-
-        self.D, self.H, self.T = self.loadInitialData()
+        # Load D, H and T from file, also keep track of the length of these data
+        self.D, self.H, self.T, self.length = self.loadInitialData(SensorData.ideal_length)
+        # Initialise deques to hold unsmoothed new data
+        self.D_buffer = deque()
+        self.H_buffer = deque()
+        self.T_buffer = deque()
 
         SensorData.updateYlim(
             SensorData.ylim_H, SensorData.ylim_H_buffer, self.H)
         SensorData.updateYlim(
             SensorData.ylim_T, SensorData.ylim_T_buffer, self.T)
 
-
-    def decayLimits(ylim: list, buffer: float, *data: deque):
-        # Decays ylim (mutate)
-        # Allows input of multiple sets of data, eg. decayLimits(ylim, buffer, H_inside, H_outside, ...)
-        ylim_decay = 0.1  # Proportion to decay each time
-        
-        assert(len(data) >= 1)
-        ymin = min(data[0])
-        ymax = max(data[0])
-        if len(data) >= 2:
-            for d in data[1:]:
-                ymin = max(ymin, max(d))
-                ymax = max(ymax, max(d))
-
-        ymin -= buffer
-        ymax += buffer
-        if ymin > ylim[0]:
-            ylim[0] = ylim[0] + ylim_decay*abs(ylim[0] - ymin)
-        if ymax < ylim[1]:
-            ylim[1] = ylim[1] - ylim_decay*abs(ylim[1] - ymax)
-
-    def updateYlim(ylim: list, buffer: int, data: deque):
-        # data is a deque of floats
-        # Since ylim is a list, it is mutated within this function
-        data_min = min(data)
-        data_max = max(data)
-        if len(ylim) == 0:
-            ylim.clear()
-            ylim.append(data_min - buffer)
-            ylim.append(data_max + buffer)
-        else:
-            if data_min < ylim[0]:
-                ylim[0] = data_min - buffer
-            if data_max > ylim[1]:
-                ylim[1] = data_max + buffer
-
-    def loadInitialData(self, num_interp: int = 1000, window_halflength: int = 10) -> Tuple[deque, deque, deque]:
+    def loadInitialData(self, num_thin: int) -> Tuple[deque, deque, deque, int]:
         # Inputs:
-        #   num_interp - Number of data points after interpolation (this increases the resolution
+        #   num_thin - Number of data points after thinning (this increases the resolution
         #       of the line)
         #   window_halflength - Number of array elements to use as the window halflength for moving
         #       median smoothing (this increases the smoothness of the line)
@@ -96,7 +72,7 @@ class SensorData:
 
         assert window_start_idx <= window_end_idx
 
-        # Use an np.array before smoothing and interpolation
+        # Use an np.array before smoothing and thinning
         D_bulk = np.array(
             data["Datetime"].loc[window_start_idx:window_end_idx].compute())
         H_bulk = np.array(
@@ -104,16 +80,18 @@ class SensorData:
         T_bulk = np.array(
             data["Temperature"].loc[window_start_idx:window_end_idx].compute())
 
-        # Smooth and interpolate data, for better and faster plotting
-        # Just in case there are fewer data than num_interp
-        num_interp = np.min([num_interp, len(D_bulk)])
-        D, H = smoothInterp(D_bulk, H_bulk, num_interp, window_halflength)
-        T = smoothInterp(D_bulk, T_bulk, num_interp, window_halflength)[1]
+        # Smooth and thin data, for better and faster plotting
+        # Just in case there are fewer data than num_thin
+        num_thin = np.min([num_thin, len(D_bulk)])
+        D, H = smoothThin(D_bulk, H_bulk, num_thin, SensorData.bulk_smooth_window_halfwidth)
+        T = smoothThin(D_bulk, T_bulk, num_thin, SensorData.bulk_smooth_window_halfwidth)[1]
         # D, H and T are deques for fast append/pop
 
-        return D, H, T
+        length = num_thin  # Length of the deques
 
-    def update(self) -> Tuple[int, int]:
+        return D, H, T, length
+
+    def update(self):
         # Update D, H and T (passed by reference) from the csv file
         # Also return the new additions to D, H and T (e.g. if we want to use them to update ylim)
         with open(self.filepath, "r") as textfile:
@@ -139,23 +117,67 @@ class SensorData:
 
         # Remove old values from D
         old_time = datetime.datetime.now() - SensorData.history_timedelta
-        num_removed = 0  # Count how many elements we remove
-        while self.D[0] < old_time and len(self.D) > 1:
+        while self.D[0] < old_time and self.length > 1:
             self.D.popleft()
             self.H.popleft()
             self.T.popleft()
-            num_removed += 1
+            self.length -= 1
 
-        # Update deques
+        # self.D_buffer.extend(D_end)
+        # self.H_buffer.extend(H_end)
+        # self.T_buffer.extend(T_end)
+
+        # Update deques (once smoothed)
         self.D.extend(D_end)
         self.H.extend(H_end)
         self.T.extend(T_end)
+        self.length += len(D_end)
 
         # Update y limits, using the smaller ._end deques
         SensorData.updateYlim(
             SensorData.ylim_H, SensorData.ylim_H_buffer, H_end)
         SensorData.updateYlim(
             SensorData.ylim_T, SensorData.ylim_T_buffer, T_end)
+
+    @staticmethod
+    def decayLimits(ylim: list, buffer: float, *data: deque):
+        # Decays ylim (mutate)
+        # Allows input of multiple sets of data, eg. decayLimits(ylim, buffer, H_inside, H_outside, ...)
+        ylim_decay = 0.1  # Proportion to decay each time
+
+        assert(len(data) >= 1)
+        ymin = min(data[0])
+        ymax = max(data[0])
+        if len(data) >= 2:
+            for d in data[1:]:
+                ymin = max(ymin, max(d))
+                ymax = max(ymax, max(d))
+
+        ymin -= buffer
+        ymax += buffer
+        if ymin > ylim[0]:
+            ylim[0] = ylim[0] + ylim_decay*abs(ylim[0] - ymin)
+        if ymax < ylim[1]:
+            ylim[1] = ylim[1] - ylim_decay*abs(ylim[1] - ymax)
+
+    @staticmethod
+    def updateYlim(ylim: list, buffer: int, data: deque):
+        # data is a deque of floats
+        # Since ylim is a list, it is mutated within this function
+        data_min = min(data)
+        data_max = max(data)
+        if len(ylim) == 0:
+            ylim.clear()
+            ylim.append(data_min - buffer)
+            ylim.append(data_max + buffer)
+        else:
+            if data_min < ylim[0]:
+                ylim[0] = data_min - buffer
+            if data_max > ylim[1]:
+                ylim[1] = data_max + buffer
+
+
+
 
 
 def binSearchDatetime(
@@ -227,19 +249,18 @@ def reversed_blocks(f, blocksize=4096):
 #################################################################################################################
 
 
-
-
-
-def smoothInterp(t: np.array, x: np.array, n: int, window_halflength: int) -> Tuple[deque, deque]:
-    # Given values x occurring at times t, interpolate regularly between the start and end times and smooth to give a deque of length n
+def smoothThin(t: np.array, x: np.array, num_thin: int, window_halflength: int, *, start: int = 0) -> Tuple[deque, deque]:
+    # Given values x occurring at times t, thinning regularly between the start and end times and
+    # smooth to give a deque of length num_thin
     # Use moving average smoothing (median), as the data can have spikes
     # The window_halflength is the half length of the window used for the moving average
-    assert(len(t) == len(x))
     N = len(t)
-    assert(N >= n)
+    assert(0 <= start < N)
+    assert(N == len(x))
+    assert(N-start >= num_thin)
 
     # Subset the indices evenly
-    idx = np.linspace(0, N-1, n, dtype=int)
+    idx = np.linspace(start, N-1, num_thin, dtype=int)
     T = deque(pd.to_datetime(t[idx]))
     X = deque(scipy.signal.medfilt(x, 2*window_halflength+1)[idx])
 
