@@ -6,21 +6,23 @@ from typing import Tuple
 
 import dask.dataframe as dd
 import numpy as np
+from numpy.core.defchararray import array
 import pandas as pd
 import scipy.signal
 
 
 class SensorData:
     history_timedelta = datetime.timedelta(minutes=6)
+    # assert(history_timedelta < datetime.timedelta(days=7)) # Should there be a maximum?
     # Y axes limits are also contained within this class as a static variable
     ylim_H_buffer = 5  # The amount to add on to the top and bottom of the limits
     ylim_T_buffer = 3
     # Store ylim in a list to do efficiently (don't repeatedly call max/min on the whole deque)
     ylim_H = []
     ylim_T = []
-    # What length should the data be, after thinning
-    ideal_length = 1000
-    # Median smoothing window halfwidth 
+    # How many bins should there be in the datetime grid
+    num_bins = 1000
+    # Median smoothing window halfwidth
     bulk_smooth_window_halfwidth = 10
     buffer_smooth_window_halfwidth = 3
     # New data smoothing buffer size
@@ -50,41 +52,28 @@ class SensorData:
         # Outputs:
         #   (D, H, T) - Datetime, humidity and temperature deques
 
-        data = dd.read_csv(self.filepath)
-        data["Datetime"] = dd.to_datetime(data["Datetime"])
+        
 
         current_time = datetime.datetime.now()
-        window_start = current_time - SensorData.history_timedelta
+        window_start_time = pd.Timestamp(current_time - SensorData.history_timedelta)
+        window_end_time = pd.Timestamp(current_time)
 
-        window_end_idx = len(data) - 1
+        # Define (1-dimensional) grid edges
+        # Leave this as an array for now, convert to deque later
+        self.grid_edges = np.linspace(
+            window_start_time.value, window_end_time.value, SensorData.num_bins + 1)
+        self.grid_edges = pd.to_datetime(self.grid_edges)
 
-        if data["Datetime"].loc[0].compute().item() < window_start:
-            # Check if the desired start time
-            if window_start > data["Datetime"].loc[len(data)-1].compute().item():
-                window_start_idx = window_end_idx
-            else:
-                # Use a binary search to find the initial start window indices
-                window_start_idx = binSearchDatetime(
-                    data["Datetime"], window_start)
-        else:
-            # If there is not enough history, start at the latest recorded date
-            window_start_idx = 0
-
-        assert window_start_idx <= window_end_idx
-
-        # Use an np.array before smoothing and thinning
-        D_bulk = np.array(
-            data["Datetime"].loc[window_start_idx:window_end_idx].compute())
-        H_bulk = np.array(
-            data["Humidity"].loc[window_start_idx:window_end_idx].compute())
-        T_bulk = np.array(
-            data["Temperature"].loc[window_start_idx:window_end_idx].compute())
+        # Find and load the data from the csv into arrays
+        D_bulk, H_bulk, T_bulk = self.loadBulkData(window_start_time)
 
         # Smooth and thin data, for better and faster plotting
         # Just in case there are fewer data than num_thin
-        num_thin = np.min([SensorData.ideal_length, len(D_bulk)])
-        D, H = smoothThin(D_bulk, H_bulk, num_thin, SensorData.bulk_smooth_window_halfwidth)
-        T = smoothThin(D_bulk, T_bulk, num_thin, SensorData.bulk_smooth_window_halfwidth)[1]
+        num_thin = np.min([SensorData.num_bins, len(D_bulk)])
+        D, H = smoothThin(D_bulk, H_bulk, num_thin,
+                          SensorData.bulk_smooth_window_halfwidth)
+        T = smoothThin(D_bulk, T_bulk, num_thin,
+                       SensorData.bulk_smooth_window_halfwidth)[1]
         # D, H and T are deques for fast append/pop
 
         length = num_thin  # Length of the deques
@@ -140,6 +129,36 @@ class SensorData:
             SensorData.updateYlim(
                 SensorData.ylim_T, SensorData.ylim_T_buffer, T_end)
 
+    def loadBulkData(self, window_start_time: pd.Timestamp) -> Tuple[np.array, np.array, np.array]:
+        # Load the bulk data from file
+        data = dd.read_csv(self.filepath)
+        data["Datetime"] = dd.to_datetime(data["Datetime"])
+        
+        within_window_end_idx = len(data) - 1
+        if data["Datetime"].loc[0].compute().item() < window_start_time:
+            # Check if the desired start time
+            if window_start_time > data["Datetime"].loc[len(data)-1].compute().item():
+                within_window_start_idx = within_window_end_idx
+            else:
+                # Use a binary search to find the initial start window indices
+                within_window_start_idx = binSearchDatetime(
+                    data["Datetime"], window_start_time)
+        else:
+            # If there is not enough history, start at the latest recorded date
+            within_window_start_idx = 0
+
+        assert within_window_start_idx <= within_window_end_idx
+
+        # Use an np.array before smoothing and thinning
+        D_bulk = np.array(
+            data["Datetime"].loc[within_window_start_idx:within_window_end_idx].compute())
+        H_bulk = np.array(
+            data["Humidity"].loc[within_window_start_idx:within_window_end_idx].compute())
+        T_bulk = np.array(
+            data["Temperature"].loc[within_window_start_idx:within_window_end_idx].compute())
+        
+        return D_bulk, H_bulk, T_bulk
+
     @staticmethod
     def decayLimits(ylim: list, buffer: float, *data: deque):
         # Decays ylim (mutate)
@@ -176,9 +195,6 @@ class SensorData:
                 ylim[0] = data_min - buffer
             if data_max > ylim[1]:
                 ylim[1] = data_max + buffer
-
-
-
 
 
 def binSearchDatetime(
