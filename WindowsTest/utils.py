@@ -1,5 +1,6 @@
 import csv
 import datetime
+import time
 import os
 from collections import deque
 from itertools import count
@@ -32,9 +33,14 @@ class SensorData:
 
     def __init__(self, filepath: str):
         self.filepath = filepath
-        # Load D, H and T from file, also keep track of the length of these data
+        # These datetime grid variables are initialised in self.loadInitialData()
+        # self.D_grid_edges
+        # self.D_grid_centres
+
+        # Load H and T from file
         self.H, self.T = self.loadInitialData()
         # Initialise deques to hold new data from the next bin in the future
+        self.D_buffer = deque()
         self.H_buffer = deque()
         self.T_buffer = deque()
 
@@ -42,6 +48,10 @@ class SensorData:
             SensorData.ylim_H, SensorData.ylim_H_buffer, self.H)
         SensorData.updateYlim(
             SensorData.ylim_T, SensorData.ylim_T_buffer, self.T)
+
+        # For testing purposes:
+        time.sleep(2)
+        self.update()
 
     def loadInitialData(self) -> Tuple[deque, deque]:
         # Inputs:
@@ -58,40 +68,94 @@ class SensorData:
             current_time - SensorData.history_timedelta)
         window_end_time = pd.Timestamp(current_time)
 
-        # Define (1-dimensional) grid edges and bin centres (for datetime)
+        # Define regular (1-dimensional) grid edges and bin centres (for datetime)
         # Leave this as an array for now, convert to deque later
-        self.grid_edges = np.linspace(
+        self.D_grid_edges = np.linspace(
             window_start_time.value, window_end_time.value, SensorData.num_grid + 1)
-        self.grid_centres = np.mean(
-            [self.grid_edges[:-1], self.grid_edges[1:]])
+        self.D_grid_centres = 0.5 * \
+            (self.D_grid_edges[:-1] + self.D_grid_edges[1:])
         # Edges of each bin in the grid
-        self.grid_edges = pd.to_datetime(self.grid_edges)
+        self.D_grid_edges = pd.to_datetime(self.D_grid_edges)
         # Centre of each bin in the grid
-        self.grid_centres = pd.to_datetime(self.grid_centres)
+        self.D_grid_centres = pd.to_datetime(self.D_grid_centres)
 
         # Find and load the data from the csv into arrays
         D_bulk, H_bulk, T_bulk = self.loadBulkData(window_start_time)
 
         # Allocate the correct data to each bin
         # Take the median within each bin to decide on their final values
-        H, T = self.allocateToGrid(D_bulk, H_bulk, T_bulk)
+        H, T = self.allocateToGrid(self.D_grid_edges, D_bulk, H_bulk, T_bulk)
 
         # Finally, convert the grid values to deques for fast pop/append
-        self.grid_edges = deque(self.grid_edges)
-        self.grid_centres = deque(self.grid_centres)
+        self.D_grid_edges = deque(self.D_grid_edges)
+        self.D_grid_centres = deque(self.D_grid_centres)
 
         return H, T
 
     def update(self):
-        # Update D, H and T (passed by reference) from the csv file
-        # Also return the new additions to D, H and T (e.g. if we want to use them to update ylim)
+        # Get new data from the csv file
+        D_new, H_new, T_new = self.loadNewData()
+        # Add to the buffer
+        self.D_buffer.extend(D_new)
+        self.H_buffer.extend(H_new)
+        self.T_buffer.extend(T_new)
+
+        current_time = datetime.datetime.now()
+        new_time_elapsed = current_time - self.D_grid_edges[-1]
+        num_new_bins = int(np.floor(new_time_elapsed / self.grid_resolution))
+        num_new_edges = num_new_bins + 1
+
+        # Return if no new bins need to be added
+        if num_new_bins < 1:
+            return
+
+        # Remove old bins from the grid
+        for _ in range(num_new_bins):
+            self.D_grid_centres.popleft()
+            self.D_grid_edges.popleft()
+            self.H.popleft()
+            self.T.popleft()
+
+        # Calculate new grid edges (including the existing final grid edge == first grid edge here)
+        new_grid_edges = np.array(
+            [self.D_grid_edges[-1] + _*self.grid_resolution for _ in range(num_new_edges)])
+        new_grid_centres = new_grid_edges[:-1] + 0.5*self.grid_resolution
+
+        # Remove values to be added to the grid from the buffer
+        D_add = deque()
+        H_add = deque()
+        T_add = deque()
+
+        while len(self.D_buffer) >= 1 and self.D_buffer[0] < new_grid_edges[-1]:
+            D_add.append(self.D_buffer.popleft())
+            H_add.append(self.H_buffer.popleft())
+            T_add.append(self.T_buffer.popleft())
+
+        # Allocate new data into the new grid
+        H_new_grid, T_new_grid = self.allocateToGrid(
+            new_grid_edges, np.array(D_add), np.array(H_add), np.array(T_add))
+
+        # Add these new values to the grid, and update the grid edges & centres
+        self.H.extend(H_new_grid)
+        self.T.extend(T_new_grid)
+        self.D_grid_edges.extend(deque(new_grid_edges[1:]))
+        self.D_grid_centres.extend(deque(new_grid_centres))
+
+        # Update y limits, using the new bins
+        SensorData.updateYlim(
+            SensorData.ylim_H, SensorData.ylim_H_buffer, H_new_grid)
+        SensorData.updateYlim(
+            SensorData.ylim_T, SensorData.ylim_T_buffer, T_new_grid)
+
+    def loadNewData(self) -> Tuple[deque, deque, deque]:
+        # Load new values of D, H and T from the csv
+        D_new = deque()
+        H_new = deque()
+        T_new = deque()
         with open(self.filepath, "r") as textfile:
             # Open and read the file in reverse order
             f_end = csv.DictReader(reversed_lines(textfile), fieldnames=[
                 "Datetime", "Temperature", "Humidity"])
-            D_end = deque()
-            H_end = deque()
-            T_end = deque()
             while True:
                 # Read line by line (from the end backwards) until we reach the date we have at the end of D
                 line = next(f_end)
@@ -99,53 +163,32 @@ class SensorData:
                     line["Datetime"], "%Y-%m-%d %H:%M:%S"))
                 H_proposed = float(line["Humidity"])
                 T_proposed = float(line["Temperature"])
-                if D_proposed <= self.D[-1]:
+                if D_proposed <= self.D_grid_edges[-1]:
                     break
                 else:
-                    D_end.appendleft(D_proposed)
-                    H_end.appendleft(H_proposed)
-                    T_end.appendleft(T_proposed)
+                    D_new.appendleft(D_proposed)
+                    H_new.appendleft(H_proposed)
+                    T_new.appendleft(T_proposed)
 
-        # Remove old values from D
-        old_time = datetime.datetime.now() - SensorData.history_timedelta
-        while self.D[0] < old_time and self.length > 1:
-            self.D.popleft()
-            self.H.popleft()
-            self.T.popleft()
-            self.length -= 1
+        return D_new, H_new, T_new
 
-        # self.D_buffer.extend(D_end)
-        # self.H_buffer.extend(H_end)
-        # self.T_buffer.extend(T_end)
-
-        if len(D_end) >= 1:
-            # Update deques (once smoothed)
-            self.D.extend(D_end)
-            self.H.extend(H_end)
-            self.T.extend(T_end)
-            self.length += len(D_end)
-
-            # Update y limits, using the smaller ._end deques
-            SensorData.updateYlim(
-                SensorData.ylim_H, SensorData.ylim_H_buffer, H_end)
-            SensorData.updateYlim(
-                SensorData.ylim_T, SensorData.ylim_T_buffer, T_end)
-
-    def allocateToGrid(self, D_bulk: np.array, H_bulk: np.array, T_bulk: np.array) -> Tuple[deque, deque]:
-        # By construction, D_bulk should all be greater than self.grid_edges[0]
+    def allocateToGrid(self, grid_edges: pd.DatetimeIndex, D_bulk: np.array, H_bulk: np.array, T_bulk: np.array) -> Tuple[deque, deque]:
+        # By construction, D_bulk should all be greater than grid_edges[0]
         # Throw an error otherwise
         # Add a small timedelta to compare these float values approximately
-        assert(D_bulk[0] >= self.grid_edges[0] -
-               datetime.timedelta(seconds=0.2))
+        assert(D_bulk[0] >= grid_edges[0] -
+               datetime.timedelta(seconds=0.01))
+
+        num_grid = len(grid_edges) - 1
 
         # Find indices of the data that fall in each bin
         bin_data_idx = []
-        for bin_idx in range(SensorData.num_grid):
-            data_indices_above = self.grid_edges[bin_idx] <= D_bulk
-            if bin_idx < SensorData.num_grid-1:
-                data_indices_below = D_bulk < self.grid_edges[bin_idx+1]
+        for bin_idx in range(num_grid):
+            data_indices_above = grid_edges[bin_idx] <= D_bulk
+            if bin_idx < num_grid-1:
+                data_indices_below = D_bulk < grid_edges[bin_idx+1]
             else:
-                data_indices_below = D_bulk <= self.grid_edges[bin_idx+1]
+                data_indices_below = D_bulk <= grid_edges[bin_idx+1]
 
             bin_data_idx.append(np.where(np.logical_and(
                 data_indices_above, data_indices_below))[0])
@@ -153,7 +196,7 @@ class SensorData:
         # Fill in each bin with one value, by using the median within each bin
         def fillGrid(bin_data_idx: list, data: np.array) -> deque:
             grid = deque()
-            for bin_idx in range(SensorData.num_grid):
+            for bin_idx in range(num_grid):
                 bin_input = data[bin_data_idx[bin_idx]]
                 bin_input = np.median(bin_input)
                 grid.append(bin_input)
@@ -220,8 +263,8 @@ class SensorData:
     def updateYlim(ylim: list, buffer: int, data: deque):
         # data is a deque of floats
         # Since ylim is a list, it is mutated within this function
-        data_min = min(data)
-        data_max = max(data)
+        data_min = np.nanmin(data)
+        data_max = np.nanmax(data)
         if len(ylim) == 0:
             ylim.clear()
             ylim.append(data_min - buffer)

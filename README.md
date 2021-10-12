@@ -22,6 +22,8 @@ Repo containing code for pi humidity monitoring
 ### Codebase
 - Do profiling to see what takes most time
 - Make class methods private that shouldnt be called outside of the class
+- Overload [] operator for the SensorData class to return: 
+  - ```SensorData[i] = (grid_centre[i], H[i], T[i])``` ?
 
 ### Visualisation
 - Plot a dashed line with observation carried forward if the last observation is old (older than 2 mins or 1 hour or ...?)
