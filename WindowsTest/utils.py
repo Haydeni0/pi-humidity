@@ -2,11 +2,12 @@ import csv
 import datetime
 import os
 from collections import deque
+from itertools import count
 from typing import Tuple
 
 import dask.dataframe as dd
 import numpy as np
-from numpy.core.defchararray import array
+from numpy.lib.function_base import median
 import pandas as pd
 import scipy.signal
 
@@ -21,7 +22,8 @@ class SensorData:
     ylim_H = []
     ylim_T = []
     # How many bins should there be in the datetime grid
-    num_bins = 1000
+    num_grid = 1000
+    grid_resolution = history_timedelta/num_grid  # Width of one grid bin
     # Median smoothing window halfwidth
     bulk_smooth_window_halfwidth = 10
     buffer_smooth_window_halfwidth = 3
@@ -31,9 +33,8 @@ class SensorData:
     def __init__(self, filepath: str):
         self.filepath = filepath
         # Load D, H and T from file, also keep track of the length of these data
-        self.D, self.H, self.T, self.length = self.loadInitialData()
-        # Initialise deques to hold unsmoothed new data
-        self.D_buffer = deque()
+        self.H, self.T = self.loadInitialData()
+        # Initialise deques to hold new data from the next bin in the future
         self.H_buffer = deque()
         self.T_buffer = deque()
 
@@ -42,7 +43,7 @@ class SensorData:
         SensorData.updateYlim(
             SensorData.ylim_T, SensorData.ylim_T_buffer, self.T)
 
-    def loadInitialData(self) -> Tuple[deque, deque, deque, int]:
+    def loadInitialData(self) -> Tuple[deque, deque]:
         # Inputs:
         #   num_thin - Number of data points after thinning (this increases the resolution
         #       of the line)
@@ -52,33 +53,34 @@ class SensorData:
         # Outputs:
         #   (D, H, T) - Datetime, humidity and temperature deques
 
-        
-
         current_time = datetime.datetime.now()
-        window_start_time = pd.Timestamp(current_time - SensorData.history_timedelta)
+        window_start_time = pd.Timestamp(
+            current_time - SensorData.history_timedelta)
         window_end_time = pd.Timestamp(current_time)
 
-        # Define (1-dimensional) grid edges
+        # Define (1-dimensional) grid edges and bin centres (for datetime)
         # Leave this as an array for now, convert to deque later
         self.grid_edges = np.linspace(
-            window_start_time.value, window_end_time.value, SensorData.num_bins + 1)
+            window_start_time.value, window_end_time.value, SensorData.num_grid + 1)
+        self.grid_centres = np.mean(
+            [self.grid_edges[:-1], self.grid_edges[1:]])
+        # Edges of each bin in the grid
         self.grid_edges = pd.to_datetime(self.grid_edges)
+        # Centre of each bin in the grid
+        self.grid_centres = pd.to_datetime(self.grid_centres)
 
         # Find and load the data from the csv into arrays
         D_bulk, H_bulk, T_bulk = self.loadBulkData(window_start_time)
 
-        # Smooth and thin data, for better and faster plotting
-        # Just in case there are fewer data than num_thin
-        num_thin = np.min([SensorData.num_bins, len(D_bulk)])
-        D, H = smoothThin(D_bulk, H_bulk, num_thin,
-                          SensorData.bulk_smooth_window_halfwidth)
-        T = smoothThin(D_bulk, T_bulk, num_thin,
-                       SensorData.bulk_smooth_window_halfwidth)[1]
-        # D, H and T are deques for fast append/pop
+        # Allocate the correct data to each bin
+        # Take the median within each bin to decide on their final values
+        H, T = self.allocateToGrid(D_bulk, H_bulk, T_bulk)
 
-        length = num_thin  # Length of the deques
+        # Finally, convert the grid values to deques for fast pop/append
+        self.grid_edges = deque(self.grid_edges)
+        self.grid_centres = deque(self.grid_centres)
 
-        return D, H, T, length
+        return H, T
 
     def update(self):
         # Update D, H and T (passed by reference) from the csv file
@@ -129,11 +131,45 @@ class SensorData:
             SensorData.updateYlim(
                 SensorData.ylim_T, SensorData.ylim_T_buffer, T_end)
 
+    def allocateToGrid(self, D_bulk: np.array, H_bulk: np.array, T_bulk: np.array) -> Tuple[deque, deque]:
+        # By construction, D_bulk should all be greater than self.grid_edges[0]
+        # Throw an error otherwise
+        # Add a small timedelta to compare these float values approximately
+        assert(D_bulk[0] >= self.grid_edges[0] -
+               datetime.timedelta(seconds=0.2))
+
+        # Find indices of the data that fall in each bin
+        bin_data_idx = []
+        for bin_idx in range(SensorData.num_grid):
+            data_indices_above = self.grid_edges[bin_idx] <= D_bulk
+            if bin_idx < SensorData.num_grid-1:
+                data_indices_below = D_bulk < self.grid_edges[bin_idx+1]
+            else:
+                data_indices_below = D_bulk <= self.grid_edges[bin_idx+1]
+
+            bin_data_idx.append(np.where(np.logical_and(
+                data_indices_above, data_indices_below))[0])
+
+        # Fill in each bin with one value, by using the median within each bin
+        def fillGrid(bin_data_idx: list, data: np.array) -> deque:
+            grid = deque()
+            for bin_idx in range(SensorData.num_grid):
+                bin_input = data[bin_data_idx[bin_idx]]
+                bin_input = np.median(bin_input)
+                grid.append(bin_input)
+
+            return grid
+
+        H = fillGrid(bin_data_idx, H_bulk)
+        T = fillGrid(bin_data_idx, T_bulk)
+
+        return H, T
+
     def loadBulkData(self, window_start_time: pd.Timestamp) -> Tuple[np.array, np.array, np.array]:
-        # Load the bulk data from file
+        # Load the bulk data from file after a specified time
         data = dd.read_csv(self.filepath)
         data["Datetime"] = dd.to_datetime(data["Datetime"])
-        
+
         within_window_end_idx = len(data) - 1
         if data["Datetime"].loc[0].compute().item() < window_start_time:
             # Check if the desired start time
@@ -149,14 +185,14 @@ class SensorData:
 
         assert within_window_start_idx <= within_window_end_idx
 
-        # Use an np.array before smoothing and thinning
+        # Return as an np.array
         D_bulk = np.array(
             data["Datetime"].loc[within_window_start_idx:within_window_end_idx].compute())
         H_bulk = np.array(
             data["Humidity"].loc[within_window_start_idx:within_window_end_idx].compute())
         T_bulk = np.array(
             data["Temperature"].loc[within_window_start_idx:within_window_end_idx].compute())
-        
+
         return D_bulk, H_bulk, T_bulk
 
     @staticmethod
@@ -232,11 +268,11 @@ def binSearchDatetime(
             R_idx = M_idx
             L_idx = M_idx
         elif Datetime.loc[L_idx].compute().item() == target_datetime:
-            R_idx = L_idx
+            L_idx = R_idx
 
         idx_width = R_idx - L_idx
 
-    return int(L_idx)
+    return int(R_idx)
 
 
 # Based on SO post https://stackoverflow.com/questions/10933838/how-to-read-a-csv-file-in-reverse-order-in-python

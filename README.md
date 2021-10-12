@@ -16,10 +16,12 @@ Repo containing code for pi humidity monitoring
 ### Data processing
 - NaN handling
 - Instead of keeping all the data dependent on the date D, make a regular 1-D grid of datetime with a set length (e.g. 1000 elements) spanning from current_time - history_timedelta to current_time
+  - Should the grid length be reduced if there are too few datapoints? E.g. if num_grid == 1000 but len(D_bulk == 400 ish)
   - Do we need a secondary smoothing? rolling mean?
 
 ### Codebase
 - Do profiling to see what takes most time
+- Make class methods private that shouldnt be called outside of the class
 
 ### Visualisation
 - Plot a dashed line with observation carried forward if the last observation is old (older than 2 mins or 1 hour or ...?)
