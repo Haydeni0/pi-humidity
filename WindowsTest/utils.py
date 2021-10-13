@@ -50,7 +50,7 @@ class SensorData:
             SensorData.ylim_T, SensorData.ylim_T_buffer, self.T)
 
         # For testing purposes:
-        time.sleep(2)
+        # time.sleep(1)
         self.update()
 
     def loadInitialData(self) -> Tuple[deque, deque]:
@@ -92,7 +92,10 @@ class SensorData:
 
         return H, T
 
-    def update(self):
+    def update(self) -> bool:
+        # Check for new data, and update the grid if required.
+        # Returns True if the grid is updated, otherwise returns false
+
         # Get new data from the csv file
         D_new, H_new, T_new = self.loadNewData()
         # Add to the buffer
@@ -107,7 +110,7 @@ class SensorData:
 
         # Return if no new bins need to be added
         if num_new_bins < 1:
-            return
+            return False
 
         # Remove old bins from the grid
         for _ in range(num_new_bins):
@@ -146,6 +149,7 @@ class SensorData:
             SensorData.ylim_H, SensorData.ylim_H_buffer, H_new_grid)
         SensorData.updateYlim(
             SensorData.ylim_T, SensorData.ylim_T_buffer, T_new_grid)
+        return True
 
     def loadNewData(self) -> Tuple[deque, deque, deque]:
         # Load new values of D, H and T from the csv
@@ -176,10 +180,23 @@ class SensorData:
         # By construction, D_bulk should all be greater than grid_edges[0]
         # Throw an error otherwise
         # Add a small timedelta to compare these float values approximately
-        assert(D_bulk[0] >= grid_edges[0] -
-               datetime.timedelta(seconds=0.01))
+        
+            
+
+        assert(len(grid_edges) >= 2, "Not enough grid edges given")
 
         num_grid = len(grid_edges) - 1
+
+        # If no data is given, return a list of nans
+        if len(D_bulk) == 0:
+            nans = deque()
+            for _ in range(num_grid):
+                nans.append(np.nan)
+            return nans, nans
+
+
+        assert(D_bulk[0] >= grid_edges[0] -
+            datetime.timedelta(seconds=0.01))            
 
         # Find indices of the data that fall in each bin
         bin_data_idx = []
@@ -244,7 +261,7 @@ class SensorData:
         # Allows input of multiple sets of data, eg. decayLimits(ylim, buffer, H_inside, H_outside, ...)
         ylim_decay = 0.1  # Proportion to decay each time
 
-        assert(len(data) >= 1)
+        assert(len(data) > 0, "data is empty")
         ymin = min(data[0])
         ymax = max(data[0])
         if len(data) >= 2:

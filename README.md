@@ -2,6 +2,8 @@
 Repo containing code for pi humidity monitoring
 
 ## To-do
+- Add datetime grid feature
+  - Now that loading and updating of data works, make sure the plotting works
 
 ### Other
 - Back up an image of the fully configured pi
