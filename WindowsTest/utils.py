@@ -1,3 +1,4 @@
+from functools import wraps
 import csv
 import datetime
 import time
@@ -14,7 +15,7 @@ import scipy.signal
 
 
 class SensorData:
-    history_timedelta = datetime.timedelta(minutes=6)
+    history_timedelta = datetime.timedelta(minutes=20)
     # assert(history_timedelta < datetime.timedelta(days=7)) # Should there be a maximum?
     # Y axes limits are also contained within this class as a static variable
     ylim_H_buffer = 5  # The amount to add on to the top and bottom of the limits
@@ -23,7 +24,7 @@ class SensorData:
     ylim_H = []
     ylim_T = []
     # How many bins should there be in the datetime grid
-    num_grid = 1000
+    num_grid = 200
     grid_resolution = history_timedelta/num_grid  # Width of one grid bin
     # Median smoothing window halfwidth
     bulk_smooth_window_halfwidth = 10
@@ -37,20 +38,24 @@ class SensorData:
         # self.D_grid_edges
         # self.D_grid_centres
 
-        # Load H and T from file
-        self.H, self.T = self.loadInitialData()
+        # Load H and T from file (in raw format with possible nans)
+        self.H_raw, self.T_raw = self.loadInitialData()
+        # Process H and T to remove nans using last observation carried forward (LOCF)
+        # Also record which values were nan
+        self.H, self.H_was_nan = SensorData.replaceNanLOCF(self.H_raw)
+        self.T, self.T_was_nan = SensorData.replaceNanLOCF(self.T_raw)
+        
         # Initialise deques to hold new data from the next bin in the future
         self.D_buffer = deque()
         self.H_buffer = deque()
         self.T_buffer = deque()
 
         SensorData.updateYlim(
-            SensorData.ylim_H, SensorData.ylim_H_buffer, self.H)
+            SensorData.ylim_H, SensorData.ylim_H_buffer, self.H_raw)
         SensorData.updateYlim(
-            SensorData.ylim_T, SensorData.ylim_T_buffer, self.T)
+            SensorData.ylim_T, SensorData.ylim_T_buffer, self.T_raw)
 
-        # For testing purposes:
-        # time.sleep(1)
+        # Update immediately after initial data is loaded, as it may have taken a while
         self.update()
 
     def loadInitialData(self) -> Tuple[deque, deque]:
@@ -84,13 +89,13 @@ class SensorData:
 
         # Allocate the correct data to each bin
         # Take the median within each bin to decide on their final values
-        H, T = self.allocateToGrid(self.D_grid_edges, D_bulk, H_bulk, T_bulk)
+        H_raw, T_raw = self.allocateToGrid(self.D_grid_edges, D_bulk, H_bulk, T_bulk)
 
         # Finally, convert the grid values to deques for fast pop/append
         self.D_grid_edges = deque(self.D_grid_edges)
         self.D_grid_centres = deque(self.D_grid_centres)
 
-        return H, T
+        return H_raw, T_raw
 
     def update(self) -> bool:
         # Check for new data, and update the grid if required.
@@ -116,8 +121,12 @@ class SensorData:
         for _ in range(num_new_bins):
             self.D_grid_centres.popleft()
             self.D_grid_edges.popleft()
+            self.H_raw.popleft()
+            self.T_raw.popleft()
             self.H.popleft()
             self.T.popleft()
+            self.H_was_nan.popleft()
+            self.T_was_nan.popleft()
 
         # Calculate new grid edges (including the existing final grid edge == first grid edge here)
         new_grid_edges = np.array(
@@ -135,21 +144,49 @@ class SensorData:
             T_add.append(self.T_buffer.popleft())
 
         # Allocate new data into the new grid
-        H_new_grid, T_new_grid = self.allocateToGrid(
+        H_raw_new_grid, T_raw_new_grid = self.allocateToGrid(
             new_grid_edges, np.array(D_add), np.array(H_add), np.array(T_add))
 
+        # Remove nans
+        H_new_grid, H_new_was_nan = SensorData.replaceNanLOCF(H_raw_new_grid, self.H[-1])
+        T_new_grid, T_new_was_nan = SensorData.replaceNanLOCF(T_raw_new_grid, self.T[-1])
+
         # Add these new values to the grid, and update the grid edges & centres
-        self.H.extend(H_new_grid)
-        self.T.extend(T_new_grid)
         self.D_grid_edges.extend(deque(new_grid_edges[1:]))
         self.D_grid_centres.extend(deque(new_grid_centres))
+        self.H_raw.extend(H_raw_new_grid)
+        self.T_raw.extend(T_raw_new_grid)
+        self.H.extend(H_new_grid)
+        self.T.extend(T_new_grid)
+        self.H_was_nan.extend(H_new_was_nan)
+        self.T_was_nan.extend(T_new_was_nan)
 
         # Update y limits, using the new bins
         SensorData.updateYlim(
-            SensorData.ylim_H, SensorData.ylim_H_buffer, H_new_grid)
+            SensorData.ylim_H, SensorData.ylim_H_buffer, H_raw_new_grid)
         SensorData.updateYlim(
-            SensorData.ylim_T, SensorData.ylim_T_buffer, T_new_grid)
+            SensorData.ylim_T, SensorData.ylim_T_buffer, T_raw_new_grid)
         return True
+
+    @staticmethod
+    def replaceNanLOCF(data: deque, backup_val: float = 50) -> Tuple[deque, deque]:
+        # Replace nans in the deque with the last observation carried forward
+        # Also record the locations of where the nans were
+        data_LOCF = deque()
+        was_nan = deque()
+
+        # If the first value in data is nan, use backup_val instead of LOCF
+        last_val = backup_val
+        for d in data:
+            if np.isnan(d):
+                data_LOCF.append(last_val)
+                was_nan.append(True)
+            else:
+                last_val = d
+                data_LOCF.append(d)
+                was_nan.append(False)
+        
+        return data_LOCF, was_nan
 
     def loadNewData(self) -> Tuple[deque, deque, deque]:
         # Load new values of D, H and T from the csv
@@ -180,8 +217,6 @@ class SensorData:
         # By construction, D_bulk should all be greater than grid_edges[0]
         # Throw an error otherwise
         # Add a small timedelta to compare these float values approximately
-        
-            
 
         assert(len(grid_edges) >= 2, "Not enough grid edges given")
 
@@ -194,9 +229,8 @@ class SensorData:
                 nans.append(np.nan)
             return nans, nans
 
-
         assert(D_bulk[0] >= grid_edges[0] -
-            datetime.timedelta(seconds=0.01))            
+               datetime.timedelta(seconds=0.01))
 
         # Find indices of the data that fall in each bin
         bin_data_idx = []
@@ -220,10 +254,10 @@ class SensorData:
 
             return grid
 
-        H = fillGrid(bin_data_idx, H_bulk)
-        T = fillGrid(bin_data_idx, T_bulk)
+        H_raw = fillGrid(bin_data_idx, H_bulk)
+        T_raw = fillGrid(bin_data_idx, T_bulk)
 
-        return H, T
+        return H_raw, T_raw
 
     def loadBulkData(self, window_start_time: pd.Timestamp) -> Tuple[np.array, np.array, np.array]:
         # Load the bulk data from file after a specified time
@@ -378,3 +412,18 @@ def smoothThin(t: np.array, x: np.array, num_thin: int, window_halflength: int, 
     X = deque(scipy.signal.medfilt(x, 2*window_halflength+1)[idx])
 
     return T, X
+
+
+# Timing decorator for a function
+# https://stackoverflow.com/questions/1622943/timeit-versus-timing-decorator
+def timing(f):
+    @wraps(f)
+    def wrap(*args, **kw):
+        ts = time.time()
+        result = f(*args, **kw)
+        te = time.time()
+        # print('func:%r args:[%r, %r] took: %2.4f sec' %
+        #       (f.__name__, args, kw, te-ts))
+        print(f"func:{f.__name__} took: {te-ts: 2.4f} sec")
+        return result
+    return wrap
