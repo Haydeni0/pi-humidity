@@ -15,7 +15,7 @@ import scipy.signal
 
 
 class SensorData:
-    history_timedelta = datetime.timedelta(minutes=20)
+    __history_timedelta = datetime.timedelta(minutes=20)
     # assert(history_timedelta < datetime.timedelta(days=7)) # Should there be a maximum?
     # Y axes limits are also contained within this class as a static variable
     ylim_H_buffer = 5  # The amount to add on to the top and bottom of the limits
@@ -25,7 +25,7 @@ class SensorData:
     ylim_T = []
     # How many bins should there be in the datetime grid
     __num_grid = 1000
-    __grid_resolution = history_timedelta/__num_grid  # Width of one grid bin
+    __grid_resolution = __history_timedelta/__num_grid  # Width of one grid bin
 
     def __init__(self, filepath: str):
         self.filepath = filepath
@@ -46,9 +46,9 @@ class SensorData:
         self.__T_buffer = deque()
 
         SensorData.updateYlim(
-            SensorData.ylim_H, SensorData.ylim_H_buffer, self.H_raw)
+            SensorData.ylim_H, SensorData.ylim_H_buffer, self.H)
         SensorData.updateYlim(
-            SensorData.ylim_T, SensorData.ylim_T_buffer, self.T_raw)
+            SensorData.ylim_T, SensorData.ylim_T_buffer, self.T)
 
         # Update immediately after initial data is loaded, as it may have taken a while
         self.update()
@@ -65,7 +65,7 @@ class SensorData:
 
         current_time = datetime.datetime.now()
         window_start_time = pd.Timestamp(
-            current_time - SensorData.history_timedelta)
+            current_time - SensorData.__history_timedelta)
         window_end_time = pd.Timestamp(current_time)
 
         # Define regular (1-dimensional) grid edges and bin centres (for datetime)
@@ -158,9 +158,9 @@ class SensorData:
 
         # Update y limits, using the new bins
         SensorData.updateYlim(
-            SensorData.ylim_H, SensorData.ylim_H_buffer, H_raw_new_grid)
+            SensorData.ylim_H, SensorData.ylim_H_buffer, H_new_grid)
         SensorData.updateYlim(
-            SensorData.ylim_T, SensorData.ylim_T_buffer, T_raw_new_grid)
+            SensorData.ylim_T, SensorData.ylim_T_buffer, T_new_grid)
         return True
 
     
@@ -195,10 +195,13 @@ class SensorData:
         data = dd.read_csv(self.filepath)
         data["Datetime"] = dd.to_datetime(data["Datetime"])
 
+        data_is_available = True
+
         within_window_end_idx = len(data) - 1
         if data["Datetime"].loc[0].compute().item() < window_start_time:
-            # Check if the desired start time
+            # Check if the desired start time is after the last time in data
             if window_start_time > data["Datetime"].loc[len(data)-1].compute().item():
+                data_is_available = False
                 within_window_start_idx = within_window_end_idx
             else:
                 # Use a binary search to find the initial start window indices
@@ -211,12 +214,17 @@ class SensorData:
         assert within_window_start_idx <= within_window_end_idx
 
         # Return as an np.array
-        D_bulk = np.array(
-            data["Datetime"].loc[within_window_start_idx:within_window_end_idx].compute())
-        H_bulk = np.array(
-            data["Humidity"].loc[within_window_start_idx:within_window_end_idx].compute())
-        T_bulk = np.array(
-            data["Temperature"].loc[within_window_start_idx:within_window_end_idx].compute())
+        if data_is_available:
+            D_bulk = np.array(
+                data["Datetime"].loc[within_window_start_idx:within_window_end_idx].compute())
+            H_bulk = np.array(
+                data["Humidity"].loc[within_window_start_idx:within_window_end_idx].compute())
+            T_bulk = np.array(
+                data["Temperature"].loc[within_window_start_idx:within_window_end_idx].compute())
+        else:
+            D_bulk = np.array([])
+            H_bulk = np.array([])
+            T_bulk = np.array([])
 
         return D_bulk, H_bulk, T_bulk
 
@@ -246,7 +254,7 @@ class SensorData:
         # Throw an error otherwise
         # Add a small timedelta to compare these float values approximately
 
-        assert(len(grid_edges) >= 2, "Not enough grid edges given")
+        assert(len(grid_edges) >= 2) # "Not enough grid edges given"
 
         num_grid = len(grid_edges) - 1
 
@@ -295,7 +303,7 @@ class SensorData:
         # Allows input of multiple sets of data, eg. decayLimits(ylim, buffer, H_inside, H_outside, ...)
         ylim_decay = 0.1  # Proportion to decay each time
 
-        assert(len(data) > 0, "data is empty")
+        assert(len(data) > 0) # "data is empty")
         ymin = min(data[0])
         ymax = max(data[0])
         if len(data) >= 2:

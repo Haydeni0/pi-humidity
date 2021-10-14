@@ -13,8 +13,8 @@ import seaborn as sns
 from utils import SensorData
 
 # filepath = "data/DHT22_inside.csv"
-filepath = "WindowsTest/TestData/inside.csv"
-# filepath = "WindowsTest/TestData/inside_old.csv"
+# filepath = "WindowsTest/TestData/inside.csv"
+filepath = "WindowsTest/TestData/inside_old.csv"
 # filepath = "WindowsTest/TestData/nonexistent.csv"
 
 
