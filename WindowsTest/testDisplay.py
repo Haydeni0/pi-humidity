@@ -10,70 +10,42 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-from utils import binSearchDatetime, decayLimits, updateQueues, smoothInterp
+from utils import SensorData
 
-# filepath = "data/DHT22_data.csv"
-filepath = "WindowsTest/TestData/inside.csv"
+# filepath = "data/DHT22_inside.csv"
+filepath_inside = "WindowsTest/TestData/inside.csv"
+filepath_outside = "WindowsTest/TestData/outside.csv"
+# filepath = "WindowsTest/TestData/inside_old.csv"
+# filepath = "WindowsTest/TestData/nonexistent.csv"
 
-# Use a dask dataframe for better & faster memory management when reading the whole csv
-data = dd.read_csv(filepath)
-data["Datetime"] = dd.to_datetime(data["Datetime"])
 
-# The amount of time history shown in the graph
-history_timedelta = datetime.timedelta(minutes=2)
+if (not os.path.exists(filepath_inside)) or (not os.path.exists(filepath_outside)):
+    raise FileNotFoundError(filepath_inside)
 
-current_time = datetime.datetime.now()
-window_start = current_time - history_timedelta
-
-window_end_idx = len(data) - 1
-
-if data["Datetime"].loc[0].compute().item() < window_start: 
-    # Check if the desired start time 
-    if window_start > data["Datetime"].loc[len(data)-1].compute().item():
-        window_start_idx = window_end_idx
-    else:
-        # Use a binary search to find the initial start window indices
-        window_start_idx = binSearchDatetime(data["Datetime"], window_start)
-else:
-    # If there is not enough history, start at the latest recorded date
-    window_start_idx = 0
-
-assert window_start_idx <= window_end_idx
-
-# Use an np.array before smoothing and interpolation
-D_bulk = np.array(data["Datetime"].loc[window_start_idx:window_end_idx].compute())
-H_bulk = np.array(data["Humidity"].loc[window_start_idx:window_end_idx].compute())
-T_bulk = np.array(data["Temperature"].loc[window_start_idx:window_end_idx].compute())
-
-# Smooth and interpolate data, for better and faster plotting
-num_interp = 1000 # Number of data points after interpolation (this increases the resolution of the line)
-window_halflength = 10 # Number of array elements to use as the window halflength for moving median smoothing (this increases the smoothness of the line)
-num_interp = np.min([num_interp, len(D_bulk)]) # Just in case there are fewer data than num_interp
-D, H = smoothInterp(D_bulk, H_bulk, num_interp, window_halflength)
-T = smoothInterp(D_bulk, T_bulk, num_interp, window_halflength)[1]
-# D, H and T are deques for fast append/pop
+inside_sensor = SensorData(filepath_inside)
+outside_sensor = SensorData(filepath_outside)
 
 # Initial plot
 fig = plt.figure()
 ax_H = fig.add_subplot(2, 1, 1)
 ax_T = fig.add_subplot(2, 1, 2)
 # fig.tight_layout()
-line_H, = ax_H.plot([], [])
-line_T, = ax_T.plot([], [])
+line_H_inside, = ax_H.plot([], [], label="Inside")
+line_T_inside, = ax_T.plot([], [], label="Inside")
+line_H_outside, = ax_H.plot([], [], label="Outside")
+line_T_outside, = ax_T.plot([], [], label="Outside")
 
 # Make the frametime text object
-frametime_text = ax_H.text(D[0], 66, "")
+frametime_text = ax_H.text(inside_sensor.D_grid_centres[0], 66, "")
 
 # Set x and y axes limits
-ylim_H_buffer = 5  # The amount to add on to the top and bottom of the limits
-ylim_T_buffer = 3
-ax_H.set_xlim(D[0], D[-1])
-ax_T.set_xlim(D[0], D[-1])
-# Store ylim in a list to do efficiently (don't repeatedly call max/min on the whole deque)
-ylim_H = [np.min(H) - ylim_H_buffer, np.max(H) + ylim_H_buffer]
-ylim_T = [np.min(T) - ylim_T_buffer, np.max(T) + ylim_T_buffer]
-ax_H.set_ylim(ylim_H)
-ax_T.set_ylim(ylim_T)
+# Set these using only the dates from the inside sensor
+ax_H.set_xlim(
+    inside_sensor.D_grid_centres[0], inside_sensor.D_grid_centres[-1])
+ax_T.set_xlim(
+    inside_sensor.D_grid_centres[0], inside_sensor.D_grid_centres[-1])
+ax_H.set_ylim(SensorData.ylim_H)
+ax_T.set_ylim(SensorData.ylim_T)
 
 
 # Draw the initial figure before setting the data
@@ -86,57 +58,50 @@ frametime_old = ""
 while True:
     frame_start_time = time.time()
 
-    # Get new data from the csvs if there are any
-    D_end, H_end, T_end = updateQueues(D, H, T, filepath, history_timedelta)
+    # Update the sensor data
+    inside_updated = inside_sensor.update()
+    outside_updated = outside_sensor.update()
 
-    # Find new y limits
-    if D_end:  # If not empty
-        min_H_end = np.min(np.array(H_end).astype(np.float))
-        max_H_end = np.max(np.array(H_end).astype(np.float))
-        if min_H_end < ylim_H[0]:
-            ylim_H[0] = min_H_end - ylim_H_buffer
-        if max_H_end > ylim_H[1]:
-            ylim_H[1] = max_H_end + ylim_H_buffer
-        min_T_end = np.min(np.array(T_end).astype(np.float))
-        max_T_end = np.max(np.array(T_end).astype(np.float))
-        if min_T_end < ylim_T[0]:
-            ylim_T[0] = min_T_end - ylim_T_buffer
-        if max_T_end > ylim_T[1]:
-            ylim_T[1] = max_T_end + ylim_T_buffer
+    if inside_updated or outside_updated:
+        # Set new y limits
+        ax_H.set_xlim(
+            inside_sensor.D_grid_centres[0], inside_sensor.D_grid_centres[-1])
+        ax_T.set_xlim(
+            inside_sensor.D_grid_centres[0], inside_sensor.D_grid_centres[-1])
+        ax_H.set_ylim(SensorData.ylim_H)
+        ax_T.set_ylim(SensorData.ylim_T)
 
-    # Set new y limits
-    ax_H.set_xlim(D[0], D[-1])
-    ax_T.set_xlim(D[0], D[-1])
-    ax_H.set_ylim(ylim_H)
-    ax_T.set_ylim(ylim_T)
+        # Set frametime text
+        frametime_text.set_text(frametime_old)
+        # Make sure the frametime counter stays in the axis limits
+        frametime_text.set_x(inside_sensor.D_grid_centres[0])
+        # Make sure the frametime counter stays in the axis limits
+        frametime_text.set_y(SensorData.ylim_H[1] + 1)
 
-    # Set frametime text
-    frametime_text.set_text(frametime_old)
-    # Make sure the frametime counter stays in the axis limits
-    frametime_text.set_x(D[0])
-    # Make sure the frametime counter stays in the axis limits
-    frametime_text.set_y(ylim_H[1] + 1)
+        # Set new data
+        line_H_inside.set_data(inside_sensor.D_grid_centres, inside_sensor.H)
+        line_T_inside.set_data(inside_sensor.D_grid_centres, inside_sensor.T)
+        line_H_outside.set_data(
+            outside_sensor.D_grid_centres, outside_sensor.H)
+        line_T_outside.set_data(
+            outside_sensor.D_grid_centres, outside_sensor.T)
 
-    # Set new data
-    line_H.set_data(D, H)
-    line_T.set_data(D, T)
+        # Redraw everything, as we need changing x ticks as well as the line and frametimes
+        fig.canvas.draw()
 
-    # Redraw everything, as we need changing x ticks as well as the line and frametimes
-    fig.canvas.draw()
+        fig.canvas.flush_events()
 
-    fig.canvas.flush_events()
+        # Every once in a while, check if the y limits have become too large
+        # And if so, slowly decay them
+        decay_interval = 5
+        if next(decay_counter) == int(decay_interval/update_interval):
+            decay_counter = count()  # Reset counter
+            SensorData.decayLimits(
+                SensorData.ylim_H, SensorData.ylim_H_buffer, inside_sensor.H, outside_sensor.H)
+            SensorData.decayLimits(
+                SensorData.ylim_T, SensorData.ylim_T_buffer, inside_sensor.T, outside_sensor.H)
 
-    # Every once in a while, check if the y limits have become too large
-    # And if so, slowly decay them
-    # Probably have this large ish so that we dont have to run np.max/min on the whole deque too often
-    decay_interval = 20
-    ylim_decay = 0.1  # Proportion to decay each time
-    if next(decay_counter) == int(decay_interval/update_interval):
-        decay_counter = count()  # Reset counter
-        decayLimits(H, ylim_H, ylim_decay, ylim_H_buffer)
-        decayLimits(T, ylim_T, ylim_decay, ylim_T_buffer)
-
-    # Get current frametime to display on the next frame
-    frametime_old = f"Frame time (s): {time.time() - frame_start_time: 0.3f}"
+        # Get current frametime to display on the next frame
+        frametime_old = f"Frame time (s): {time.time() - frame_start_time: 0.3f}"
 
     time.sleep(update_interval)
