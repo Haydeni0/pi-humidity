@@ -15,7 +15,7 @@ import scipy.signal
 
 
 class SensorData:
-    __history_timedelta = datetime.timedelta(minutes=20)
+    __history_timedelta = datetime.timedelta(seconds=15)
     # assert(history_timedelta < datetime.timedelta(days=7)) # Should there be a maximum?
     # Y axes limits are also contained within this class as a static variable
     ylim_H_buffer = 5  # The amount to add on to the top and bottom of the limits
@@ -39,7 +39,7 @@ class SensorData:
         # Also record which values were nan
         self.H, self.H_was_nan = SensorData.replaceNanLOCF(self.H_raw)
         self.T, self.T_was_nan = SensorData.replaceNanLOCF(self.T_raw)
-        
+
         # Initialise deques to hold new data from the next bin in the future
         self.__D_buffer = deque()
         self.__H_buffer = deque()
@@ -84,7 +84,8 @@ class SensorData:
 
         # Allocate the correct data to each bin
         # Take the median within each bin to decide on their final values
-        H_raw, T_raw = self.allocateToGrid(self.D_grid_edges, D_bulk, H_bulk, T_bulk)
+        H_raw, T_raw = self.allocateToGrid(
+            self.D_grid_edges, D_bulk, H_bulk, T_bulk)
 
         # Finally, convert the grid values to deques for fast pop/append
         self.D_grid_edges = deque(self.D_grid_edges)
@@ -111,22 +112,46 @@ class SensorData:
         # Return if no new bins need to be added
         if num_new_bins < 1:
             return False
+        # Check if there are too many new bins
+        too_many_new_bins = False
+        if num_new_bins > SensorData.__num_grid:
+            too_many_new_bins = True
+            num_new_bins = SensorData.__num_grid
+            num_new_edges = SensorData.__num_grid + 1
 
         # Remove old bins from the grid
-        for _ in range(num_new_bins):
-            self.D_grid_centres.popleft()
-            self.D_grid_edges.popleft()
-            self.H_raw.popleft()
-            self.T_raw.popleft()
-            self.H.popleft()
-            self.T.popleft()
-            self.H_was_nan.popleft()
-            self.T_was_nan.popleft()
+        if num_new_bins < SensorData.__num_grid:
+            # When just adding new data to the grid
+            for _ in range(num_new_bins):
+                self.D_grid_centres.popleft()
+                self.D_grid_edges.popleft()
+                self.H_raw.popleft()
+                self.T_raw.popleft()
+                self.H.popleft()
+                self.T.popleft()
+                self.H_was_nan.popleft()
+                self.T_was_nan.popleft()
 
-        # Calculate new grid edges (including the existing final grid edge == first grid edge here)
-        new_grid_edges = np.array(
-            [self.D_grid_edges[-1] + _*self.__grid_resolution for _ in range(num_new_edges)])
-        new_grid_centres = new_grid_edges[:-1] + 0.5*self.__grid_resolution
+            # Calculate new grid edges (including the existing final grid edge == first grid edge here)
+
+            new_grid_edges = np.array(
+                [self.D_grid_edges[-1] + _*self.__grid_resolution for _ in range(num_new_edges)])
+            new_grid_centres = new_grid_edges[:-1] + 0.5*self.__grid_resolution
+        else:
+            # When the previous data is too old, and the entire grid needs to be remade
+            self.D_grid_centres.clear()
+            self.D_grid_edges.clear()
+            self.H_raw.clear()
+            self.T_raw.clear()
+            self.H.clear()
+            self.T.clear()
+            self.H_was_nan.clear()
+            self.T_was_nan.clear()
+
+            new_grid_edges = np.array(
+                [current_time - SensorData.__history_timedelta + 
+                    _*self.__grid_resolution for _ in range(num_new_edges)])
+            new_grid_centres = new_grid_edges[:-1] + 0.5*self.__grid_resolution
 
         # Remove values to be added to the grid from the buffer
         D_add = deque()
@@ -134,17 +159,30 @@ class SensorData:
         T_add = deque()
 
         while len(self.__D_buffer) >= 1 and self.__D_buffer[0] < new_grid_edges[-1]:
-            D_add.append(self.__D_buffer.popleft())
-            H_add.append(self.__H_buffer.popleft())
-            T_add.append(self.__T_buffer.popleft())
+            D_temp = self.__D_buffer.popleft()
+            if (too_many_new_bins and D_temp >= new_grid_edges[0]) or not too_many_new_bins:
+                D_add.append(D_temp)
+                H_add.append(self.__H_buffer.popleft())
+                T_add.append(self.__T_buffer.popleft())
+            else:
+                self.__H_buffer.popleft()
+                self.__T_buffer.popleft()
 
         # Allocate new data into the new grid
         H_raw_new_grid, T_raw_new_grid = self.allocateToGrid(
             new_grid_edges, np.array(D_add), np.array(H_add), np.array(T_add))
 
         # Remove nans
-        H_new_grid, H_new_was_nan = SensorData.replaceNanLOCF(H_raw_new_grid, self.H[-1])
-        T_new_grid, T_new_was_nan = SensorData.replaceNanLOCF(T_raw_new_grid, self.T[-1])
+        if not too_many_new_bins:
+            H_new_grid, H_new_was_nan = SensorData.replaceNanLOCF(
+                H_raw_new_grid, self.H[-1])
+            T_new_grid, T_new_was_nan = SensorData.replaceNanLOCF(
+                T_raw_new_grid, self.T[-1])
+        else:
+            H_new_grid, H_new_was_nan = SensorData.replaceNanLOCF(
+                H_raw_new_grid)
+            T_new_grid, T_new_was_nan = SensorData.replaceNanLOCF(
+                T_raw_new_grid)
 
         # Add these new values to the grid, and update the grid edges & centres
         self.D_grid_edges.extend(deque(new_grid_edges[1:]))
@@ -163,8 +201,6 @@ class SensorData:
             SensorData.ylim_T, SensorData.ylim_T_buffer, T_new_grid)
         return True
 
-    
-
     def __loadNewData(self) -> Tuple[deque, deque, deque]:
         # Load new values of D, H and T from the csv
         D_new = deque()
@@ -179,8 +215,8 @@ class SensorData:
                 line = next(f_end)
                 D_proposed = pd.Timestamp(datetime.datetime.strptime(
                     line["Datetime"], "%Y-%m-%d %H:%M:%S"))
-                H_proposed = float(line["Humidity"])
-                T_proposed = float(line["Temperature"])
+                H_proposed = float(noneToNan(line["Humidity"]))
+                T_proposed = float(noneToNan(line["Temperature"]))
                 if D_proposed <= self.D_grid_edges[-1]:
                     break
                 else:
@@ -189,7 +225,7 @@ class SensorData:
                     T_new.appendleft(T_proposed)
 
         return D_new, H_new, T_new
-    
+
     def __loadBulkData(self, window_start_time: pd.Timestamp) -> Tuple[np.array, np.array, np.array]:
         # Load the bulk data from file after a specified time
         data = dd.read_csv(self.filepath)
@@ -245,7 +281,7 @@ class SensorData:
                 last_val = d
                 data_LOCF.append(d)
                 was_nan.append(False)
-        
+
         return data_LOCF, was_nan
 
     @staticmethod
@@ -254,7 +290,7 @@ class SensorData:
         # Throw an error otherwise
         # Add a small timedelta to compare these float values approximately
 
-        assert(len(grid_edges) >= 2) # "Not enough grid edges given"
+        assert(len(grid_edges) >= 2)  # "Not enough grid edges given"
 
         num_grid = len(grid_edges) - 1
 
@@ -295,15 +331,13 @@ class SensorData:
 
         return H_raw, T_raw
 
-    
-
     @staticmethod
     def decayLimits(ylim: list, buffer: float, *data: deque):
         # Decays ylim (mutate)
         # Allows input of multiple sets of data, eg. decayLimits(ylim, buffer, H_inside, H_outside, ...)
         ylim_decay = 0.1  # Proportion to decay each time
 
-        assert(len(data) > 0) # "data is empty")
+        assert(len(data) > 0)  # "data is empty")
         # For each dataset given, get the minimum and maximum
         mins = []
         maxs = []
@@ -438,3 +472,9 @@ def timing(f):
         print(f"func:{f.__name__} took: {te-ts: 2.4f} sec")
         return result
     return wrap
+
+def noneToNan(x):
+    if x is None:
+        return np.nan
+    else:
+        return x

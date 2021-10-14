@@ -15,5 +15,6 @@ from utils import timing
 
 print(len(np.array([])))
 
-
+# check deque maxlength feature: when using .extend with data 
+# longer than maxlength, will it remove the right or left bit?
 
