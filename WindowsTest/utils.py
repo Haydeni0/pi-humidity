@@ -304,12 +304,15 @@ class SensorData:
         ylim_decay = 0.1  # Proportion to decay each time
 
         assert(len(data) > 0) # "data is empty")
-        ymin = min(data[0])
-        ymax = max(data[0])
-        if len(data) >= 2:
-            for d in data[1:]:
-                ymin = max(ymin, max(d))
-                ymax = max(ymax, max(d))
+        # For each dataset given, get the minimum and maximum
+        mins = []
+        maxs = []
+        for d in data:
+            mins.append(min(d))
+            maxs.append(max(d))
+        # ymin is the minimum of the minimum of each dataset in data
+        ymin = min(mins)
+        ymax = max(maxs)
 
         ymin -= buffer
         ymax += buffer
