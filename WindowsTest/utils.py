@@ -24,13 +24,8 @@ class SensorData:
     ylim_H = []
     ylim_T = []
     # How many bins should there be in the datetime grid
-    num_grid = 200
-    grid_resolution = history_timedelta/num_grid  # Width of one grid bin
-    # Median smoothing window halfwidth
-    bulk_smooth_window_halfwidth = 10
-    buffer_smooth_window_halfwidth = 3
-    # New data smoothing buffer size
-    smooth_buffer_size = buffer_smooth_window_halfwidth + 1
+    __num_grid = 1000
+    __grid_resolution = history_timedelta/__num_grid  # Width of one grid bin
 
     def __init__(self, filepath: str):
         self.filepath = filepath
@@ -39,16 +34,16 @@ class SensorData:
         # self.D_grid_centres
 
         # Load H and T from file (in raw format with possible nans)
-        self.H_raw, self.T_raw = self.loadInitialData()
+        self.H_raw, self.T_raw = self.__loadInitialData()
         # Process H and T to remove nans using last observation carried forward (LOCF)
         # Also record which values were nan
         self.H, self.H_was_nan = SensorData.replaceNanLOCF(self.H_raw)
         self.T, self.T_was_nan = SensorData.replaceNanLOCF(self.T_raw)
         
         # Initialise deques to hold new data from the next bin in the future
-        self.D_buffer = deque()
-        self.H_buffer = deque()
-        self.T_buffer = deque()
+        self.__D_buffer = deque()
+        self.__H_buffer = deque()
+        self.__T_buffer = deque()
 
         SensorData.updateYlim(
             SensorData.ylim_H, SensorData.ylim_H_buffer, self.H_raw)
@@ -58,7 +53,7 @@ class SensorData:
         # Update immediately after initial data is loaded, as it may have taken a while
         self.update()
 
-    def loadInitialData(self) -> Tuple[deque, deque]:
+    def __loadInitialData(self) -> Tuple[deque, deque]:
         # Inputs:
         #   num_thin - Number of data points after thinning (this increases the resolution
         #       of the line)
@@ -76,7 +71,7 @@ class SensorData:
         # Define regular (1-dimensional) grid edges and bin centres (for datetime)
         # Leave this as an array for now, convert to deque later
         self.D_grid_edges = np.linspace(
-            window_start_time.value, window_end_time.value, SensorData.num_grid + 1)
+            window_start_time.value, window_end_time.value, SensorData.__num_grid + 1)
         self.D_grid_centres = 0.5 * \
             (self.D_grid_edges[:-1] + self.D_grid_edges[1:])
         # Edges of each bin in the grid
@@ -85,7 +80,7 @@ class SensorData:
         self.D_grid_centres = pd.to_datetime(self.D_grid_centres)
 
         # Find and load the data from the csv into arrays
-        D_bulk, H_bulk, T_bulk = self.loadBulkData(window_start_time)
+        D_bulk, H_bulk, T_bulk = self.__loadBulkData(window_start_time)
 
         # Allocate the correct data to each bin
         # Take the median within each bin to decide on their final values
@@ -102,15 +97,15 @@ class SensorData:
         # Returns True if the grid is updated, otherwise returns false
 
         # Get new data from the csv file
-        D_new, H_new, T_new = self.loadNewData()
+        D_new, H_new, T_new = self.__loadNewData()
         # Add to the buffer
-        self.D_buffer.extend(D_new)
-        self.H_buffer.extend(H_new)
-        self.T_buffer.extend(T_new)
+        self.__D_buffer.extend(D_new)
+        self.__H_buffer.extend(H_new)
+        self.__T_buffer.extend(T_new)
 
         current_time = datetime.datetime.now()
         new_time_elapsed = current_time - self.D_grid_edges[-1]
-        num_new_bins = int(np.floor(new_time_elapsed / self.grid_resolution))
+        num_new_bins = int(np.floor(new_time_elapsed / self.__grid_resolution))
         num_new_edges = num_new_bins + 1
 
         # Return if no new bins need to be added
@@ -130,18 +125,18 @@ class SensorData:
 
         # Calculate new grid edges (including the existing final grid edge == first grid edge here)
         new_grid_edges = np.array(
-            [self.D_grid_edges[-1] + _*self.grid_resolution for _ in range(num_new_edges)])
-        new_grid_centres = new_grid_edges[:-1] + 0.5*self.grid_resolution
+            [self.D_grid_edges[-1] + _*self.__grid_resolution for _ in range(num_new_edges)])
+        new_grid_centres = new_grid_edges[:-1] + 0.5*self.__grid_resolution
 
         # Remove values to be added to the grid from the buffer
         D_add = deque()
         H_add = deque()
         T_add = deque()
 
-        while len(self.D_buffer) >= 1 and self.D_buffer[0] < new_grid_edges[-1]:
-            D_add.append(self.D_buffer.popleft())
-            H_add.append(self.H_buffer.popleft())
-            T_add.append(self.T_buffer.popleft())
+        while len(self.__D_buffer) >= 1 and self.__D_buffer[0] < new_grid_edges[-1]:
+            D_add.append(self.__D_buffer.popleft())
+            H_add.append(self.__H_buffer.popleft())
+            T_add.append(self.__T_buffer.popleft())
 
         # Allocate new data into the new grid
         H_raw_new_grid, T_raw_new_grid = self.allocateToGrid(
@@ -168,27 +163,9 @@ class SensorData:
             SensorData.ylim_T, SensorData.ylim_T_buffer, T_raw_new_grid)
         return True
 
-    @staticmethod
-    def replaceNanLOCF(data: deque, backup_val: float = 50) -> Tuple[deque, deque]:
-        # Replace nans in the deque with the last observation carried forward
-        # Also record the locations of where the nans were
-        data_LOCF = deque()
-        was_nan = deque()
+    
 
-        # If the first value in data is nan, use backup_val instead of LOCF
-        last_val = backup_val
-        for d in data:
-            if np.isnan(d):
-                data_LOCF.append(last_val)
-                was_nan.append(True)
-            else:
-                last_val = d
-                data_LOCF.append(d)
-                was_nan.append(False)
-        
-        return data_LOCF, was_nan
-
-    def loadNewData(self) -> Tuple[deque, deque, deque]:
+    def __loadNewData(self) -> Tuple[deque, deque, deque]:
         # Load new values of D, H and T from the csv
         D_new = deque()
         H_new = deque()
@@ -212,8 +189,59 @@ class SensorData:
                     T_new.appendleft(T_proposed)
 
         return D_new, H_new, T_new
+    
+    def __loadBulkData(self, window_start_time: pd.Timestamp) -> Tuple[np.array, np.array, np.array]:
+        # Load the bulk data from file after a specified time
+        data = dd.read_csv(self.filepath)
+        data["Datetime"] = dd.to_datetime(data["Datetime"])
 
-    def allocateToGrid(self, grid_edges: pd.DatetimeIndex, D_bulk: np.array, H_bulk: np.array, T_bulk: np.array) -> Tuple[deque, deque]:
+        within_window_end_idx = len(data) - 1
+        if data["Datetime"].loc[0].compute().item() < window_start_time:
+            # Check if the desired start time
+            if window_start_time > data["Datetime"].loc[len(data)-1].compute().item():
+                within_window_start_idx = within_window_end_idx
+            else:
+                # Use a binary search to find the initial start window indices
+                within_window_start_idx = binSearchDatetime(
+                    data["Datetime"], window_start_time)
+        else:
+            # If there is not enough history, start at the latest recorded date
+            within_window_start_idx = 0
+
+        assert within_window_start_idx <= within_window_end_idx
+
+        # Return as an np.array
+        D_bulk = np.array(
+            data["Datetime"].loc[within_window_start_idx:within_window_end_idx].compute())
+        H_bulk = np.array(
+            data["Humidity"].loc[within_window_start_idx:within_window_end_idx].compute())
+        T_bulk = np.array(
+            data["Temperature"].loc[within_window_start_idx:within_window_end_idx].compute())
+
+        return D_bulk, H_bulk, T_bulk
+
+    @staticmethod
+    def replaceNanLOCF(data: deque, backup_val: float = 50) -> Tuple[deque, deque]:
+        # Replace nans in the deque with the last observation carried forward
+        # Also record the locations of where the nans were
+        data_LOCF = deque()
+        was_nan = deque()
+
+        # If the first value in data is nan, use backup_val instead of LOCF
+        last_val = backup_val
+        for d in data:
+            if np.isnan(d):
+                data_LOCF.append(last_val)
+                was_nan.append(True)
+            else:
+                last_val = d
+                data_LOCF.append(d)
+                was_nan.append(False)
+        
+        return data_LOCF, was_nan
+
+    @staticmethod
+    def allocateToGrid(grid_edges: pd.DatetimeIndex, D_bulk: np.array, H_bulk: np.array, T_bulk: np.array) -> Tuple[deque, deque]:
         # By construction, D_bulk should all be greater than grid_edges[0]
         # Throw an error otherwise
         # Add a small timedelta to compare these float values approximately
@@ -259,35 +287,7 @@ class SensorData:
 
         return H_raw, T_raw
 
-    def loadBulkData(self, window_start_time: pd.Timestamp) -> Tuple[np.array, np.array, np.array]:
-        # Load the bulk data from file after a specified time
-        data = dd.read_csv(self.filepath)
-        data["Datetime"] = dd.to_datetime(data["Datetime"])
-
-        within_window_end_idx = len(data) - 1
-        if data["Datetime"].loc[0].compute().item() < window_start_time:
-            # Check if the desired start time
-            if window_start_time > data["Datetime"].loc[len(data)-1].compute().item():
-                within_window_start_idx = within_window_end_idx
-            else:
-                # Use a binary search to find the initial start window indices
-                within_window_start_idx = binSearchDatetime(
-                    data["Datetime"], window_start_time)
-        else:
-            # If there is not enough history, start at the latest recorded date
-            within_window_start_idx = 0
-
-        assert within_window_start_idx <= within_window_end_idx
-
-        # Return as an np.array
-        D_bulk = np.array(
-            data["Datetime"].loc[within_window_start_idx:within_window_end_idx].compute())
-        H_bulk = np.array(
-            data["Humidity"].loc[within_window_start_idx:within_window_end_idx].compute())
-        T_bulk = np.array(
-            data["Temperature"].loc[within_window_start_idx:within_window_end_idx].compute())
-
-        return D_bulk, H_bulk, T_bulk
+    
 
     @staticmethod
     def decayLimits(ylim: list, buffer: float, *data: deque):

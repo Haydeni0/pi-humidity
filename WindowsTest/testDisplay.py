@@ -82,14 +82,13 @@ while True:
 
         # Every once in a while, check if the y limits have become too large
         # And if so, slowly decay them
-        # Probably have this large ish so that we dont have to run np.max/min on the whole deque too often
-        decay_interval = 20
+        decay_interval = 5
         if next(decay_counter) == int(decay_interval/update_interval):
             decay_counter = count()  # Reset counter
             SensorData.decayLimits(SensorData.ylim_H, SensorData.ylim_H_buffer, inside_sensor.H)
             SensorData.decayLimits(SensorData.ylim_T, SensorData.ylim_T_buffer, inside_sensor.T)
 
-    # Get current frametime to display on the next frame
-    frametime_old = f"Frame time (s): {time.time() - frame_start_time: 0.3f}"
+        # Get current frametime to display on the next frame
+        frametime_old = f"Frame time (s): {time.time() - frame_start_time: 0.3f}"
 
     time.sleep(update_interval)

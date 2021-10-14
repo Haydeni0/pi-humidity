@@ -3,11 +3,7 @@ Repo containing code for pi humidity monitoring
 
 ## To-do
 - Add datetime grid feature
-  - Now that loading and updating of data works, make sure the plotting works
-  - H is now H_raw, as it contains nans.
-    - Make H the same as H_raw, but with nan values replaced with last observation carried forward
-    - Do the same for T
-    - Also, track which observations are nans so it can be coloured different when plotting    
+  - Colour previously missing observations red
 
 ### Other
 - Back up an image of the fully configured pi
