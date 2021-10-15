@@ -49,6 +49,11 @@ ax_T.set_xlim(
 ax_H.set_ylim(SensorData.ylim_H)
 ax_T.set_ylim(SensorData.ylim_T)
 
+# Set labels
+ax_H.set_ylabel("Humidity (%RH)")
+ax_T.set_ylabel("Temperature ($^\circ$C)")
+ax_T.set_xlabel("Time (s)")
+
 
 # Draw the initial figure before setting the data
 fig.canvas.draw()
