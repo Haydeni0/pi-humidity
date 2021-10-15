@@ -13,8 +13,14 @@ import scipy.signal
 from utils import timing
 
 
-print(len(np.array([])))
 
 # check deque maxlength feature: when using .extend with data 
 # longer than maxlength, will it remove the right or left bit?
+
+d = deque(["a", "b", "c"])
+a = deque([1,2,3,4,5,6,7])
+print(a)
+a = deque(a, maxlen=4)
+
+print(a)
 

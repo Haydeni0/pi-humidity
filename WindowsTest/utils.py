@@ -50,6 +50,16 @@ class SensorData:
         SensorData.updateYlim(
             SensorData.ylim_T, SensorData.ylim_T_buffer, self.T)
 
+        # Remake grid deques with a max length
+        self.D_grid_centres = deque(self.D_grid_centres, maxlen = SensorData.__num_grid)
+        self.D_grid_edges = deque(self.D_grid_edges, maxlen = SensorData.__num_grid+1)
+        self.H_raw = deque(self.H_raw, maxlen = SensorData.__num_grid)
+        self.T_raw = deque(self.T_raw, maxlen = SensorData.__num_grid)
+        self.H = deque(self.H, maxlen = SensorData.__num_grid)
+        self.T = deque(self.T, maxlen = SensorData.__num_grid)
+        self.H_was_nan = deque(self.H_was_nan, maxlen = SensorData.__num_grid)
+        self.T_was_nan = deque(self.T_was_nan, maxlen = SensorData.__num_grid)
+
         # Update immediately after initial data is loaded, as it may have taken a while
         self.update()
 
@@ -112,46 +122,25 @@ class SensorData:
         # Return if no new bins need to be added
         if num_new_bins < 1:
             return False
+
         # Check if there are too many new bins
-        too_many_new_bins = False
+        # If this is the case, then all the data in the grid needs to be overwritten
+        overwrite_entire_grid = False
         if num_new_bins > SensorData.__num_grid:
-            too_many_new_bins = True
+            overwrite_entire_grid = True
             num_new_bins = SensorData.__num_grid
             num_new_edges = SensorData.__num_grid + 1
 
-        # Remove old bins from the grid
-        if num_new_bins < SensorData.__num_grid:
-            # When just adding new data to the grid
-            for _ in range(num_new_bins):
-                self.D_grid_centres.popleft()
-                self.D_grid_edges.popleft()
-                self.H_raw.popleft()
-                self.T_raw.popleft()
-                self.H.popleft()
-                self.T.popleft()
-                self.H_was_nan.popleft()
-                self.T_was_nan.popleft()
-
+        if not overwrite_entire_grid:
             # Calculate new grid edges (including the existing final grid edge == first grid edge here)
-
             new_grid_edges = np.array(
                 [self.D_grid_edges[-1] + _*self.__grid_resolution for _ in range(num_new_edges)])
-            new_grid_centres = new_grid_edges[:-1] + 0.5*self.__grid_resolution
         else:
             # When the previous data is too old, and the entire grid needs to be remade
-            self.D_grid_centres.clear()
-            self.D_grid_edges.clear()
-            self.H_raw.clear()
-            self.T_raw.clear()
-            self.H.clear()
-            self.T.clear()
-            self.H_was_nan.clear()
-            self.T_was_nan.clear()
-
             new_grid_edges = np.array(
                 [current_time - SensorData.__history_timedelta + 
                     _*self.__grid_resolution for _ in range(num_new_edges)])
-            new_grid_centres = new_grid_edges[:-1] + 0.5*self.__grid_resolution
+        new_grid_centres = new_grid_edges[:-1] + 0.5*self.__grid_resolution
 
         # Remove values to be added to the grid from the buffer
         D_add = deque()
@@ -160,7 +149,8 @@ class SensorData:
 
         while len(self.__D_buffer) >= 1 and self.__D_buffer[0] < new_grid_edges[-1]:
             D_temp = self.__D_buffer.popleft()
-            if (too_many_new_bins and D_temp >= new_grid_edges[0]) or not too_many_new_bins:
+            if (overwrite_entire_grid and D_temp >= new_grid_edges[0]) or not overwrite_entire_grid:
+                # Only append relevant (new) data to *_add
                 D_add.append(D_temp)
                 H_add.append(self.__H_buffer.popleft())
                 T_add.append(self.__T_buffer.popleft())
@@ -173,7 +163,7 @@ class SensorData:
             new_grid_edges, np.array(D_add), np.array(H_add), np.array(T_add))
 
         # Remove nans
-        if not too_many_new_bins:
+        if not overwrite_entire_grid:
             H_new_grid, H_new_was_nan = SensorData.replaceNanLOCF(
                 H_raw_new_grid, self.H[-1])
             T_new_grid, T_new_was_nan = SensorData.replaceNanLOCF(
@@ -185,6 +175,7 @@ class SensorData:
                 T_raw_new_grid)
 
         # Add these new values to the grid, and update the grid edges & centres
+        # Since these deques have a maxlen attribute, old values are popped off the left side
         self.D_grid_edges.extend(deque(new_grid_edges[1:]))
         self.D_grid_centres.extend(deque(new_grid_centres))
         self.H_raw.extend(H_raw_new_grid)
