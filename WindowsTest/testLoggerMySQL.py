@@ -5,7 +5,6 @@ import math
 from typing import Tuple
 
 import numpy as np
-from numpy.lib.twodim_base import _trilu_indices_form_dispatcher
 import pandas as pd
 
 
@@ -23,7 +22,6 @@ connection_config = {
     "password": "OSzP34,@H0.I2m$sZpI<",
     'raise_on_warnings': True
 }
-DB_NAME = "pi_humidity"
 TABLE_NAME_inside = "dht_inside"
 TABLE_NAME_outside = "dht_outside"
 

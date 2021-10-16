@@ -22,6 +22,7 @@ Repo containing code for pi humidity monitoring
 
 ### Data handling & ingesting
 - get MySQL to deal with everything
+- Potentially, the data could be grouped into bins and smoothed by sql before being put into python
 
 ### Data processing
 - Handle nans given by the sensor
