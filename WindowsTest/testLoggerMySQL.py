@@ -29,7 +29,7 @@ TABLE_NAME_outside = "dht_outside"
 
 # Data generation parameters
 # Use same AR parameters for both inside and outside
-log_interval = 4  # in seconds
+log_interval = 1  # in seconds
 AR_time_constant = 60*60  # Time constant of the AR(1) processes (in seconds)
 C = math.exp(-log_interval/AR_time_constant)
 sigma_H = 6
@@ -47,10 +47,9 @@ class ObsDHT:
         self.T = T
 
 
-inside_obs = ObsDHT(D=datetime.datetime.now().replace(
-    microsecond=0), H=80, T=20)
+inside_obs = ObsDHT(D=datetime.datetime.now(), H=80, T=20)
 outside_obs = ObsDHT(
-    D=datetime.datetime.now().replace(microsecond=0), H=60, T=20)
+    D=datetime.datetime.now(), H=60, T=20)
 
 
 def updateAR(x0: float, sigma: float, C: float, mean: float) -> float:
@@ -66,8 +65,8 @@ def createTableDHT(cursor, TABLE_NAME):
     # Function to create a table in DHT format if it doesn't already exist
     try:
         cursor.execute(
-            f"CREATE TABLE {TABLE_NAME} (`id` INT NOT NULL AUTO_INCREMENT UNIQUE \
-                PRIMARY KEY, dtime DATETIME, humidity FLOAT, temperature FLOAT);"
+            f"CREATE TABLE {TABLE_NAME} (dtime DATETIME(1) NOT NULL UNIQUE PRIMARY KEY, \
+                humidity FLOAT, temperature FLOAT);"
         )
     except Error as err:
         if err.errno == errorcode.ER_TABLE_EXISTS_ERROR:
@@ -78,7 +77,7 @@ def createTableDHT(cursor, TABLE_NAME):
 
 def sendObservationDHT(cursor, TABLE_NAME, DHT: ObsDHT):
     try:
-        date_formatted = datetime.datetime.strftime(DHT.D, "%Y-%m-%d %H:%M:%S")
+        date_formatted = datetime.datetime.strftime(DHT.D, "%Y-%m-%d %H:%M:%S.%f")
         cursor.execute(
             f"INSERT INTO {TABLE_NAME} (dtime, humidity, temperature)\
                 VALUES ('{date_formatted}', {DHT.H:0.1f}, {DHT.T: 0.1f});"
@@ -104,23 +103,24 @@ try:
     createTableDHT(cursor, TABLE_NAME_outside)
 
     while True:
+        # Update DHT observations (using an AR(1))
         inside_obs = ObsDHT(
-            D=datetime.datetime.now().replace(microsecond=0),
+            D=datetime.datetime.now(),
             H=updateAR(inside_obs.H, sigma_H, C, mean_H_inside),
             T=updateAR(inside_obs.T, sigma_T, C, mean_T_inside)
         )
         outside_obs = ObsDHT(
-            D=datetime.datetime.now().replace(microsecond=0),
+            D=datetime.datetime.now(),
             H=updateAR(outside_obs.H, sigma_H, C, mean_H_outside),
             T=updateAR(outside_obs.T, sigma_T, C, mean_T_outside)
         )
 
+        # Send the observation to the server
         cursor.execute("START TRANSACTION;")
         sendObservationDHT(cursor, TABLE_NAME_inside, inside_obs)
         sendObservationDHT(cursor, TABLE_NAME_outside, outside_obs)
         cursor.execute("COMMIT;")
 
-        # break
         time.sleep(log_interval)
 
 except Error as err:

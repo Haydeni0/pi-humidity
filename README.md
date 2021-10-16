@@ -9,6 +9,10 @@ Repo containing code for pi humidity monitoring
 - google drive pi backups
 - Use a database, MySQL, instead of a csv.
   - Maybe this will have faster loading times and better modularity of storage
+  - Build a python module (file) that handles the communication with the MySQL server and DHT tables (an API)
+    - This should handle the input of DHT data and the querying of DHT data
+      - Make a DHT class that holds a single observation of DHT (datetime, humidity, temperature) which can be used as an input to the SQL_DHT API
+    - This should be built to automatically work on the raspi as well, given different inputs to classes/functions
 
 ### Other
 - Back up an image of the fully configured pi
@@ -17,8 +21,7 @@ Repo containing code for pi humidity monitoring
   - rclone or rsync
 
 ### Data handling & ingesting
-- Store one csv per month, as querying a large csv might be difficult
-  - One year of data (2 second rate) is 15,768,000 rows (31 characters per row) -> 488,808,000‬ bytes
+- get MySQL to deal with everything
 
 ### Data processing
 - Handle nans given by the sensor
