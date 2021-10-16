@@ -7,6 +7,8 @@ Repo containing code for pi humidity monitoring
   - Why does the data take so long to initially load?
   - is dask the problem
 - google drive pi backups
+- Use a database, MySQL, instead of a csv.
+  - Maybe this will have faster loading times and better modularity of storage
 
 ### Other
 - Back up an image of the fully configured pi
