@@ -31,7 +31,22 @@ connection_config = {
     'raise_on_warnings': True
 }
 
-a = ConnectDHTSQL(connection_config)
-# a.createTable("dht_outside")
-# a.sendObservation("dht_outside", ObsDHT(datetime.datetime.now(), 60, 22))
+pi_humidity_SQL = ConnectDHTSQL(connection_config)
+
+
+
+def getLatestObservations():
+
+    current_time = datetime.datetime.now()
+    history_timedelta = datetime.timedelta(seconds=3)
+
+    start_dtime = current_time - history_timedelta
+    end_dtime = current_time
+
+    return pi_humidity_SQL.getObservations("dht_outside", start_dtime, end_dtime)
+
+
+print(getLatestObservations())
+
+
 pass
