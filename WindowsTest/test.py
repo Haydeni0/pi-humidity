@@ -21,7 +21,7 @@ import mysql.connector
 from mysql.connector import Error
 from mysql.connector import errorcode
 
-from DHT_MySQL_interface import ConnectDHTSQL
+from DHT_MySQL_interface import ConnectDHTSQL, ObsDHT
 
 connection_config = {
     "host": 'localhost',
@@ -32,5 +32,6 @@ connection_config = {
 }
 
 a = ConnectDHTSQL(connection_config)
-
-
+# a.createTable("dht_outside")
+# a.sendObservation("dht_outside", ObsDHT(datetime.datetime.now(), 60, 22))
+pass

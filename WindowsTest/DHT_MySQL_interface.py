@@ -67,6 +67,7 @@ class ConnectDHTSQL:
     def createTable(self, TABLE_NAME):
         # Function to create a table in DHT format if it doesn't already exist
         try:
+            # Don't bother with START TRANSACTION or COMMIT, as CREATE TABLE does an implicit commit
             self.cursor.execute(
                 f"CREATE TABLE {TABLE_NAME} (dtime DATETIME(1) NOT NULL UNIQUE PRIMARY KEY, \
                     humidity FLOAT, temperature FLOAT);"
@@ -79,11 +80,12 @@ class ConnectDHTSQL:
     
     def sendObservation(self, TABLE_NAME, DHT: ObsDHT):
         try:
-            # date_formatted = datetime.datetime.strftime(DHT.D, "%Y-%m-%d %H:%M:%S.%f")
+            self.cursor.execute("START TRANSACTION;")
             self.cursor.execute(
                 f"INSERT INTO {TABLE_NAME} (dtime, humidity, temperature)\
                     VALUES ('{DHT.D}', {DHT.H:0.1f}, {DHT.T: 0.1f});"
             )
+            self.cursor.execute("COMMIT;")
         except Error as err:
             print(err)
             

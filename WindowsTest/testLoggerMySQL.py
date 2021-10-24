@@ -59,80 +59,38 @@ def updateAR(x0: float, sigma: float, C: float, mean: float) -> float:
 
 # ---- MySQL functions and connection ----
 
-def createTableDHT(cursor, TABLE_NAME):
-    # Function to create a table in DHT format if it doesn't already exist
-    try:
-        cursor.execute(
-            f"CREATE TABLE {TABLE_NAME} (dtime DATETIME(1) NOT NULL UNIQUE PRIMARY KEY, \
-                humidity FLOAT, temperature FLOAT);"
-        )
-    except Error as err:
-        if err.errno == errorcode.ER_TABLE_EXISTS_ERROR:
-            print(f"Table {TABLE_NAME} exists")
-        else:
-            print(err)
+connection_config = {
+    "host": 'localhost',
+    "database": "pi_humidity",
+    "user": "Haydeni0",
+    "password": "OSzP34,@H0.I2m$sZpI<",
+    'raise_on_warnings': True
+}
+
+from DHT_MySQL_interface import ConnectDHTSQL, ObsDHT
+pi_humidity_SQL = ConnectDHTSQL(connection_config)
+
+pi_humidity_SQL.createTable(TABLE_NAME_inside)
+pi_humidity_SQL.createTable(TABLE_NAME_outside)
 
 
-def sendObservationDHT(cursor, TABLE_NAME, DHT: ObsDHT):
-    try:
-        date_formatted = datetime.datetime.strftime(DHT.D, "%Y-%m-%d %H:%M:%S.%f")
-        cursor.execute(
-            f"INSERT INTO {TABLE_NAME} (dtime, humidity, temperature)\
-                VALUES ('{date_formatted}', {DHT.H:0.1f}, {DHT.T: 0.1f});"
-        )
-    except Error as err:
-        print(err)
+while True:
+    # Update DHT observations (using an AR(1))
+    inside_obs = ObsDHT(
+        D=datetime.datetime.now(),
+        H=updateAR(inside_obs.H, sigma_H, C, mean_H_inside),
+        T=updateAR(inside_obs.T, sigma_T, C, mean_T_inside)
+    )
+    outside_obs = ObsDHT(
+        D=datetime.datetime.now(),
+        H=updateAR(outside_obs.H, sigma_H, C, mean_H_outside),
+        T=updateAR(outside_obs.T, sigma_T, C, mean_T_outside)
+    )
 
 
-# Start connection
-try:
-    # Connect to server and database
-    cnx = mysql.connector.connect(**connection_config)
+    # Send the observation to the server
+    pi_humidity_SQL.sendObservation(TABLE_NAME_inside, inside_obs)
+    pi_humidity_SQL.sendObservation(TABLE_NAME_outside, outside_obs)
 
-    db_Info = cnx.get_server_info()
-    print("Connected to MySQL Server version ", db_Info)
-    cursor = cnx.cursor()
-    cursor.execute("select database();")
-    record = cursor.fetchone()
-    print("Connected to database: ", record[0])
-    print("="*100)
+    time.sleep(log_interval)
 
-    createTableDHT(cursor, TABLE_NAME_inside)
-    createTableDHT(cursor, TABLE_NAME_outside)
-
-    while True:
-        # Update DHT observations (using an AR(1))
-        inside_obs = ObsDHT(
-            D=datetime.datetime.now(),
-            H=updateAR(inside_obs.H, sigma_H, C, mean_H_inside),
-            T=updateAR(inside_obs.T, sigma_T, C, mean_T_inside)
-        )
-        outside_obs = ObsDHT(
-            D=datetime.datetime.now(),
-            H=updateAR(outside_obs.H, sigma_H, C, mean_H_outside),
-            T=updateAR(outside_obs.T, sigma_T, C, mean_T_outside)
-        )
-
-        # Send the observation to the server
-        cursor.execute("START TRANSACTION;")
-        sendObservationDHT(cursor, TABLE_NAME_inside, inside_obs)
-        sendObservationDHT(cursor, TABLE_NAME_outside, outside_obs)
-        cursor.execute("COMMIT;")
-
-        time.sleep(log_interval)
-
-except Error as err:
-    if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-        print("Something is wrong with your user name or password")
-    elif err.errno == errorcode.ER_BAD_DB_ERROR:
-        print("Database does not exist")
-    else:
-        print(err)
-finally:
-    if 'cnx' in locals():
-        cnx.close()
-        print("_"*100)
-        print("MySQL connection closed")
-
-
-# f.write(f"{current_time},{ctemperature:0.2f},{chumidity:0.2f}\n")
