@@ -1,16 +1,14 @@
 import time
-from collections import deque
 from itertools import count
 
-import dask.dataframe as dd
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 
-from utils import SensorData
-
 from DHT_MySQL_interface import DHTConnection, ObsDHT
+from Sensors import DHTSensorData
 
+# MySQL server connection details
 connection_config = {
     "host": 'localhost',
     "database": "pi_humidity",
@@ -21,8 +19,8 @@ connection_config = {
 
 DHT_db = DHTConnection(connection_config)
 
-inside_sensor = SensorData(DHT_db, "dht_inside")
-outside_sensor = SensorData(DHT_db, "dht_outside")
+inside_sensor = DHTSensorData(DHT_db, "dht_inside")
+outside_sensor = DHTSensorData(DHT_db, "dht_outside")
 
 # Initial plot
 fig = plt.figure()
@@ -43,8 +41,8 @@ ax_H.set_xlim(
     inside_sensor.D_grid_centres[0], inside_sensor.D_grid_centres[-1])
 ax_T.set_xlim(
     inside_sensor.D_grid_centres[0], inside_sensor.D_grid_centres[-1])
-ax_H.set_ylim(SensorData.ylim_H)
-ax_T.set_ylim(SensorData.ylim_T)
+ax_H.set_ylim(DHTSensorData.ylim_H)
+ax_T.set_ylim(DHTSensorData.ylim_T)
 
 # Set labels
 ax_H.set_ylabel("Humidity (%RH)")
@@ -72,15 +70,15 @@ while True:
             inside_sensor.D_grid_centres[0], inside_sensor.D_grid_centres[-1])
         ax_T.set_xlim(
             inside_sensor.D_grid_centres[0], inside_sensor.D_grid_centres[-1])
-        ax_H.set_ylim(SensorData.ylim_H)
-        ax_T.set_ylim(SensorData.ylim_T)
+        ax_H.set_ylim(DHTSensorData.ylim_H)
+        ax_T.set_ylim(DHTSensorData.ylim_T)
 
         # Set frametime text
         frametime_text.set_text(frametime_old)
         # Make sure the frametime counter stays in the axis limits
         frametime_text.set_x(inside_sensor.D_grid_centres[0])
         # Make sure the frametime counter stays in the axis limits
-        frametime_text.set_y(SensorData.ylim_H[1] + 1)
+        frametime_text.set_y(DHTSensorData.ylim_H[1] + 1)
 
         # Set new data
         line_H_inside.set_data(inside_sensor.D_grid_centres, inside_sensor.H)
@@ -100,10 +98,10 @@ while True:
         decay_interval = 5
         if next(decay_counter) == int(decay_interval/update_interval):
             decay_counter = count()  # Reset counter
-            SensorData.decayLimits(
-                SensorData.ylim_H, SensorData.ylim_H_buffer, inside_sensor.H, outside_sensor.H)
-            SensorData.decayLimits(
-                SensorData.ylim_T, SensorData.ylim_T_buffer, inside_sensor.T, outside_sensor.H)
+            DHTSensorData.decayLimits(
+                DHTSensorData.ylim_H, DHTSensorData.ylim_H_buffer, inside_sensor.H, outside_sensor.H)
+            DHTSensorData.decayLimits(
+                DHTSensorData.ylim_T, DHTSensorData.ylim_T_buffer, inside_sensor.T, outside_sensor.H)
 
         # Get current frametime to display on the next frame
         frametime_old = f"Frame time (s): {time.time() - frame_start_time: 0.3f}"
