@@ -1,5 +1,4 @@
 from functools import wraps
-import csv
 import datetime
 import time
 import os
@@ -17,7 +16,7 @@ from DHT_MySQL_interface import DHTConnection, ObsDHT
 
 
 class SensorData:
-    __history_timedelta = datetime.timedelta(hours=2)
+    __history_timedelta = datetime.timedelta(minutes=2)
     # assert(history_timedelta < datetime.timedelta(days=7)) # Should there be a maximum?
     # Y axes limits are also contained within this class as a static variable
     ylim_H_buffer = 5  # The amount to add on to the top and bottom of the limits
@@ -317,93 +316,6 @@ class SensorData:
                 ylim[0] = data_min - buffer
             if data_max > ylim[1]:
                 ylim[1] = data_max + buffer
-
-
-def binSearchDatetime(
-    Datetime: dd.core.Series, target_datetime: datetime.datetime
-) -> int:
-    # Searches the dask list for the index of the greatest time smaller than target_datetime
-    # Inputs:
-    # - Datetime (Sorted list of datetime.datetime objects, in dask series format)
-    # - target_datetime (datetime.datetime)
-    #
-    # Outputs:
-    # - L_idx (int) - Index of the greatest datetime in the list smaller than target_datetime
-
-    #  Assume that Datetime is already sorted
-    L_idx = 0
-    R_idx = len(Datetime) - 1
-    L = Datetime.loc[L_idx].compute().item()
-    R = Datetime.loc[R_idx].compute().item()
-
-    idx_width = R_idx - L_idx
-
-    # The date we are searching for must be within the left and right limits
-    assert L < target_datetime < R
-
-    # Binary search
-    while idx_width > 1:
-        M_idx = np.ceil(np.mean([L_idx, R_idx]))
-        M = Datetime.loc[M_idx].compute().item()
-
-        if M > target_datetime:
-            R_idx = M_idx
-        elif M < target_datetime:
-            L_idx = M_idx
-        elif M == target_datetime:
-            R_idx = M_idx
-            L_idx = M_idx
-        elif Datetime.loc[L_idx].compute().item() == target_datetime:
-            L_idx = R_idx
-
-        idx_width = R_idx - L_idx
-
-    return int(R_idx)
-
-
-# Based on SO post https://stackoverflow.com/questions/10933838/how-to-read-a-csv-file-in-reverse-order-in-python
-#################################################################################################################
-def reversed_lines(f):
-    # Generate the lines of file in reverse order
-    part = ""
-    for block in reversed_blocks(f):
-        for c in reversed(block):
-            if c == "\n" and part:
-                yield part[::-1]
-                part = ""
-            part += c
-    if part:
-        yield part[::-1]
-
-
-def reversed_blocks(f, blocksize=4096):
-    # Generate blocks of file's contents in reverse order
-    f.seek(0, os.SEEK_END)
-    here = f.tell()
-    while 0 < here:
-        delta = min(blocksize, here)
-        here -= delta
-        f.seek(here, os.SEEK_SET)
-        yield f.read(delta)
-#################################################################################################################
-
-
-def smoothThin(t: np.array, x: np.array, num_thin: int, window_halflength: int, *, start: int = 0) -> Tuple[deque, deque]:
-    # Given values x occurring at times t, thinning regularly between the start and end times and
-    # smooth to give a deque of length num_thin
-    # Use moving average smoothing (median), as the data can have spikes
-    # The window_halflength is the half length of the window used for the moving average
-    N = len(t)
-    assert(0 <= start < N)
-    assert(N == len(x))
-    assert(N-start >= num_thin)
-
-    # Subset the indices evenly
-    idx = np.linspace(start, N-1, num_thin, dtype=int)
-    T = deque(pd.to_datetime(t[idx]))
-    X = deque(scipy.signal.medfilt(x, 2*window_halflength+1)[idx])
-
-    return T, X
 
 
 # Timing decorator for a function
