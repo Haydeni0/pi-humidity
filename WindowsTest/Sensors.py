@@ -30,8 +30,10 @@ class DHTSensorData:
         # self.D_grid_edges
         # self.D_grid_centres
 
-        # Load H and T from file (in raw format with possible nans)
+        # Load H and T from database (in raw format with possible nans)
+        t = time.time()
         self.H_raw, self.T_raw = self.__loadInitialData()
+        print(f"    Load H and T from database: {time.time()-t: 2.4f}")
         # Process H and T to remove nans using last observation carried forward (LOCF)
         # Also record which values were nan
         self.H, self.H_was_nan = DHTSensorData.replaceNanLOCF(self.H_raw)
@@ -86,7 +88,8 @@ class DHTSensorData:
         # Centre of each bin in the grid
         self.D_grid_centres = pd.to_datetime(self.D_grid_centres)
 
-        # Find and load the data from the csv into arrays
+        # Find and load the data from the database into arrays
+
         D_bulk, H_bulk, T_bulk = self.DHT_db.getObservations(
             self.table_name, start_dtime, current_time)
 
@@ -243,6 +246,7 @@ class DHTSensorData:
                datetime.timedelta(seconds=0.01))
 
         # Find indices of the data that fall in each bin
+        t = time.time()
         bin_data_idx = []
         for bin_idx in range(num_grid):
             data_indices_above = grid_edges[bin_idx] <= D_bulk
@@ -253,6 +257,7 @@ class DHTSensorData:
 
             bin_data_idx.append(np.where(np.logical_and(
                 data_indices_above, data_indices_below))[0])
+        print(f"        Allocate to grid: {time.time()-t: 2.4f}")
 
         # Fill in each bin with one value, by using the median within each bin
         def fillGrid(bin_data_idx: list, data: np.array) -> deque:
