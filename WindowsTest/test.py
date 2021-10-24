@@ -21,7 +21,7 @@ import mysql.connector
 from mysql.connector import Error
 from mysql.connector import errorcode
 
-from DHT_MySQL_interface import ConnectDHTSQL, ObsDHT
+from DHT_MySQL_interface import DHTConnection, ObsDHT
 
 connection_config = {
     "host": 'localhost',
@@ -31,7 +31,7 @@ connection_config = {
     'raise_on_warnings': True
 }
 
-pi_humidity_SQL = ConnectDHTSQL(connection_config)
+pi_humidity_SQL = DHTConnection(connection_config)
 
 
 

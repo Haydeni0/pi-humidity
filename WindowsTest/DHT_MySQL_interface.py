@@ -21,7 +21,7 @@ class ObsDHT:
         self.T = T
 
 
-class ConnectDHTSQL:
+class DHTConnection:
     def __init__(self, connection_config, raise_connection_errors=False):
         # Example connection config
         """

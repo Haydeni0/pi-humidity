@@ -67,8 +67,8 @@ connection_config = {
     'raise_on_warnings': True
 }
 
-from DHT_MySQL_interface import ConnectDHTSQL, ObsDHT
-pi_humidity_SQL = ConnectDHTSQL(connection_config)
+from DHT_MySQL_interface import DHTConnection, ObsDHT
+pi_humidity_SQL = DHTConnection(connection_config)
 
 pi_humidity_SQL.createTable(TABLE_NAME_inside)
 pi_humidity_SQL.createTable(TABLE_NAME_outside)
