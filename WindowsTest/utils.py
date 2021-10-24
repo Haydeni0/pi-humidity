@@ -13,9 +13,11 @@ from numpy.lib.function_base import median
 import pandas as pd
 import scipy.signal
 
+from DHT_MySQL_interface import DHTConnection, ObsDHT
+
 
 class SensorData:
-    __history_timedelta = datetime.timedelta(seconds=15)
+    __history_timedelta = datetime.timedelta(hours=2)
     # assert(history_timedelta < datetime.timedelta(days=7)) # Should there be a maximum?
     # Y axes limits are also contained within this class as a static variable
     ylim_H_buffer = 5  # The amount to add on to the top and bottom of the limits
@@ -24,11 +26,12 @@ class SensorData:
     ylim_H = []
     ylim_T = []
     # How many bins should there be in the datetime grid
-    __num_grid = 1000
+    __num_grid = 200
     __grid_resolution = __history_timedelta/__num_grid  # Width of one grid bin
 
-    def __init__(self, filepath: str):
-        self.filepath = filepath
+    def __init__(self, DHT_db: DHTConnection, table_name: str):
+        self.DHT_db = DHT_db
+        self.table_name = table_name
         # These datetime grid variables are initialised in self.loadInitialData()
         # self.D_grid_edges
         # self.D_grid_centres
@@ -51,14 +54,16 @@ class SensorData:
             SensorData.ylim_T, SensorData.ylim_T_buffer, self.T)
 
         # Remake grid deques with a max length
-        self.D_grid_centres = deque(self.D_grid_centres, maxlen = SensorData.__num_grid)
-        self.D_grid_edges = deque(self.D_grid_edges, maxlen = SensorData.__num_grid+1)
-        self.H_raw = deque(self.H_raw, maxlen = SensorData.__num_grid)
-        self.T_raw = deque(self.T_raw, maxlen = SensorData.__num_grid)
-        self.H = deque(self.H, maxlen = SensorData.__num_grid)
-        self.T = deque(self.T, maxlen = SensorData.__num_grid)
-        self.H_was_nan = deque(self.H_was_nan, maxlen = SensorData.__num_grid)
-        self.T_was_nan = deque(self.T_was_nan, maxlen = SensorData.__num_grid)
+        self.D_grid_centres = deque(
+            self.D_grid_centres, maxlen=SensorData.__num_grid)
+        self.D_grid_edges = deque(
+            self.D_grid_edges, maxlen=SensorData.__num_grid+1)
+        self.H_raw = deque(self.H_raw, maxlen=SensorData.__num_grid)
+        self.T_raw = deque(self.T_raw, maxlen=SensorData.__num_grid)
+        self.H = deque(self.H, maxlen=SensorData.__num_grid)
+        self.T = deque(self.T, maxlen=SensorData.__num_grid)
+        self.H_was_nan = deque(self.H_was_nan, maxlen=SensorData.__num_grid)
+        self.T_was_nan = deque(self.T_was_nan, maxlen=SensorData.__num_grid)
 
         # Update immediately after initial data is loaded, as it may have taken a while
         self.update()
@@ -73,15 +78,16 @@ class SensorData:
         # Outputs:
         #   (D, H, T) - Datetime, humidity and temperature deques
 
+        # Get the datetime interval to query data from
         current_time = datetime.datetime.now()
-        window_start_time = pd.Timestamp(
-            current_time - SensorData.__history_timedelta)
-        window_end_time = pd.Timestamp(current_time)
+        start_dtime = current_time - SensorData.__history_timedelta
+        # Store the last time that the server was queried
+        self.last_queried_time = current_time
 
         # Define regular (1-dimensional) grid edges and bin centres (for datetime)
         # Leave this as an array for now, convert to deque later
         self.D_grid_edges = np.linspace(
-            window_start_time.value, window_end_time.value, SensorData.__num_grid + 1)
+            pd.Timestamp(start_dtime).value, pd.Timestamp(current_time).value, SensorData.__num_grid + 1)
         self.D_grid_centres = 0.5 * \
             (self.D_grid_edges[:-1] + self.D_grid_edges[1:])
         # Edges of each bin in the grid
@@ -90,7 +96,8 @@ class SensorData:
         self.D_grid_centres = pd.to_datetime(self.D_grid_centres)
 
         # Find and load the data from the csv into arrays
-        D_bulk, H_bulk, T_bulk = self.__loadBulkData(window_start_time)
+        D_bulk, H_bulk, T_bulk = self.DHT_db.getObservations(
+            self.table_name, start_dtime, current_time)
 
         # Allocate the correct data to each bin
         # Take the median within each bin to decide on their final values
@@ -110,9 +117,9 @@ class SensorData:
         # Get new data from the csv file
         D_new, H_new, T_new = self.__loadNewData()
         # Add to the buffer
-        self.__D_buffer.extend(D_new)
-        self.__H_buffer.extend(H_new)
-        self.__T_buffer.extend(T_new)
+        self.__D_buffer.extend(deque(D_new))
+        self.__H_buffer.extend(deque(H_new))
+        self.__T_buffer.extend(deque(T_new))
 
         current_time = datetime.datetime.now()
         new_time_elapsed = current_time - self.D_grid_edges[-1]
@@ -138,7 +145,7 @@ class SensorData:
         else:
             # When the previous data is too old, and the entire grid needs to be remade
             new_grid_edges = np.array(
-                [current_time - SensorData.__history_timedelta + 
+                [current_time - SensorData.__history_timedelta +
                     _*self.__grid_resolution for _ in range(num_new_edges)])
         new_grid_centres = new_grid_edges[:-1] + 0.5*self.__grid_resolution
 
@@ -192,68 +199,17 @@ class SensorData:
             SensorData.ylim_T, SensorData.ylim_T_buffer, T_new_grid)
         return True
 
-    def __loadNewData(self) -> Tuple[deque, deque, deque]:
-        # Load new values of D, H and T from the csv
-        D_new = deque()
-        H_new = deque()
-        T_new = deque()
-        with open(self.filepath, "r") as textfile:
-            # Open and read the file in reverse order
-            f_end = csv.DictReader(reversed_lines(textfile), fieldnames=[
-                "Datetime", "Temperature", "Humidity"])
-            while True:
-                # Read line by line (from the end backwards) until we reach the date we have at the end of D
-                line = next(f_end)
-                D_proposed = pd.Timestamp(datetime.datetime.strptime(
-                    line["Datetime"], "%Y-%m-%d %H:%M:%S"))
-                H_proposed = float(noneToNan(line["Humidity"]))
-                T_proposed = float(noneToNan(line["Temperature"]))
-                if D_proposed <= self.D_grid_edges[-1]:
-                    break
-                else:
-                    D_new.appendleft(D_proposed)
-                    H_new.appendleft(H_proposed)
-                    T_new.appendleft(T_proposed)
+    def __loadNewData(self) -> Tuple[np.array, np.array, np.array]:
+        # Load new values of D, H and T from the server
+
+        # Query datetimes that are new since we last queried the server
+        start_dtime = self.last_queried_time + datetime.timedelta(seconds=0.1)
+        current_time = datetime.datetime.now()
+        self.last_queried_time = current_time
+        D_new, H_new, T_new = self.DHT_db.getObservations(
+            self.table_name, start_dtime, current_time)
 
         return D_new, H_new, T_new
-
-    def __loadBulkData(self, window_start_time: pd.Timestamp) -> Tuple[np.array, np.array, np.array]:
-        # Load the bulk data from file after a specified time
-        data = dd.read_csv(self.filepath)
-        data["Datetime"] = dd.to_datetime(data["Datetime"])
-
-        data_is_available = True
-
-        within_window_end_idx = len(data) - 1
-        if data["Datetime"].loc[0].compute().item() < window_start_time:
-            # Check if the desired start time is after the last time in data
-            if window_start_time > data["Datetime"].loc[len(data)-1].compute().item():
-                data_is_available = False
-                within_window_start_idx = within_window_end_idx
-            else:
-                # Use a binary search to find the initial start window indices
-                within_window_start_idx = binSearchDatetime(
-                    data["Datetime"], window_start_time)
-        else:
-            # If there is not enough history, start at the latest recorded date
-            within_window_start_idx = 0
-
-        assert within_window_start_idx <= within_window_end_idx
-
-        # Return as an np.array
-        if data_is_available:
-            D_bulk = np.array(
-                data["Datetime"].loc[within_window_start_idx:within_window_end_idx].compute())
-            H_bulk = np.array(
-                data["Humidity"].loc[within_window_start_idx:within_window_end_idx].compute())
-            T_bulk = np.array(
-                data["Temperature"].loc[within_window_start_idx:within_window_end_idx].compute())
-        else:
-            D_bulk = np.array([])
-            H_bulk = np.array([])
-            T_bulk = np.array([])
-
-        return D_bulk, H_bulk, T_bulk
 
     @staticmethod
     def replaceNanLOCF(data: deque, backup_val: float = 50) -> Tuple[deque, deque]:
@@ -463,6 +419,7 @@ def timing(f):
         print(f"func:{f.__name__} took: {te-ts: 2.4f} sec")
         return result
     return wrap
+
 
 def noneToNan(x):
     if x is None:

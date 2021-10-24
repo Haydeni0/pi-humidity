@@ -12,20 +12,20 @@ import seaborn as sns
 
 from utils import SensorData
 
-filepath_inside = "data/DHT22_inside.csv"
-filepath_outside = "data/DHT22_outside.csv"
-filepath_inside = "WindowsTest/TestData/inside.csv"
-filepath_outside = "WindowsTest/TestData/outside.csv"
-# Test cases
-# filepath = "WindowsTest/TestData/inside_old.csv"
-# filepath = "WindowsTest/TestData/nonexistent.csv"
+from DHT_MySQL_interface import DHTConnection, ObsDHT
 
+connection_config = {
+    "host": 'localhost',
+    "database": "pi_humidity",
+    "user": "Haydeni0",
+    "password": "OSzP34,@H0.I2m$sZpI<",
+    'raise_on_warnings': True
+}
 
-if (not os.path.exists(filepath_inside)) or (not os.path.exists(filepath_outside)):
-    raise FileNotFoundError(filepath_inside)
+DHT_db = DHTConnection(connection_config)
 
-inside_sensor = SensorData(filepath_inside)
-outside_sensor = SensorData(filepath_outside)
+inside_sensor = SensorData(DHT_db, "dht_inside")
+outside_sensor = SensorData(DHT_db, "dht_outside")
 
 # Initial plot
 fig = plt.figure()

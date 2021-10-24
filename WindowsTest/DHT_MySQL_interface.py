@@ -75,7 +75,7 @@ class DHTConnection:
             print("MySQL connection closed")
 
     def getObservations(self, table_name: str, start_dtime: datetime.datetime,
-                        end_dtime: datetime.datetime):
+                        end_dtime: datetime.datetime) -> Tuple[np.array, np.array, np.array]:
 
         query = f"SELECT dtime, humidity, temperature FROM {table_name} \
             WHERE dtime BETWEEN %s AND %s"
