@@ -1,6 +1,7 @@
 import datetime
 from collections import deque
 from typing import Tuple
+import time
 
 import numpy as np
 import pandas as pd
@@ -10,7 +11,7 @@ from utils import timing
 
 
 class DHTSensorData:
-    __history_timedelta = datetime.timedelta(minutes=2)
+    __history_timedelta = datetime.timedelta(hours=1)
     # assert(history_timedelta < datetime.timedelta(days=7)) # Should there be a maximum?
     # Y axes limits are also contained within this class as a static variable
     ylim_H_buffer = 5  # The amount to add on to the top and bottom of the limits
@@ -57,9 +58,6 @@ class DHTSensorData:
         self.T = deque(self.T, maxlen=DHTSensorData.__num_grid)
         self.H_was_nan = deque(self.H_was_nan, maxlen=DHTSensorData.__num_grid)
         self.T_was_nan = deque(self.T_was_nan, maxlen=DHTSensorData.__num_grid)
-
-        # Update immediately after initial data is loaded, as it may have taken a while
-        self.update()
 
     def __loadInitialData(self) -> Tuple[deque, deque]:
         # Inputs:
