@@ -14,7 +14,7 @@ connection_config = {
     "database": "pi_humidity",
     "user": "Haydeni0",
     "password": "OSzP34,@H0.I2m$sZpI<",
-    'raise_on_warnings': True
+    'raise_on_warnings': False
 }
 
 DHT_db = DHTConnection(connection_config)
@@ -68,6 +68,7 @@ fig.canvas.draw()
 fig.canvas.flush_events()
 # Use block=False so that we have control of the figure event loop
 plt.show(block=False)
+plt.ion()
 # Draw and flush the plot twice more, not sure why this has to happen,
 # but otherwise we have to wait for two successful iterations of the while loop
 fig.canvas.draw()
@@ -79,7 +80,7 @@ print(
     f"Draw the initial figure before setting the data: {time.time()-t: 2.4f}")
 
 decay_counter = count()  # Initialise counter for use with the y limit decay
-update_interval = 0.5  # The time (seconds) to wait before each update
+event_loop_interval = 0.5  # The time (seconds) to wait between each event loop cycle
 frametime_old = ""
 while True:
     frame_start_time = time.time()
@@ -118,7 +119,7 @@ while True:
         # Every once in a while, check if the y limits have become too large
         # And if so, slowly decay them
         decay_interval = 5
-        if next(decay_counter) == int(decay_interval/update_interval):
+        if next(decay_counter) == int(decay_interval/event_loop_interval):
             decay_counter = count()  # Reset counter
             DHTSensorData.decayLimits(
                 DHTSensorData.ylim_H, DHTSensorData.ylim_H_buffer, inside_sensor.H, outside_sensor.H)
@@ -129,6 +130,6 @@ while True:
         frametime_old = f"Frame time (s): {time.time() - frame_start_time: 0.3f}"
         # print(f"[updated]")
 
-    print(f"Loop time: {time.time() - frame_start_time: 0.3f}")
+    # print(f"Loop time: {time.time() - frame_start_time: 0.3f}")
     fig.canvas.flush_events()  # Always flush events to keep the gui responsive
-    time.sleep(update_interval)
+    time.sleep(event_loop_interval)

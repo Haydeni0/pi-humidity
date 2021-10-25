@@ -11,7 +11,7 @@ from utils import timing
 
 
 class DHTSensorData:
-    __history_timedelta = datetime.timedelta(hours=20)
+    __history_timedelta = datetime.timedelta(hours=1)
     # assert(history_timedelta < datetime.timedelta(days=7)) # Should there be a maximum?
     # Y axes limits are also contained within this class as a static variable
     ylim_H_buffer = 5  # The amount to add on to the top and bottom of the limits
@@ -20,7 +20,7 @@ class DHTSensorData:
     ylim_H = []
     ylim_T = []
     # How many bins should there be in the datetime grid
-    __num_grid = 200
+    __num_grid = 800
     __grid_resolution = __history_timedelta/__num_grid  # Width of one grid bin
 
     def __init__(self, DHT_db: DHTConnection, table_name: str):
@@ -91,9 +91,12 @@ class DHTSensorData:
         # Find and load the data from the database straight into the grid
         H_raw = deque()
         T_raw = deque()
+        T = 0
         for grid_idx in range(DHTSensorData.__num_grid):
+            t_start = time.time()
             _, H_bin, T_bin = self.DHT_db.getObservations(
                 self.table_name, self.D_grid_edges[grid_idx], self.D_grid_edges[grid_idx+1])
+            T += time.time() - t_start
             if len(H_bin) > 0:
                 H_raw.append(np.median(H_bin))
                 T_raw.append(np.median(T_bin))
@@ -105,6 +108,7 @@ class DHTSensorData:
         self.D_grid_edges = deque(self.D_grid_edges)
         self.D_grid_centres = deque(self.D_grid_centres)
 
+        print(f"Total query time: {T: 2.4f}s")
         return H_raw, T_raw
 
     def update(self) -> bool:

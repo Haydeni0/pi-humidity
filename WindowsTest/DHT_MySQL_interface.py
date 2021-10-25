@@ -43,7 +43,7 @@ class DHTConnection:
 
             # Connect a cursor to the server
             self.cursor = self.connection.cursor()
-            
+
             self.cursor.execute("SELECT DATABASE();")
             record = self.cursor.fetchone()
             print("Connected to database: ", record[0])
@@ -60,7 +60,6 @@ class DHTConnection:
 
             if raise_connection_errors:
                 raise(err)
-        
 
     def __del__(self):
         # Close the server connection when instance is destroyed
@@ -69,19 +68,24 @@ class DHTConnection:
             # Closing the cursor throws an error for some reason. This SO answer perhaps shows why, but after
             # following the answer, things are still broken
             # https://stackoverflow.com/a/1482477
-            # self.cursor.close() 
+            # self.cursor.close()
             self.connection.close()
             print("_"*100)
             print("MySQL connection closed")
 
     def getObservations(self, table_name: str, start_dtime: datetime.datetime,
                         end_dtime: datetime.datetime) -> Tuple[np.array, np.array, np.array]:
-
-        query = f"SELECT dtime, humidity, temperature FROM {table_name} \
-            WHERE dtime BETWEEN %s AND %s"
+        # Query the database for DHT observations between two times
+        # Return D, H and T separately as arrays
+        query = f"""
+            SELECT dtime, humidity, temperature 
+                FROM {table_name}
+                WHERE dtime BETWEEN %s AND %s
+            """
 
         try:
-            self.connection.reconnect() # Reconnect to the server to ensure we get the latest data
+            # Reconnect to the server to ensure we get the latest data
+            self.connection.reconnect()
             self.cursor.execute(query, (start_dtime, end_dtime))
             observations = self.cursor.fetchall()
 
@@ -100,6 +104,7 @@ class DHTConnection:
 
         except Error as err:
             print(err)
+            return np.array([]), np.array([]), np.array([])
 
     def createTable(self, table_name: str):
         # Function to create a table in DHT format if it doesn't already exist
