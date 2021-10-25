@@ -15,38 +15,10 @@ import scipy.signal
 from utils import timing
 
 
-# Based on examples
-# https://dev.mysql.com/doc/connector-python/en/connector-python-example-connecting.html
-import mysql.connector
-from mysql.connector import Error
-from mysql.connector import errorcode
-
-from DHT_MySQL_interface import DHTConnection, ObsDHT
-
-connection_config = {
-    "host": 'localhost',
-    "database": "pi_humidity",
-    "user": "Haydeni0",
-    "password": "OSzP34,@H0.I2m$sZpI<",
-    'raise_on_warnings': True
-}
-
-pi_humidity_SQL = DHTConnection(connection_config)
+a = np.searchsorted([1,5,10], [], side="right")
 
 
 
-def getLatestObservations():
-
-    current_time = datetime.datetime.now()
-    history_timedelta = datetime.timedelta(seconds=3)
-
-    start_dtime = current_time - history_timedelta
-    end_dtime = current_time
-
-    return pi_humidity_SQL.getObservations("dht_outside", start_dtime, end_dtime)
-
-
-print(getLatestObservations())
-
-
+print(a)
+print(a[0])
 pass

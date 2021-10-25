@@ -20,7 +20,7 @@ class DHTSensorData:
     ylim_H = []
     ylim_T = []
     # How many bins should there be in the datetime grid
-    __num_grid = 800
+    __num_grid = 200
     __grid_resolution = __history_timedelta/__num_grid  # Width of one grid bin
 
     def __init__(self, DHT_db: DHTConnection, table_name: str):
@@ -33,7 +33,8 @@ class DHTSensorData:
         # Load H and T from database (in raw format with possible nans)
         t = time.time()
         self.H_raw, self.T_raw = self.__loadInitialData()
-        print(f"Load H and T from database table {self.table_name}: {time.time()-t: 2.4f}")
+        print(
+            f"Load H and T from database table {self.table_name}: {time.time()-t: 2.4f}")
         # Process H and T to remove nans using last observation carried forward (LOCF)
         # Also record which values were nan
         self.H, self.H_was_nan = DHTSensorData.replaceNanLOCF(self.H_raw)
@@ -89,26 +90,40 @@ class DHTSensorData:
         self.D_grid_centres = pd.to_datetime(self.D_grid_centres)
 
         # Find and load the data from the database straight into the grid
-        H_raw = deque()
-        T_raw = deque()
-        T = 0
-        for grid_idx in range(DHTSensorData.__num_grid):
-            t_start = time.time()
-            _, H_bin, T_bin = self.DHT_db.getObservations(
-                self.table_name, self.D_grid_edges[grid_idx], self.D_grid_edges[grid_idx+1])
-            T += time.time() - t_start
-            if len(H_bin) > 0:
-                H_raw.append(np.median(H_bin))
-                T_raw.append(np.median(T_bin))
-            else:
-                H_raw.append(np.nan)
-                T_raw.append(np.nan)
+        use_SQL_loading = False # I think False is best here, as allocateToGrid is quite fast
+        if use_SQL_loading:
+            # Method that queries the database multiple times to get data from each bin separately
+            # This takes O(num_grid) compute time
+            t = time.time()
+            H_raw = deque()
+            T_raw = deque()
+            for grid_idx in range(DHTSensorData.__num_grid):
+                _, H_bin, T_bin = self.DHT_db.getObservations(
+                    self.table_name, self.D_grid_edges[grid_idx], self.D_grid_edges[grid_idx+1])
+                if len(H_bin) > 0:
+                    H_raw.append(np.median(H_bin))
+                    T_raw.append(np.median(T_bin))
+                else:
+                    H_raw.append(np.nan)
+                    T_raw.append(np.nan)
+            print(f"SQL bin loading: {time.time() - t: 2.4f}s")
+        else:
+            # Alternate method that queries the database once
+            # This takes O(history_timedelta) compute time
+            t = time.time()
+            # Find and load the data from the database into arrays
+            D_bulk, H_bulk, T_bulk = self.DHT_db.getObservations(
+                self.table_name, start_dtime, current_time)
+            # Allocate the correct data to each bin
+            # Take the median within each bin to decide on their final values
+            H_raw, T_raw = self.allocateToGrid(
+                self.D_grid_edges, D_bulk, H_bulk, T_bulk)
+            print(f"allocateToGrid loading: {time.time() - t: 2.4f}s")
 
         # Finally, convert the grid values to deques for fast pop/append
         self.D_grid_edges = deque(self.D_grid_edges)
         self.D_grid_centres = deque(self.D_grid_centres)
 
-        print(f"Total query time: {T: 2.4f}s")
         return H_raw, T_raw
 
     def update(self) -> bool:
@@ -242,7 +257,6 @@ class DHTSensorData:
 
         num_grid = len(grid_edges) - 1
 
-        # If no data is given, return a list of nans
         if len(D_bulk) == 0:
             nans = deque()
             for _ in range(num_grid):
@@ -254,34 +268,16 @@ class DHTSensorData:
         assert(D_bulk[-1] <= grid_edges[-1] +
                datetime.timedelta(seconds=0.01))
 
-        # Find indices of the data that fall in each bin
-        # This is very slow and inefficient, but it's alright for now as it's only 
-        # used in the update steps. Try to improve this in the future.
-        # t = time.time()
-        bin_data_idx = []
+        # Get an array the same size as D_bulk that holds the bin indices the dates fall into
+        # Note that this starts at 1 and ends at num_grid
+        D_bulk_bin_idx = np.searchsorted(grid_edges, D_bulk, side="right")
+        H_raw = deque()
+        T_raw = deque()
         for bin_idx in range(num_grid):
-            data_indices_above = grid_edges[bin_idx] <= D_bulk
-            if bin_idx < num_grid-1:
-                data_indices_below = D_bulk < grid_edges[bin_idx+1]
-            else:
-                data_indices_below = D_bulk <= grid_edges[bin_idx+1]
-
-            bin_data_idx.append(np.where(np.logical_and(
-                data_indices_above, data_indices_below))[0])
-
-        # Fill in each bin with one value, by using the median within each bin
-        def fillGrid(bin_data_idx: list, data: np.array) -> deque:
-            grid = deque()
-            for bin_idx in range(num_grid):
-                bin_input = data[bin_data_idx[bin_idx]]
-                bin_input = np.median(bin_input)
-                grid.append(bin_input)
-
-            return grid
-        
-        H_raw = fillGrid(bin_data_idx, H_bulk)
-        T_raw = fillGrid(bin_data_idx, T_bulk)
-        # print(f"Allocate to grid: {time.time()-t: 2.4f}")
+            valid_indices = np.where(D_bulk_bin_idx == bin_idx+1)
+            if len(valid_indices) > 0:
+                H_raw.append(np.median(H_bulk[valid_indices]))
+                T_raw.append(np.median(T_bulk[valid_indices]))
 
         return H_raw, T_raw
 

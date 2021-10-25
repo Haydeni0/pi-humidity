@@ -14,7 +14,7 @@ connection_config = {
     "database": "pi_humidity",
     "user": "Haydeni0",
     "password": "OSzP34,@H0.I2m$sZpI<",
-    'raise_on_warnings': False
+    'raise_on_warnings': True
 }
 
 DHT_db = DHTConnection(connection_config)
