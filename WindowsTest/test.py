@@ -20,5 +20,4 @@ a = np.searchsorted([1,5,10], [], side="right")
 
 
 print(a)
-print(a[0])
 pass

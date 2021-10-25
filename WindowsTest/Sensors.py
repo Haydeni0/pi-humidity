@@ -1,7 +1,8 @@
 import datetime
+import time
+import warnings
 from collections import deque
 from typing import Tuple
-import time
 
 import numpy as np
 import pandas as pd
@@ -11,7 +12,7 @@ from utils import timing
 
 
 class DHTSensorData:
-    __history_timedelta = datetime.timedelta(hours=1)
+    __history_timedelta = datetime.timedelta(hours=10)
     # assert(history_timedelta < datetime.timedelta(days=7)) # Should there be a maximum?
     # Y axes limits are also contained within this class as a static variable
     ylim_H_buffer = 5  # The amount to add on to the top and bottom of the limits
@@ -20,7 +21,7 @@ class DHTSensorData:
     ylim_H = []
     ylim_T = []
     # How many bins should there be in the datetime grid
-    __num_grid = 200
+    __num_grid = 2000
     __grid_resolution = __history_timedelta/__num_grid  # Width of one grid bin
 
     def __init__(self, DHT_db: DHTConnection, table_name: str):
@@ -94,7 +95,7 @@ class DHTSensorData:
         if use_SQL_loading:
             # Method that queries the database multiple times to get data from each bin separately
             # This takes O(num_grid) compute time
-            t = time.time()
+            
             H_raw = deque()
             T_raw = deque()
             for grid_idx in range(DHTSensorData.__num_grid):
@@ -106,11 +107,10 @@ class DHTSensorData:
                 else:
                     H_raw.append(np.nan)
                     T_raw.append(np.nan)
-            print(f"SQL bin loading: {time.time() - t: 2.4f}s")
         else:
             # Alternate method that queries the database once
             # This takes O(history_timedelta) compute time
-            t = time.time()
+
             # Find and load the data from the database into arrays
             D_bulk, H_bulk, T_bulk = self.DHT_db.getObservations(
                 self.table_name, start_dtime, current_time)
@@ -118,7 +118,6 @@ class DHTSensorData:
             # Take the median within each bin to decide on their final values
             H_raw, T_raw = self.allocateToGrid(
                 self.D_grid_edges, D_bulk, H_bulk, T_bulk)
-            print(f"allocateToGrid loading: {time.time() - t: 2.4f}s")
 
         # Finally, convert the grid values to deques for fast pop/append
         self.D_grid_edges = deque(self.D_grid_edges)
@@ -251,22 +250,23 @@ class DHTSensorData:
     def allocateToGrid(grid_edges: pd.DatetimeIndex, D_bulk: np.array, H_bulk: np.array, T_bulk: np.array) -> Tuple[deque, deque]:
         # By construction, D_bulk should all be greater than grid_edges[0]
         # Throw an error otherwise
-        # Add a small timedelta to compare these float values approximately
 
         assert(len(grid_edges) >= 2)  # "Not enough grid edges given"
 
         num_grid = len(grid_edges) - 1
 
+        # If no data is given, return a list of nans
         if len(D_bulk) == 0:
             nans = deque()
             for _ in range(num_grid):
                 nans.append(np.nan)
             return nans, nans
 
+        # Add a small timedelta to compare these float values approximately
         assert(D_bulk[0] >= grid_edges[0] -
-               datetime.timedelta(seconds=0.01))
+               datetime.timedelta(seconds=0.1))
         assert(D_bulk[-1] <= grid_edges[-1] +
-               datetime.timedelta(seconds=0.01))
+               datetime.timedelta(seconds=0.1))
 
         # Get an array the same size as D_bulk that holds the bin indices the dates fall into
         # Note that this starts at 1 and ends at num_grid
@@ -276,8 +276,12 @@ class DHTSensorData:
         for bin_idx in range(num_grid):
             valid_indices = np.where(D_bulk_bin_idx == bin_idx+1)
             if len(valid_indices) > 0:
-                H_raw.append(np.median(H_bulk[valid_indices]))
-                T_raw.append(np.median(T_bulk[valid_indices]))
+                with warnings.catch_warnings():
+                    # Catch the warnings these give, as they are useless
+                    # RuntimeWarning: Mean of empty slice.
+                    warnings.simplefilter("ignore", category=RuntimeWarning)
+                    H_raw.append(np.median(H_bulk[valid_indices]))
+                    T_raw.append(np.median(T_bulk[valid_indices]))
 
         return H_raw, T_raw
 

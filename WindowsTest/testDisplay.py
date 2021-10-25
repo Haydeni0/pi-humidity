@@ -38,12 +38,11 @@ line_H_outside, = ax_H.plot(
     outside_sensor.D_grid_centres, outside_sensor.H, label="Outside")
 line_T_outside, = ax_T.plot(
     outside_sensor.D_grid_centres, outside_sensor.T, label="Outside")
-print(f"Initial plot: {time.time()-t: 2.4f}")
+print(f"Set up initial figure: {time.time()-t: 2.4f}")
 
 # Make the frametime text object
 t = time.time()
 frametime_text = ax_H.text(inside_sensor.D_grid_centres[0], 66, "")
-
 # Set x and y axes limits
 # Set these using only the dates from the inside sensor
 ax_H.set_xlim(
@@ -52,17 +51,14 @@ ax_T.set_xlim(
     inside_sensor.D_grid_centres[0], inside_sensor.D_grid_centres[-1])
 ax_H.set_ylim(DHTSensorData.ylim_H)
 ax_T.set_ylim(DHTSensorData.ylim_T)
-print(f"Frametime text and set axis limits: {time.time()-t: 2.4f}")
 
-# Set labels
-t = time.time()
 ax_H.set_ylabel("Humidity (%RH)")
 ax_T.set_ylabel("Temperature ($^\circ$C)")
 ax_T.set_xlabel("Time (s)")
-print(f"Set labels: {time.time()-t: 2.4f}")
+print(f"Set additional plot attributes: {time.time()-t: 2.4f}")
 
 
-# Draw the initial figure before setting the data
+# Draw the initial figure
 t = time.time()
 fig.canvas.draw()
 fig.canvas.flush_events()
@@ -75,9 +71,7 @@ fig.canvas.draw()
 fig.canvas.flush_events()
 fig.canvas.draw()
 fig.canvas.flush_events()
-
-print(
-    f"Draw the initial figure before setting the data: {time.time()-t: 2.4f}")
+print(f"Draw the initial figure: {time.time()-t: 2.4f}")
 
 decay_counter = count()  # Initialise counter for use with the y limit decay
 event_loop_interval = 0.5  # The time (seconds) to wait between each event loop cycle
