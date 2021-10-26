@@ -1,18 +1,13 @@
 import datetime
+import math
 import os
 import time
-import math
 from typing import Tuple
 
 import numpy as np
 import pandas as pd
 
-
-# Based on examples
-# https://dev.mysql.com/doc/connector-python/en/connector-python-example-connecting.html
-import mysql.connector
-from mysql.connector import Error
-from mysql.connector import errorcode
+from DHT_MySQL_interface import DHTConnection, ObsDHT
 
 # MySQL server connection config
 connection_config = {
@@ -37,14 +32,6 @@ mean_T_inside = 23
 mean_H_outside = 66
 mean_T_outside = 22
 
-
-class ObsDHT:
-    def __init__(self, *, D, H, T):
-        self.D = D
-        self.H = H
-        self.T = T
-
-
 inside_obs = ObsDHT(D=datetime.datetime.now(), H=80, T=20)
 outside_obs = ObsDHT(
     D=datetime.datetime.now(), H=60, T=20)
@@ -67,7 +54,7 @@ connection_config = {
     'raise_on_warnings': True
 }
 
-from DHT_MySQL_interface import DHTConnection, ObsDHT
+
 pi_humidity_SQL = DHTConnection(connection_config)
 
 pi_humidity_SQL.createTable(TABLE_NAME_inside)
