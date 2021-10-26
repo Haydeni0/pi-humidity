@@ -2,10 +2,10 @@
 Repo containing code for pi humidity monitoring
 
 ## To-do
+- Set up mysql server on pi
+  - Be able to connect to it and query from it using the PC
+- Put the grid_edges into the DHT sensor data class as a static variable rather than instance
 - Tidy up graph, labels, titles, etc.
-- Do profiling to see what needs speeding up
-  - Why does the data take so long to initially load?
-  - is dask the problem
 - google drive pi backups
 - Use a database, MySQL, instead of a csv.
   - Maybe this will have faster loading times and better modularity of storage
