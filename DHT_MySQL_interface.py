@@ -65,7 +65,7 @@ class DHTConnection:
             # self.cursor.close()
             self.connection.close()
             print("_"*100)
-            print("MySQL connection closed")
+            print(f"MySQL connection closed ({datetime.datetime.now()})")
 
     def getObservations(self, table_name: str, start_dtime: datetime.datetime,
                         end_dtime: datetime.datetime) -> Tuple[np.array, np.array, np.array]:

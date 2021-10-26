@@ -35,7 +35,7 @@ class DHTSensorData:
         t = time.time()
         self.H_raw, self.T_raw = self.__loadInitialData()
         print(
-            f"  Load H and T from database table {self.table_name}: {time.time()-t: 2.4f}")
+            f"  Query H and T from database table {self.table_name}: {time.time()-t: 2.4f}")
         # Process H and T to remove nans using last observation carried forward (LOCF)
         # Also record which values were nan
         self.H, self.H_was_nan = DHTSensorData.replaceNanLOCF(self.H_raw)

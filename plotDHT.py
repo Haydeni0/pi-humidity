@@ -88,9 +88,10 @@ num_update_loop_cycles = update_interval / event_loop_interval
 loop_counter = count()
 decay_counter = count()  # Initialise counter for use with the y limit decay
 # Store a few of the most recent loop times to keep a running average
-looptimes_draw = deque([0], maxlen=5)
-looptimes_update = deque([0], maxlen=5)
-looptimes_loop = deque([0], maxlen=5)
+looptimes_draw = deque([0], maxlen=20)
+looptimes_update = deque([0], maxlen=20)
+looptimes_loop = deque([0], maxlen=20)
+
 while True:
     loop_start_time = time.time()
 
