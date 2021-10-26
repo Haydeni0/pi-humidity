@@ -8,7 +8,7 @@ from mysql.connector import Error
 from mysql.connector import errorcode
 
 connection_config = {
-    "host": 'localhost',
+    "host": '192.168.1.46',
     "database": "pi_humidity",
     "user": "haydeni0",
     "password": "raspizeroWH_SQL",

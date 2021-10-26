@@ -1,5 +1,5 @@
 # pi-humidity
-Repo containing code for pi humidity monitoring
+Repo containing code for humidity and temperature logging and monitoring on a raspberry pi zero, using two DHT22 sensors.
 
 ## To-do
 - Set up mysql server on pi
