@@ -1,4 +1,6 @@
+import textwrap
 import time
+from collections import deque
 from itertools import count
 
 import matplotlib.pyplot as plt
@@ -42,7 +44,7 @@ print(f"Set up initial figure: {time.time()-t: 2.4f}")
 
 # Make the frametime text object
 t = time.time()
-frametime_text = ax_H.text(inside_sensor.D_grid_centres[0], 66, "")
+avg_looptime_text = ax_H.text(inside_sensor.D_grid_centres[0], 66, "")
 # Set x and y axes limits
 # Set these using only the dates from the inside sensor
 ax_H.set_xlim(
@@ -64,7 +66,6 @@ fig.canvas.draw()
 fig.canvas.flush_events()
 # Use block=False so that we have control of the figure event loop
 plt.show(block=False)
-plt.ion()
 # Draw and flush the plot twice more, not sure why this has to happen,
 # but otherwise we have to wait for two successful iterations of the while loop
 fig.canvas.draw()
@@ -74,10 +75,13 @@ fig.canvas.flush_events()
 print(f"Draw the initial figure: {time.time()-t: 2.4f}")
 
 decay_counter = count()  # Initialise counter for use with the y limit decay
-event_loop_interval = 0.5  # The time (seconds) to wait between each event loop cycle
-frametime_old = ""
+# The time (seconds) to wait between each event loop cycle
+event_loop_interval = 0.1
+# Store a few of the most recent loop times to keep a running average
+looptimes_draw = deque([0], maxlen=5)
+looptimes_nodraw = deque([0], maxlen=5)
 while True:
-    frame_start_time = time.time()
+    loop_start_time = time.time()
 
     # Update the sensor data
     inside_updated = inside_sensor.update()
@@ -92,12 +96,15 @@ while True:
         ax_H.set_ylim(DHTSensorData.ylim_H)
         ax_T.set_ylim(DHTSensorData.ylim_T)
 
-        # Set frametime text
-        frametime_text.set_text(frametime_old)
+        # Set looptime text
+        txt = f"""
+        Average loop time (s): {np.mean(looptimes_nodraw): 0.3f}
+        Average draw time (s): {np.mean(looptimes_draw): 0.3f}"""
+        avg_looptime_text.set_text(textwrap.dedent(txt))
         # Make sure the frametime counter stays in the axis limits
-        frametime_text.set_x(inside_sensor.D_grid_centres[0])
+        avg_looptime_text.set_x(inside_sensor.D_grid_centres[0])
         # Make sure the frametime counter stays in the axis limits
-        frametime_text.set_y(DHTSensorData.ylim_H[1] + 1)
+        avg_looptime_text.set_y(DHTSensorData.ylim_H[1] + 1)
 
         # Set new data
         line_H_inside.set_data(inside_sensor.D_grid_centres, inside_sensor.H)
@@ -120,10 +127,9 @@ while True:
             DHTSensorData.decayLimits(
                 DHTSensorData.ylim_T, DHTSensorData.ylim_T_buffer, inside_sensor.T, outside_sensor.T)
 
-        # Get current frametime to display on the next frame
-        frametime_old = f"Frame time (s): {time.time() - frame_start_time: 0.3f}"
-        # print(f"[updated]")
+        looptimes_draw.append(time.time() - loop_start_time)
+    else:
+        looptimes_nodraw.append(time.time() - loop_start_time)
 
-    # print(f"Loop time: {time.time() - frame_start_time: 0.3f}")
     fig.canvas.flush_events()  # Always flush events to keep the gui responsive
     time.sleep(event_loop_interval)
