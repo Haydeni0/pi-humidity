@@ -15,7 +15,7 @@ DHT_PIN_OUTSIDE = 27
 connection_config = {
     "host": 'localhost',
     "database": "pi_humidity",
-    "user": "root",
+    "user": "haydeni0",
     "password": "raspizeroWH_SQL",
     'raise_on_warnings': True
 }
