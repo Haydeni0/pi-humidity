@@ -16,7 +16,7 @@ connection_config = {
     "host": 'localhost',
     "database": "pi_humidity",
     "user": "root",
-    "password": "",
+    "password": "raspizeroWH_SQL",
     'raise_on_warnings': True
 }
 TABLE_NAME_inside = "dht_inside"
