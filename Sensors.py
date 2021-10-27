@@ -21,7 +21,7 @@ class DHTSensorData:
     ylim_H = []
     ylim_T = []
     # How many bins should there be in the datetime grid
-    __num_grid = 2000
+    __num_grid = 200
     __grid_resolution = __history_timedelta/__num_grid  # Width of one grid bin
 
     def __init__(self, DHT_db: DHTConnection, table_name: str):

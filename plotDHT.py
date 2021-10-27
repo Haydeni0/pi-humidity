@@ -1,3 +1,8 @@
+from Sensors import DHTSensorData
+from DHT_MySQL_interface import DHTConnection, ObsDHT
+import seaborn as sns
+import numpy as np
+import matplotlib.pyplot as plt
 import textwrap
 import time
 from collections import deque
@@ -5,12 +10,7 @@ from itertools import count
 
 import matplotlib
 matplotlib.use('Qt5Agg')
-import matplotlib.pyplot as plt
-import numpy as np
-import seaborn as sns
 
-from DHT_MySQL_interface import DHTConnection, ObsDHT
-from Sensors import DHTSensorData
 
 # MySQL server connection details
 connection_config = {
@@ -32,7 +32,9 @@ print(f"Set up DHTSensorData: {time.time()-t: 2.4f}")
 t = time.time()
 fig = plt.figure()
 ax_H = fig.add_subplot(2, 1, 1)
+plt.grid()
 ax_T = fig.add_subplot(2, 1, 2)
+plt.grid()
 # fig.tight_layout()
 line_H_inside, = ax_H.plot(
     inside_sensor.D_grid_centres, inside_sensor.H, label="Inside")
@@ -81,8 +83,9 @@ fig.canvas.flush_events()
 print(f"Draw the initial figure: {time.time()-t: 2.4f}")
 
 # Loop intervals
-event_loop_interval = 0.1 # The time (seconds) to wait between each event loop cycle
-update_interval = 2 # The time (seconds) to wait between each update
+# The time (seconds) to wait between each event loop cycle
+event_loop_interval = 0.1
+update_interval = 2  # The time (seconds) to wait between each update
 num_update_loop_cycles = update_interval / event_loop_interval
 
 loop_counter = count()
@@ -97,7 +100,7 @@ while True:
 
     # To keep the plot responsive, only attempt to update every few loop cycles
     if next(loop_counter) >= num_update_loop_cycles:
-        loop_counter = count() # Reset loop counter
+        loop_counter = count()  # Reset loop counter
         # Update the sensor data
         inside_updated = inside_sensor.update()
         outside_updated = outside_sensor.update()
@@ -123,8 +126,10 @@ while True:
             avg_looptime_text.set_y(DHTSensorData.ylim_H[1] + 1)
 
             # Set new data
-            line_H_inside.set_data(inside_sensor.D_grid_centres, inside_sensor.H)
-            line_T_inside.set_data(inside_sensor.D_grid_centres, inside_sensor.T)
+            line_H_inside.set_data(
+                inside_sensor.D_grid_centres, inside_sensor.H)
+            line_T_inside.set_data(
+                inside_sensor.D_grid_centres, inside_sensor.T)
             line_H_outside.set_data(
                 outside_sensor.D_grid_centres, outside_sensor.H)
             line_T_outside.set_data(
