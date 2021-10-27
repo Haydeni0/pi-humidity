@@ -2,8 +2,8 @@
 Repo containing code for humidity and temperature logging and monitoring on a raspberry pi zero, using two DHT22 sensors.
 
 ## To-do
-- Set up mysql server on pi
-  - Be able to connect to it and query from it using the PC
+- Take a look at mysqldump for database backups
+- Put some retry capability into dhtLogger so it doesn't stop on server restart
 - Put the grid_edges into the DHT sensor data class as a static variable rather than instance
 - Tidy up graph, labels, titles, etc.
 - google drive pi backups

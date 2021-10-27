@@ -8,10 +8,11 @@ import os
 import sys
 import inspect
 
+# Import from parent folder
+# https://stackoverflow.com/a/11158224
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 sys.path.insert(0, parentdir) 
-
 from DHT_MySQL_interface import ObsDHT, DHTConnection
 
 TABLE_NAME_inside = "dht_inside"

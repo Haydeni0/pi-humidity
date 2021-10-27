@@ -162,7 +162,7 @@ raspi_connection_config = {
 HaydensPC_connection_config = {
     "host": 'localhost',
     "database": "pi_humidity",
-    "user": "Haydeni0",
+    "user": "haydeni0",
     "password": "OSzP34,@H0.I2m$sZpI<",
     'raise_on_warnings': True
 }
@@ -170,7 +170,7 @@ HaydensPC_connection_config = {
 
 if __name__ == "__main__":
     # Server connection details
-    # plotDHT(HaydensPC_connection_config)
+    plotDHT(HaydensPC_connection_config)
     plotDHT(raspi_connection_config)
 
 
