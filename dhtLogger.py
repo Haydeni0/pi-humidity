@@ -1,5 +1,4 @@
 import datetime
-import os
 import time
 
 import Adafruit_DHT
@@ -24,10 +23,17 @@ TABLE_NAME_outside = "dht_outside"
 
 log_interval = 2 # in seconds
 
-pi_humidity_SQL = DHTConnection(connection_config)
+# Try to connect to the server, and retry if fail
+for j in range(10):
+    try:
+        pi_humidity_SQL = DHTConnection(connection_config)
+        break
+    except:
+        time.sleep(5)
+        continue
 
-pi_humidity_SQL.createTable(TABLE_NAME_inside)
-pi_humidity_SQL.createTable(TABLE_NAME_outside)
+# pi_humidity_SQL.createTable(TABLE_NAME_inside)
+# pi_humidity_SQL.createTable(TABLE_NAME_outside)
 
 
 while True:
