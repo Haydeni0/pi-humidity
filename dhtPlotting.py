@@ -3,6 +3,7 @@ from DHT_MySQL_interface import DHTConnection, ObsDHT
 import seaborn as sns
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 import textwrap
 import time
 from collections import deque
@@ -24,9 +25,20 @@ def plotDHT(connection_config: dict):
     t = time.time()
     fig = plt.figure()
     ax_H = fig.add_subplot(2, 1, 1)
-    plt.grid()
     ax_T = fig.add_subplot(2, 1, 2)
-    plt.grid()
+    # Show grid
+    ax_H.grid(True)
+    ax_T.grid(True)
+    # Set xtick locations and formats
+    ax_H.xaxis.set_major_locator(mdates.HourLocator(byhour=[0]))
+    ax_H.xaxis.set_minor_locator(mdates.HourLocator(byhour=range(0, 23, 2)))
+    ax_H.xaxis.set_major_formatter(mdates.DateFormatter("%A"))
+    ax_H.xaxis.set_minor_formatter(mdates.DateFormatter("%Hh"))
+    ax_T.xaxis.set_major_locator(mdates.HourLocator(byhour=[0]))
+    ax_T.xaxis.set_minor_locator(mdates.HourLocator(byhour=range(0, 23, 2)))
+    ax_T.xaxis.set_major_formatter(mdates.DateFormatter("%A"))
+    ax_T.xaxis.set_minor_formatter(mdates.DateFormatter("%Hh"))
+
     # fig.tight_layout()
     line_H_inside, = ax_H.plot(
         inside_sensor.D_grid_centres, inside_sensor.H, label="Inside")
@@ -37,6 +49,13 @@ def plotDHT(connection_config: dict):
     line_T_outside, = ax_T.plot(
         outside_sensor.D_grid_centres, outside_sensor.T, label="Outside")
     print(f"Set up initial figure: {time.time()-t: 2.4f}")
+    # Set colours
+    line_H_inside.set_color("#74A122") # Green
+    line_T_inside.set_color("#74A122") # Green
+    line_H_outside.set_color("#D3042F") # Red
+    line_T_outside.set_color("#D3042F") # Green
+    # Make legend
+    ax_H.legend(loc="upper left")
 
     # Maximise the window (QT5Agg specific)
     figManager = plt.get_current_fig_manager()
