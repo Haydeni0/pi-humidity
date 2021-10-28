@@ -26,7 +26,7 @@ Repo containing code for humidity and temperature logging and monitoring on a ra
 
 ### Data processing
 - Handle nans given by the sensor
-- Do we need a secondary smoothing? rolling mean?
+- do smoothing on the bins, particularly on temperature, as it looks jagged due to low resolution
 
 ### Codebase
 - Do profiling to see what takes most time

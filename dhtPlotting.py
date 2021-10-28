@@ -39,8 +39,8 @@ def plotDHT(connection_config: dict):
     print(f"Set up initial figure: {time.time()-t: 2.4f}")
 
     # Maximise the window (QT5Agg specific)
-    # figManager = plt.get_current_fig_manager()
-    # figManager.window.showMaximized()
+    figManager = plt.get_current_fig_manager()
+    figManager.window.showMaximized()
 
     # Make the frametime text object
     t = time.time()
@@ -76,7 +76,7 @@ def plotDHT(connection_config: dict):
 
     # Loop intervals
     # The time (seconds) to wait between each event loop cycle
-    event_loop_interval = 0.1
+    event_loop_interval = 0.05
     update_interval = 2  # The time (seconds) to wait between each update
     num_update_loop_cycles = update_interval / event_loop_interval
 
@@ -97,6 +97,9 @@ def plotDHT(connection_config: dict):
             inside_updated = inside_sensor.update()
             outside_updated = outside_sensor.update()
 
+            # Store the time it takes to do an update
+            looptimes_update.append(time.time() - loop_start_time)
+            draw_start_time = time.time()
             if inside_updated or outside_updated:
                 # Set new y limits
                 ax_H.set_xlim(
@@ -140,9 +143,9 @@ def plotDHT(connection_config: dict):
                     DHTSensorData.decayLimits(
                         DHTSensorData.ylim_T, DHTSensorData.ylim_T_buffer, inside_sensor.T, outside_sensor.T)
 
-                looptimes_draw.append(time.time() - loop_start_time)
-            else:
-                looptimes_update.append(time.time() - loop_start_time)
+                # Store the time it takes to draw
+                looptimes_draw.append(time.time() - draw_start_time)
+                
         else:
             looptimes_loop.append(time.time() - loop_start_time)
 
