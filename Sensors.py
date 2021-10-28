@@ -12,7 +12,7 @@ from utils import timing
 
 
 class DHTSensorData:
-    __history_timedelta = datetime.timedelta(hours=40)
+    __history_timedelta = datetime.timedelta(hours=48)
     # assert(history_timedelta < datetime.timedelta(days=7)) # Should there be a maximum?
     # Y axes limits are also contained within this class as a static variable
     ylim_H_buffer = 5  # The amount to add on to the top and bottom of the limits
@@ -259,7 +259,10 @@ class DHTSensorData:
 
         # Get an array the same size as D_bulk that holds the bin indices the dates fall into
         # Note that this starts at 1 and ends at num_grid
-        D_bulk_bin_idx = np.searchsorted(grid_edges, D_bulk, side="right")
+        if len(D_bulk) > 0:
+            D_bulk_bin_idx = np.searchsorted(grid_edges, D_bulk, side="right")
+        else:
+            D_bulk_bin_idx = []
         H_raw = deque()
         T_raw = deque()
         for bin_idx in range(num_grid):
