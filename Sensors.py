@@ -257,19 +257,6 @@ class DHTSensorData:
 
         num_grid = len(grid_edges) - 1
 
-        # If no data is given, return a list of nans
-        if len(D_bulk) == 0:
-            nans = deque()
-            for _ in range(num_grid):
-                nans.append(np.nan)
-            return nans, nans
-
-        # Add a small timedelta to compare these float values approximately
-        assert(D_bulk[0] >= grid_edges[0] -
-               datetime.timedelta(seconds=0.1))
-        assert(D_bulk[-1] <= grid_edges[-1] +
-               datetime.timedelta(seconds=0.1))
-
         # Get an array the same size as D_bulk that holds the bin indices the dates fall into
         # Note that this starts at 1 and ends at num_grid
         D_bulk_bin_idx = np.searchsorted(grid_edges, D_bulk, side="right")
