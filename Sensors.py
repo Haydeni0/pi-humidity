@@ -12,7 +12,7 @@ from utils import timing
 
 
 class DHTSensorData:
-    __history_timedelta = datetime.timedelta(hours=48)
+    __history_timedelta = datetime.timedelta(hours=40)
     # assert(history_timedelta < datetime.timedelta(days=7)) # Should there be a maximum?
     # Y axes limits are also contained within this class as a static variable
     ylim_H_buffer = 5  # The amount to add on to the top and bottom of the limits
@@ -21,7 +21,7 @@ class DHTSensorData:
     ylim_H = []
     ylim_T = []
     # How many bins should there be in the datetime grid
-    __num_grid = 200
+    __num_grid = 2000
     __grid_resolution = __history_timedelta/__num_grid  # Width of one grid bin
 
     def __init__(self, DHT_db: DHTConnection, table_name: str):
@@ -220,9 +220,11 @@ class DHTSensorData:
         # Query datetimes that are new since we last queried the server
         start_dtime = self.last_queried_time + datetime.timedelta(seconds=0.1)
         current_time = datetime.datetime.now()
-        self.last_queried_time = current_time
         D_new, H_new, T_new = self.DHT_db.getObservations(
             self.table_name, start_dtime, current_time)
+        
+        if len(D_new) > 0:
+            self.last_queried_time = current_time
 
         return D_new, H_new, T_new
 
