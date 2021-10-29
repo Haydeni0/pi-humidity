@@ -1,6 +1,5 @@
 from Sensors import DHTSensorData
-from DHT_MySQL_interface import DHTConnection, ObsDHT
-import seaborn as sns
+from DHT_MySQL_interface import DHTConnection
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
