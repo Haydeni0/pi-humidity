@@ -1,0 +1,5 @@
+SELECT * FROM dht_inside WHERE dtime >= now() - INTERVAL 2 DAY ORDER BY dtime DESC;
+#SELECT * FROM dht_inside ORDER BY dtime ASC LIMIT 50;
+
+SHOW MASTER STATUS;
+SHOW SLAVE STATUS;

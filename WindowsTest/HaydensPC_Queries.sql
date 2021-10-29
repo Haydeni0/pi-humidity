@@ -1,0 +1,19 @@
+SELECT * FROM dht_inside WHERE dtime >= now() - INTERVAL 2 DAY ORDER BY dtime DESC;
+
+# How many data points are in the last time period
+SELECT COUNT(A.dtime) FROM (SELECT * FROM dht_inside WHERE dtime >= now() - INTERVAL 1 MINUTE) AS A;
+
+SHOW VARIABLES LIKE 'bind_address';
+
+
+SHOW SLAVE STATUS;
+
+STOP REPLICA;
+START REPLICA;
+
+CHANGE REPLICATION SOURCE TO
+SOURCE_HOST='192.168.1.46',
+SOURCE_USER='repl',
+SOURCE_PASSWORD='raspizeroWH_REPLICA',
+SOURCE_LOG_FILE='mysql-bin.000005',
+SOURCE_LOG_POS=648460;
