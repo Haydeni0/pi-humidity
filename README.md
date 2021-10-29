@@ -15,7 +15,7 @@ Repo containing code for humidity and temperature logging and monitoring on a ra
 - Handle nans given by the sensor
 - do smoothing on the bins, particularly on temperature, as it looks jagged due to low resolution
   - Be able to easily configure smoothness, maybe have it as a class instance variable for both H and T
-
+  - Sort out smoothing filter on update
 ### Codebase
 - General quality testing, especially with data logging, as that shouldn't fail
 

@@ -1,6 +1,8 @@
 import time
 from functools import wraps
 import numpy as np
+from collections import deque
+from itertools import count
 
 # Timing decorator for a function
 # https://stackoverflow.com/questions/1622943/timeit-versus-timing-decorator
@@ -22,3 +24,16 @@ def noneToNan(x):
         return np.nan
     else:
         return x
+
+def getDequeLast(data: deque, n: int) -> deque:
+    # Gets the last values of the deque in reverse order
+    # This is faster than using itertools.islice
+    assert(n>0)
+    k = count()
+    last = deque()
+    for d in reversed(data):
+        if next(k) < n:
+            last.append(d)
+        else:
+            break
+    return last

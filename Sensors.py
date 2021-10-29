@@ -6,15 +6,15 @@ from typing import Tuple
 
 import numpy as np
 import pandas as pd
+import scipy.ndimage
+import itertools
 
 from DHT_MySQL_interface import DHTConnection
-from utils import timing
-
+from utils import getDequeLast
 
 class DHTSensorData:
-    __history_timedelta = datetime.timedelta(hours=48)
-    # assert(history_timedelta < datetime.timedelta(days=7)) # Should there be a maximum?
-    # Y axes limits are also contained within this class as a static variable
+    __history_timedelta = datetime.timedelta(hours=1)
+    # Y axes limits are contained within this class as a static variable
     ylim_H_buffer = 5  # The amount to add on to the top and bottom of the limits
     ylim_T_buffer = 3
     # Store ylim in a list to do efficiently (don't repeatedly call max/min on the whole deque)
@@ -23,8 +23,11 @@ class DHTSensorData:
     # How many bins should there be in the datetime grid
     __num_grid = 2000
     __grid_resolution = __history_timedelta/__num_grid  # Width of one grid bin
+    # The window size for the smoothing. Have this dynamic based on the number of bins in the grid
+    __smooth_windowsize = max(1, int(0.01*__num_grid))
+    # __smooth_windowsize = 1
 
-    def __init__(self, DHT_db: DHTConnection, table_name: str):
+    def __init__(self, DHT_db: DHTConnection, table_name: str, smoothing: float = 1):
         self.DHT_db = DHT_db
         self.table_name = table_name
         # These datetime grid variables are initialised in self.loadInitialData()
@@ -41,6 +44,13 @@ class DHTSensorData:
         self.H, self.H_was_nan = DHTSensorData.replaceNanLOCF(self.H_raw)
         self.T, self.T_was_nan = DHTSensorData.replaceNanLOCF(self.T_raw)
 
+        # Smooth H and T
+        self.H = deque(scipy.ndimage.uniform_filter1d(
+            self.H, DHTSensorData.__smooth_windowsize))
+        self.T = deque(scipy.ndimage.uniform_filter1d(
+            self.T, DHTSensorData.__smooth_windowsize))
+
+        # End #####
         # Initialise deques to hold new data from the next bin in the future
         self.__D_buffer = deque()
         self.__H_buffer = deque()
@@ -91,11 +101,11 @@ class DHTSensorData:
         self.D_grid_centres = pd.to_datetime(self.D_grid_centres)
 
         # Find and load the data from the database straight into the grid
-        use_SQL_loading = False # I think False is best here, as allocateToGrid is quite fast
+        use_SQL_loading = False  # I think False is best here, as allocateToGrid is quite fast
         if use_SQL_loading:
             # Method that queries the database multiple times to get data from each bin separately
             # This takes O(num_grid) compute time
-            
+
             H_raw = deque()
             T_raw = deque()
             for grid_idx in range(DHTSensorData.__num_grid):
@@ -196,6 +206,19 @@ class DHTSensorData:
             T_new_grid, T_new_was_nan = DHTSensorData.replaceNanLOCF(
                 T_raw_new_grid)
 
+        # Do smoothing
+        last_H = deque(self.H, DHTSensorData.__smooth_windowsize)
+        last_T = deque(self.T, DHTSensorData.__smooth_windowsize)
+        H_new_grid.extendleft(last_H)
+        T_new_grid.extendleft(last_T)
+        H_new_grid = deque(scipy.ndimage.uniform_filter1d(
+            H_new_grid, 5*DHTSensorData.__smooth_windowsize))
+        T_new_grid = deque(scipy.ndimage.uniform_filter1d(
+            T_new_grid, 5*DHTSensorData.__smooth_windowsize))
+        for _ in range(DHTSensorData.__smooth_windowsize):
+            H_new_grid.popleft()
+            T_new_grid.popleft()
+
         # Add these new values to the grid, and update the grid edges & centres
         # Since these deques have a maxlen attribute, old values are popped off the left side
         self.D_grid_edges.extend(deque(new_grid_edges[1:]))
@@ -222,7 +245,7 @@ class DHTSensorData:
         current_time = datetime.datetime.now()
         D_new, H_new, T_new = self.DHT_db.getObservations(
             self.table_name, start_dtime, current_time)
-        
+
         if len(D_new) > 0:
             self.last_queried_time = current_time
 
