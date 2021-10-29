@@ -24,8 +24,11 @@ def plotDHT(connection_config: dict):
     # Initial plot
     t = time.time()
     fig = plt.figure()
+    # Make subplots for separate temp/humidity
     ax_H = fig.add_subplot(2, 1, 1)
     ax_T = fig.add_subplot(2, 1, 2)
+    # # Set tight layout
+    fig.tight_layout()
     # Show grid
     ax_H.grid(True)
     ax_T.grid(True)
@@ -38,8 +41,6 @@ def plotDHT(connection_config: dict):
     ax_T.xaxis.set_minor_locator(mdates.HourLocator(byhour=range(0, 23, 2)))
     ax_T.xaxis.set_major_formatter(mdates.DateFormatter("%A"))
     ax_T.xaxis.set_minor_formatter(mdates.DateFormatter("%Hh"))
-
-    # fig.tight_layout()
     line_H_inside, = ax_H.plot(
         inside_sensor.D_grid_centres, inside_sensor.H, label="Inside")
     line_T_inside, = ax_T.plot(
@@ -54,6 +55,11 @@ def plotDHT(connection_config: dict):
     line_T_inside.set_color("#74A122") # Green
     line_H_outside.set_color("#D3042F") # Red
     line_T_outside.set_color("#D3042F") # Green
+    # Set linewidths
+    line_H_inside.set_linewidth(3)
+    line_T_inside.set_linewidth(3)
+    line_H_outside.set_linewidth(3)
+    line_T_outside.set_linewidth(3)
     # Make legend
     ax_H.legend(loc="upper left")
 
@@ -63,7 +69,7 @@ def plotDHT(connection_config: dict):
 
     # Make the frametime text object
     t = time.time()
-    avg_looptime_text = ax_H.text(inside_sensor.D_grid_centres[0], 66, "")
+    avg_looptime_text = ax_T.text(inside_sensor.D_grid_centres[0], 66, "")
     # Set x and y axes limits
     # Set these using only the dates from the inside sensor
     ax_H.set_xlim(
@@ -137,7 +143,7 @@ def plotDHT(connection_config: dict):
                 # Make sure the frametime counter stays in the axis limits
                 avg_looptime_text.set_x(inside_sensor.D_grid_centres[0])
                 # Make sure the frametime counter stays in the axis limits
-                avg_looptime_text.set_y(DHTSensorData.ylim_H[1] + 1)
+                avg_looptime_text.set_y(DHTSensorData.ylim_T[0] - 2)
 
                 # Set new data
                 line_H_inside.set_data(
