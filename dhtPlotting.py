@@ -144,7 +144,7 @@ def plotDHT(connection_config: dict, *, event_loop_interval: float = 0.5, update
                 # Set looptime text
                 txt = f"""
                 Average loop|query|draw time (s): {np.mean(looptimes_loop): 0.3f} | {np.mean(looptimes_update): 0.3f} | {np.mean(looptimes_draw): 0.3f}
-                Last query: {inside_sensor.last_queried_time.strftime("%a %H:%M:%S")}
+                Last updated: {inside_sensor.last_queried_time.strftime("%a %H:%M:%S")}
                 """
                 
                 ax_T.set_xlabel(textwrap.dedent(txt), fontsize=15)
