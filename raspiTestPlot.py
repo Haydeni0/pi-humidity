@@ -2,6 +2,8 @@ import matplotlib.pyplot as plt
 import matplotlib
 import numpy as np
 
+matplotlib.use('Qt5Agg')
+
 fig = plt.figure()
 
 ax = fig.add_subplot(1, 1, 1)
