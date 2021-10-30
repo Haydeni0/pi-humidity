@@ -10,6 +10,7 @@ from itertools import count
 
 import matplotlib
 matplotlib.use('Qt5Agg')
+matplotlib.use('TkAgg')
 
 def plotDHT(connection_config: dict):
 
@@ -62,9 +63,10 @@ def plotDHT(connection_config: dict):
     # Make legend
     ax_H.legend(loc="upper left")
 
-    # Maximise the window (QT5Agg specific)
-    figManager = plt.get_current_fig_manager()
-    figManager.window.showMaximized()
+    # Maximise the window (Qt5Agg specific)
+    if matplotlib.get_backend() == "Qt5Agg":
+        figManager = plt.get_current_fig_manager()
+        figManager.window.showMaximized()
 
     # Make the frametime text object
     t = time.time()
