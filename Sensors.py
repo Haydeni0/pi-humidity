@@ -12,7 +12,7 @@ from utils import timing
 
 
 class DHTSensorData:
-    __history_timedelta = datetime.timedelta(hours=48)
+    __history_timedelta = datetime.timedelta(hours=1)
     # assert(history_timedelta < datetime.timedelta(days=7)) # Should there be a maximum?
     # Y axes limits are also contained within this class as a static variable
     ylim_H_buffer = 5  # The amount to add on to the top and bottom of the limits
@@ -21,7 +21,7 @@ class DHTSensorData:
     ylim_H = []
     ylim_T = []
     # How many bins should there be in the datetime grid
-    __num_grid = 2000
+    __num_grid = 200
     __grid_resolution = __history_timedelta/__num_grid  # Width of one grid bin
 
     def __init__(self, DHT_db: DHTConnection, table_name: str):
