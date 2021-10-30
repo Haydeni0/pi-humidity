@@ -1,14 +1,17 @@
-from Sensors import DHTSensorData
-from DHT_MySQL_interface import DHTConnection
-import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
+import datetime
 import textwrap
 import time
 from collections import deque
 from itertools import count
 
 import matplotlib
+import matplotlib.dates as mdates
+import matplotlib.pyplot as plt
+import numpy as np
+
+from DHT_MySQL_interface import DHTConnection
+from Sensors import DHTSensorData
+
 matplotlib.use('Qt5Agg')
 
 font = {'size': 19}
