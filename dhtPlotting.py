@@ -75,9 +75,7 @@ def plotDHT(connection_config: dict, *, event_loop_interval: float = 0.5, update
         figManager = plt.get_current_fig_manager()
         figManager.window.showMaximized()
 
-    # Make the frametime text object
     t = time.time()
-    avg_looptime_text = ax_T.text(inside_sensor.D_grid_centres[0], 66, "")
     # Set x and y axes limits
     # Set these using only the dates from the inside sensor
     ax_H.set_xlim(
@@ -141,14 +139,12 @@ def plotDHT(connection_config: dict, *, event_loop_interval: float = 0.5, update
                 ax_T.set_ylim(DHTSensorData.ylim_T)
 
                 # Set looptime text
-                txt = f"Average loop|query|draw time (s): {np.mean(looptimes_loop): 0.3f} | {np.mean(looptimes_update): 0.3f} | {np.mean(looptimes_draw): 0.3f}"
-                # avg_looptime_text.set_text(textwrap.dedent(txt))
-                # # Make sure the frametime counter stays in the axis limits
-                # avg_looptime_text.set_x(inside_sensor.D_grid_centres[0])
-                # # Make sure the frametime counter stays in the axis limits
-                # avg_looptime_text.set_y(DHTSensorData.ylim_T[0] - 2)
+                txt = f"""
+                Average loop|query|draw time (s): {np.mean(looptimes_loop): 0.3f} | {np.mean(looptimes_update): 0.3f} | {np.mean(looptimes_draw): 0.3f}
+                Last query: {inside_sensor.last_queried_time.strftime("%a %H:%M:%S")}
+                """
                 
-                ax_T.set_xlabel(txt, fontsize=15)
+                ax_T.set_xlabel(textwrap.dedent(txt), fontsize=15)
 
                 # Set new data
                 line_H_inside.set_data(

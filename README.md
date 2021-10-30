@@ -8,6 +8,7 @@ Repo containing code for humidity and temperature logging and monitoring on a ra
   - Or docker container?
 - Upload the mysqldump to google drive intermittently
   - rclone or rsync
+- Be able to access data from my phone?
 
 ### Data handling & ingesting
 
@@ -20,7 +21,6 @@ Repo containing code for humidity and temperature logging and monitoring on a ra
 - General quality testing, especially with data logging, as that shouldn't fail
 
 ### Visualisation
-- Make linewidths bigger
 
 ### Fan
 - Maybe control fan using raspberry pi, regulate humidity
