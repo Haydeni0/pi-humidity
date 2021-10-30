@@ -21,6 +21,9 @@ Repo containing code for humidity and temperature logging and monitoring on a ra
 - General quality testing, especially with data logging, as that shouldn't fail
 
 ### Visualisation
+- ~~Change how many minor ticks are shown based on the amount of history~~
+- Change how many major ticks are shown based on the amount of history
+  - maybe use weeks instead of days when axis gets too long
 
 ### Fan
 - Maybe control fan using raspberry pi, regulate humidity
