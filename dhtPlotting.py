@@ -12,7 +12,7 @@ import matplotlib
 matplotlib.use('Qt5Agg')
 # matplotlib.use('TkAgg')
 
-def plotDHT(connection_config: dict):
+def plotDHT(connection_config: dict, *,event_loop_interval: float = 0.5, update_interval = 5):
 
     DHT_db = DHTConnection(connection_config, True)
 
@@ -101,9 +101,8 @@ def plotDHT(connection_config: dict):
     print(f"Draw the initial figure: {time.time()-t: 2.4f}")
 
     # Loop intervals
-    # The time (seconds) to wait between each event loop cycle
-    event_loop_interval = 0.05
-    update_interval = 2  # The time (seconds) to wait between each update
+    # event_loop_interval# The time (seconds) to wait between each event loop cycle
+    # update_interval  # The time (seconds) to wait between each update
     num_update_loop_cycles = update_interval / event_loop_interval
 
     loop_counter = count()
@@ -199,7 +198,7 @@ HaydensPC_connection_config = {
 
 if __name__ == "__main__":
     # Server connection details
-    plotDHT(HaydensPC_connection_config)
+    plotDHT(HaydensPC_connection_config, event_loop_interval=0.05, update_interval=2)
     plotDHT(raspi_connection_config)
 
 
