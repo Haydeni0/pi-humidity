@@ -1,4 +1,4 @@
-SELECT * FROM dht_inside WHERE dtime >= now() - INTERVAL 2 DAY ORDER BY dtime DESC;
+SELECT * FROM dht_inside WHERE dtime >= now() - INTERVAL 2 DAY ORDER BY dtime DESC LIMIT 100;
 
 # How many data points are in the last time period
 SELECT COUNT(A.dtime) FROM (SELECT * FROM dht_inside WHERE dtime >= now() - INTERVAL 1 MINUTE) AS A;
