@@ -10,7 +10,7 @@ from itertools import count
 
 import matplotlib
 matplotlib.use('Qt5Agg')
-matplotlib.use('TkAgg')
+# matplotlib.use('TkAgg')
 
 def plotDHT(connection_config: dict):
 
