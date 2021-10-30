@@ -10,9 +10,13 @@ from itertools import count
 
 import matplotlib
 matplotlib.use('Qt5Agg')
-# matplotlib.use('TkAgg')
 
-def plotDHT(connection_config: dict, *,event_loop_interval: float = 0.5, update_interval = 5):
+font = {'size': 19}
+
+matplotlib.rc('font', **font)
+
+
+def plotDHT(connection_config: dict, *, event_loop_interval: float = 0.5, update_interval=5):
 
     DHT_db = DHTConnection(connection_config, True)
 
@@ -35,11 +39,11 @@ def plotDHT(connection_config: dict, *,event_loop_interval: float = 0.5, update_
     # Set xtick locations and formats
     ax_H.xaxis.set_major_locator(mdates.HourLocator(byhour=[0]))
     ax_H.xaxis.set_minor_locator(mdates.HourLocator(byhour=range(0, 23, 2)))
-    ax_H.xaxis.set_major_formatter(mdates.DateFormatter("%A"))
+    ax_H.xaxis.set_major_formatter(mdates.DateFormatter("%a"))
     ax_H.xaxis.set_minor_formatter(mdates.DateFormatter("%Hh"))
     ax_T.xaxis.set_major_locator(mdates.HourLocator(byhour=[0]))
     ax_T.xaxis.set_minor_locator(mdates.HourLocator(byhour=range(0, 23, 2)))
-    ax_T.xaxis.set_major_formatter(mdates.DateFormatter("%A"))
+    ax_T.xaxis.set_major_formatter(mdates.DateFormatter("%a"))
     ax_T.xaxis.set_minor_formatter(mdates.DateFormatter("%Hh"))
     line_H_inside, = ax_H.plot(
         inside_sensor.D_grid_centres, inside_sensor.H, label="Inside")
@@ -50,11 +54,14 @@ def plotDHT(connection_config: dict, *,event_loop_interval: float = 0.5, update_
     line_T_outside, = ax_T.plot(
         outside_sensor.D_grid_centres, outside_sensor.T, label="Outside")
     print(f"Set up initial figure: {time.time()-t: 2.4f}")
+    # Set major tick font size
+    ax_H.xaxis.set_tick_params(labelsize=30)
+    ax_T.xaxis.set_tick_params(labelsize=30)
     # Set colours
-    line_H_inside.set_color("#74A122") # Green
-    line_T_inside.set_color("#74A122") # Green
-    line_H_outside.set_color("#D3042F") # Red
-    line_T_outside.set_color("#D3042F") # Green
+    line_H_inside.set_color("#74A122")  # Green
+    line_T_inside.set_color("#74A122")  # Green
+    line_H_outside.set_color("#D3042F")  # Red
+    line_T_outside.set_color("#D3042F")  # Green
     # Set linewidths
     line_H_inside.set_linewidth(3)
     line_T_inside.set_linewidth(3)
@@ -82,9 +89,8 @@ def plotDHT(connection_config: dict, *,event_loop_interval: float = 0.5, update_
 
     ax_H.set_ylabel("Humidity (%RH)")
     ax_T.set_ylabel("Temperature ($^\circ$C)")
-    ax_T.set_xlabel("Time (s)")
+    # ax_H.set_xlabel("Time", fontsize=30)
     print(f"Set additional plot attributes: {time.time()-t: 2.4f}")
-
 
     # Draw the initial figure
     t = time.time()
@@ -135,15 +141,14 @@ def plotDHT(connection_config: dict, *,event_loop_interval: float = 0.5, update_
                 ax_T.set_ylim(DHTSensorData.ylim_T)
 
                 # Set looptime text
-                txt = f"""
-                Average loop time (s): {np.mean(looptimes_loop): 0.3f}
-                Average query time (s): {np.mean(looptimes_update): 0.3f}
-                Average draw time (s): {np.mean(looptimes_draw): 0.3f}"""
-                avg_looptime_text.set_text(textwrap.dedent(txt))
-                # Make sure the frametime counter stays in the axis limits
-                avg_looptime_text.set_x(inside_sensor.D_grid_centres[0])
-                # Make sure the frametime counter stays in the axis limits
-                avg_looptime_text.set_y(DHTSensorData.ylim_T[0] - 2)
+                txt = f"Average loop|query|draw time (s): {np.mean(looptimes_loop): 0.3f} | {np.mean(looptimes_update): 0.3f} | {np.mean(looptimes_draw): 0.3f}"
+                # avg_looptime_text.set_text(textwrap.dedent(txt))
+                # # Make sure the frametime counter stays in the axis limits
+                # avg_looptime_text.set_x(inside_sensor.D_grid_centres[0])
+                # # Make sure the frametime counter stays in the axis limits
+                # avg_looptime_text.set_y(DHTSensorData.ylim_T[0] - 2)
+                
+                ax_T.set_xlabel(txt, fontsize=15)
 
                 # Set new data
                 line_H_inside.set_data(
@@ -170,7 +175,7 @@ def plotDHT(connection_config: dict, *,event_loop_interval: float = 0.5, update_
 
                 # Store the time it takes to draw
                 looptimes_draw.append(time.time() - draw_start_time)
-                
+
         else:
             looptimes_loop.append(time.time() - loop_start_time)
 
@@ -178,7 +183,7 @@ def plotDHT(connection_config: dict, *,event_loop_interval: float = 0.5, update_
         time.sleep(event_loop_interval)
 
 
-# Raspberry pi zero WH MySQL server 
+# Raspberry pi zero WH MySQL server
 raspi_connection_config = {
     "host": '192.168.1.46',
     "database": "pi_humidity",
@@ -198,9 +203,6 @@ HaydensPC_connection_config = {
 
 if __name__ == "__main__":
     # Server connection details
-    plotDHT(HaydensPC_connection_config, event_loop_interval=0.05, update_interval=2)
+    plotDHT(HaydensPC_connection_config,
+            event_loop_interval=0.05, update_interval=2)
     plotDHT(raspi_connection_config)
-
-
-
-
