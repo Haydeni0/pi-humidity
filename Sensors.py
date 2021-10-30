@@ -12,7 +12,7 @@ from utils import timing
 
 
 class DHTSensorData:
-    __history_timedelta = datetime.timedelta(hours=48)
+    history_timedelta = datetime.timedelta(days=2)
     # assert(history_timedelta < datetime.timedelta(days=7)) # Should there be a maximum?
     # Y axes limits are also contained within this class as a static variable
     ylim_H_buffer = 5  # The amount to add on to the top and bottom of the limits
@@ -22,7 +22,7 @@ class DHTSensorData:
     ylim_T = []
     # How many bins should there be in the datetime grid
     __num_grid = 800
-    __grid_resolution = __history_timedelta/__num_grid  # Width of one grid bin
+    __grid_resolution = history_timedelta/__num_grid  # Width of one grid bin
 
     def __init__(self, DHT_db: DHTConnection, table_name: str):
         self.DHT_db = DHT_db
@@ -75,7 +75,7 @@ class DHTSensorData:
 
         # Get the datetime interval to query data from
         current_time = datetime.datetime.now()
-        start_dtime = current_time - DHTSensorData.__history_timedelta
+        start_dtime = current_time - DHTSensorData.history_timedelta
         # Store the last time that the server was queried
         self.last_queried_time = current_time
 
@@ -160,7 +160,7 @@ class DHTSensorData:
         else:
             # When the previous data is too old, and the entire grid needs to be remade
             new_grid_edges = np.array(
-                [current_time - DHTSensorData.__history_timedelta +
+                [current_time - DHTSensorData.history_timedelta +
                     _*self.__grid_resolution for _ in range(num_new_edges)])
         new_grid_centres = new_grid_edges[:-1] + 0.5*self.__grid_resolution
 

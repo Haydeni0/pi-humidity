@@ -40,12 +40,13 @@ def plotDHT(connection_config: dict, *, event_loop_interval: float = 0.5, update
     ax_H.grid(True)
     ax_T.grid(True)
     # Set xtick locations and formats
+    minor_tick_interval = max(1, int(DHTSensorData.history_timedelta.days))
     ax_H.xaxis.set_major_locator(mdates.HourLocator(byhour=[0]))
-    ax_H.xaxis.set_minor_locator(mdates.HourLocator(byhour=range(0, 23, 2)))
+    ax_H.xaxis.set_minor_locator(mdates.HourLocator(byhour=range(0, 23, minor_tick_interval)))
     ax_H.xaxis.set_major_formatter(mdates.DateFormatter("%a"))
     ax_H.xaxis.set_minor_formatter(mdates.DateFormatter("%Hh"))
     ax_T.xaxis.set_major_locator(mdates.HourLocator(byhour=[0]))
-    ax_T.xaxis.set_minor_locator(mdates.HourLocator(byhour=range(0, 23, 2)))
+    ax_T.xaxis.set_minor_locator(mdates.HourLocator(byhour=range(0, 23, minor_tick_interval)))
     ax_T.xaxis.set_major_formatter(mdates.DateFormatter("%a"))
     ax_T.xaxis.set_minor_formatter(mdates.DateFormatter("%Hh"))
     line_H_inside, = ax_H.plot(
