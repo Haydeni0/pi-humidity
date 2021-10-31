@@ -32,7 +32,7 @@ def setUpFigure(inside_sensor: DHTSensorData, outside_sensor: DHTSensorData):
         figManager = plt.get_current_fig_manager()
         figManager.window.showMaximized()
 
-    def setUpAxes(ax: matplotlib.axes._subplots.AxesSubplot, xlim: list, ylim: list):
+    def setUpAxes(ax, xlim: list, ylim: list):
         # Show grid
         ax.grid(True)
         # Set xtick locations and formats
