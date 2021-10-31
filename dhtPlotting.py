@@ -19,7 +19,7 @@ font = {'size': 19}
 matplotlib.rc('font', **font)
 
 
-def setUpFigure(inside_sensor, outside_sensor):
+def setUpFigure(inside_sensor: DHTSensorData, outside_sensor: DHTSensorData):
     # Set up figure
     fig = plt.figure()
     # Make subplots for separate temp/humidity
@@ -32,7 +32,7 @@ def setUpFigure(inside_sensor, outside_sensor):
         figManager = plt.get_current_fig_manager()
         figManager.window.showMaximized()
 
-    def setUpAxes(ax, xlim, ylim):
+    def setUpAxes(ax: matplotlib.axes._subplots.AxesSubplot, xlim: list, ylim: list):
         # Show grid
         ax.grid(True)
         # Set xtick locations and formats
@@ -45,7 +45,7 @@ def setUpFigure(inside_sensor, outside_sensor):
         # Set major tick font size
         ax.xaxis.set_tick_params(labelsize=30)
         # Set yaxis ticks on left and right
-        ax.tick_params(labelright=True)   
+        ax.tick_params(labelright=True)
         # Set x and y axes limits
         ax.set_xlim(xlim)
         ax.set_ylim(ylim)
@@ -74,7 +74,7 @@ def setUpFigure(inside_sensor, outside_sensor):
     line_T_outside.set_linewidth(3)
     # Make legend
     ax_H.legend(loc="upper left")
-    
+
     # Set axis labels
     ax_H.set_ylabel("Humidity (%RH)")
     ax_T.set_ylabel("Temperature ($^\circ$C)")
@@ -87,12 +87,15 @@ def setUpFigure(inside_sensor, outside_sensor):
     plt.show(block=False)
     # Draw and flush the plot twice more, not sure why this has to happen,
     # but otherwise we have to wait for two successful iterations of the while loop
+    # before we actually see the plot
     fig.canvas.draw()
     fig.canvas.flush_events()
     fig.canvas.draw()
     fig.canvas.flush_events()
 
     return fig, ax_H, ax_T, line_H_inside, line_T_inside, line_H_outside, line_T_outside
+
+# Set up figure and run the event loop for reading from the database and plotting DHT data
 
 
 def plotDHT(connection_config: dict, *, event_loop_interval: float = 0.5, update_interval=5):
@@ -206,6 +209,7 @@ HaydensPC_connection_config = {
 
 if __name__ == "__main__":
     # Server connection details
+    # Use the local server when run from the windows pc, for faster queries
     plotDHT(HaydensPC_connection_config,
             event_loop_interval=0.05, update_interval=2)
     plotDHT(raspi_connection_config)
