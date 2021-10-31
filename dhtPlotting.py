@@ -19,36 +19,41 @@ font = {'size': 19}
 matplotlib.rc('font', **font)
 
 
-def plotDHT(connection_config: dict, *, event_loop_interval: float = 0.5, update_interval=5):
-
-    DHT_db = DHTConnection(connection_config, True)
-
-    t = time.time()
-    inside_sensor = DHTSensorData(DHT_db, "dht_inside")
-    outside_sensor = DHTSensorData(DHT_db, "dht_outside")
-    print(f"Set up DHTSensorData: {time.time()-t: 2.4f}")
-
-    # Initial plot
-    t = time.time()
+def setUpFigure(inside_sensor: DHTSensorData, outside_sensor: DHTSensorData):
+    # Set up figure
     fig = plt.figure()
     # Make subplots for separate temp/humidity
     ax_H = fig.add_subplot(2, 1, 1)
     ax_T = fig.add_subplot(2, 1, 2)
-    # # Set tight layout
+    # Set tight layout
     fig.tight_layout()
-    # Show grid
-    ax_H.grid(True)
-    ax_T.grid(True)
-    # Set xtick locations and formats
-    minor_tick_interval = max(1, int(DHTSensorData.history_timedelta.days))
-    ax_H.xaxis.set_major_locator(mdates.HourLocator(byhour=[0]))
-    ax_H.xaxis.set_minor_locator(mdates.HourLocator(byhour=range(0, 23, minor_tick_interval)))
-    ax_H.xaxis.set_major_formatter(mdates.DateFormatter("%a"))
-    ax_H.xaxis.set_minor_formatter(mdates.DateFormatter("%Hh"))
-    ax_T.xaxis.set_major_locator(mdates.HourLocator(byhour=[0]))
-    ax_T.xaxis.set_minor_locator(mdates.HourLocator(byhour=range(0, 23, minor_tick_interval)))
-    ax_T.xaxis.set_major_formatter(mdates.DateFormatter("%a"))
-    ax_T.xaxis.set_minor_formatter(mdates.DateFormatter("%Hh"))
+    # Maximise the window (Qt5Agg specific)
+    if matplotlib.get_backend() == "Qt5Agg":
+        figManager = plt.get_current_fig_manager()
+        figManager.window.showMaximized()
+
+    def setUpAxes(ax: matplotlib.axes._subplots.AxesSubplot, xlim: list, ylim: list):
+        # Show grid
+        ax.grid(True)
+        # Set xtick locations and formats
+        minor_tick_interval = max(1, int(DHTSensorData.history_timedelta.days))
+        ax.xaxis.set_major_locator(mdates.HourLocator(byhour=[0]))
+        ax.xaxis.set_minor_locator(mdates.HourLocator(
+            byhour=range(0, 23, minor_tick_interval)))
+        ax.xaxis.set_major_formatter(mdates.DateFormatter("%a"))
+        ax.xaxis.set_minor_formatter(mdates.DateFormatter("%Hh"))
+        # Set major tick font size
+        ax.xaxis.set_tick_params(labelsize=30)
+        # Set yaxis ticks on left and right
+        ax.tick_params(labelright=True)
+        # Set x and y axes limits
+        ax.set_xlim(xlim)
+        ax.set_ylim(ylim)
+
+    xlim = [inside_sensor.D_grid_centres[0], inside_sensor.D_grid_centres[-1]]
+    setUpAxes(ax_H, xlim, DHTSensorData.ylim_H)
+    setUpAxes(ax_T, xlim, DHTSensorData.ylim_T)
+
     line_H_inside, = ax_H.plot(
         inside_sensor.D_grid_centres, inside_sensor.H, label="Inside")
     line_T_inside, = ax_T.plot(
@@ -57,11 +62,7 @@ def plotDHT(connection_config: dict, *, event_loop_interval: float = 0.5, update
         outside_sensor.D_grid_centres, outside_sensor.H, label="Outside")
     line_T_outside, = ax_T.plot(
         outside_sensor.D_grid_centres, outside_sensor.T, label="Outside")
-    print(f"Set up initial figure: {time.time()-t: 2.4f}")
-    # Set major tick font size
-    ax_H.xaxis.set_tick_params(labelsize=30)
-    ax_T.xaxis.set_tick_params(labelsize=30)
-    # Set colours
+    # Set line colours
     line_H_inside.set_color("#74A122")  # Green
     line_T_inside.set_color("#74A122")  # Green
     line_H_outside.set_color("#D3042F")  # Red
@@ -74,39 +75,44 @@ def plotDHT(connection_config: dict, *, event_loop_interval: float = 0.5, update
     # Make legend
     ax_H.legend(loc="upper left")
 
-    # Maximise the window (Qt5Agg specific)
-    if matplotlib.get_backend() == "Qt5Agg":
-        figManager = plt.get_current_fig_manager()
-        figManager.window.showMaximized()
-
-    t = time.time()
-    # Set x and y axes limits
-    # Set these using only the dates from the inside sensor
-    ax_H.set_xlim(
-        inside_sensor.D_grid_centres[0], inside_sensor.D_grid_centres[-1])
-    ax_T.set_xlim(
-        inside_sensor.D_grid_centres[0], inside_sensor.D_grid_centres[-1])
-    ax_H.set_ylim(DHTSensorData.ylim_H)
-    ax_T.set_ylim(DHTSensorData.ylim_T)
-
+    # Set axis labels
     ax_H.set_ylabel("Humidity (%RH)")
     ax_T.set_ylabel("Temperature ($^\circ$C)")
-    # ax_H.set_xlabel("Time", fontsize=30)
-    print(f"Set additional plot attributes: {time.time()-t: 2.4f}")
+    ax_T.set_xlabel("waiting for diagnostic info", fontsize=15)
 
     # Draw the initial figure
-    t = time.time()
     fig.canvas.draw()
     fig.canvas.flush_events()
     # Use block=False so that we have control of the figure event loop
     plt.show(block=False)
     # Draw and flush the plot twice more, not sure why this has to happen,
     # but otherwise we have to wait for two successful iterations of the while loop
+    # before we actually see the plot
     fig.canvas.draw()
     fig.canvas.flush_events()
     fig.canvas.draw()
     fig.canvas.flush_events()
-    print(f"Draw the initial figure: {time.time()-t: 2.4f}")
+
+    return fig, ax_H, ax_T, line_H_inside, line_T_inside, line_H_outside, line_T_outside
+
+# Set up figure and run the event loop for reading from the database and plotting DHT data
+
+
+def plotDHT(connection_config: dict, *, event_loop_interval: float = 0.5, update_interval=5):
+    # Connect to the database
+    DHT_db = DHTConnection(connection_config, True)
+
+    # Set up SensorData classes (get data from database and organise)
+    t = time.time()
+    inside_sensor = DHTSensorData(DHT_db, "dht_inside")
+    outside_sensor = DHTSensorData(DHT_db, "dht_outside")
+    print(f"Set up DHTSensorData: {time.time()-t: 2.4f}")
+
+    # Set up figure
+    t = time.time()
+    fig, ax_H, ax_T, line_H_inside, line_T_inside, line_H_outside, line_T_outside = \
+        setUpFigure(inside_sensor, outside_sensor)
+    print(f"Set up the initial figure: {time.time()-t: 2.4f}")
 
     # Loop intervals
     # event_loop_interval# The time (seconds) to wait between each event loop cycle
@@ -143,12 +149,12 @@ def plotDHT(connection_config: dict, *, event_loop_interval: float = 0.5, update
                 ax_T.set_ylim(DHTSensorData.ylim_T)
 
                 # Set looptime text
-                txt = f"""
+                diagnostic_txt = f"""
                 Average loop|query|draw time (s): {np.mean(looptimes_loop): 0.3f} | {np.mean(looptimes_update): 0.3f} | {np.mean(looptimes_draw): 0.3f}
                 Last updated: {inside_sensor.last_queried_time.strftime("%a %H:%M:%S")}
                 """
-                
-                ax_T.set_xlabel(textwrap.dedent(txt), fontsize=15)
+
+                ax_T.set_xlabel(textwrap.dedent(diagnostic_txt), fontsize=15)
 
                 # Set new data
                 line_H_inside.set_data(
@@ -203,6 +209,7 @@ HaydensPC_connection_config = {
 
 if __name__ == "__main__":
     # Server connection details
+    # Use the local server when run from the windows pc, for faster queries
     plotDHT(HaydensPC_connection_config,
             event_loop_interval=0.05, update_interval=2)
     plotDHT(raspi_connection_config)
