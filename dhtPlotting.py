@@ -20,14 +20,16 @@ matplotlib.rc('font', **font)
 
 
 def plotDHT(connection_config: dict, *, event_loop_interval: float = 0.5, update_interval=5):
-
+    # Connect to the database
     DHT_db = DHTConnection(connection_config, True)
-
+    
+    # Set up SensorData classes (get data from database and organise)
     t = time.time()
     inside_sensor = DHTSensorData(DHT_db, "dht_inside")
     outside_sensor = DHTSensorData(DHT_db, "dht_outside")
     print(f"Set up DHTSensorData: {time.time()-t: 2.4f}")
 
+    # Set up plotting
     # Initial plot
     t = time.time()
     fig = plt.figure()
@@ -57,10 +59,12 @@ def plotDHT(connection_config: dict, *, event_loop_interval: float = 0.5, update
         outside_sensor.D_grid_centres, outside_sensor.H, label="Outside")
     line_T_outside, = ax_T.plot(
         outside_sensor.D_grid_centres, outside_sensor.T, label="Outside")
-    print(f"Set up initial figure: {time.time()-t: 2.4f}")
     # Set major tick font size
     ax_H.xaxis.set_tick_params(labelsize=30)
     ax_T.xaxis.set_tick_params(labelsize=30)
+    # Set yaxis ticks on left and right
+    ax_H.tick_params(labelright=True)
+    ax_T.tick_params(labelright=True)
     # Set colours
     line_H_inside.set_color("#74A122")  # Green
     line_T_inside.set_color("#74A122")  # Green
@@ -73,13 +77,10 @@ def plotDHT(connection_config: dict, *, event_loop_interval: float = 0.5, update
     line_T_outside.set_linewidth(3)
     # Make legend
     ax_H.legend(loc="upper left")
-
     # Maximise the window (Qt5Agg specific)
     if matplotlib.get_backend() == "Qt5Agg":
         figManager = plt.get_current_fig_manager()
         figManager.window.showMaximized()
-
-    t = time.time()
     # Set x and y axes limits
     # Set these using only the dates from the inside sensor
     ax_H.set_xlim(
@@ -88,11 +89,11 @@ def plotDHT(connection_config: dict, *, event_loop_interval: float = 0.5, update
         inside_sensor.D_grid_centres[0], inside_sensor.D_grid_centres[-1])
     ax_H.set_ylim(DHTSensorData.ylim_H)
     ax_T.set_ylim(DHTSensorData.ylim_T)
-
+    # Set axis labels
     ax_H.set_ylabel("Humidity (%RH)")
     ax_T.set_ylabel("Temperature ($^\circ$C)")
-    # ax_H.set_xlabel("Time", fontsize=30)
-    print(f"Set additional plot attributes: {time.time()-t: 2.4f}")
+    ax_T.set_xlabel("waiting for diagnostic info", fontsize=15)
+    print(f"Set up initial figure: {time.time()-t: 2.4f}")
 
     # Draw the initial figure
     t = time.time()
