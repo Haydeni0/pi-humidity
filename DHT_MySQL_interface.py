@@ -114,12 +114,17 @@ class DHTConnection:
             else:
                 print(err)
 
-    def sendObservation(self, table_name: str, DHT: ObsDHT):
+    def sendObservation(self, table_name: str, DHT: ObsDHT, *, ignore_insert_error: bool = False):
         # Send a DHT observation to the table in the database
+        if ignore_insert_error:
+            # Ignore insertion errors if specified
+            ignore = "IGNORE"
+        else:
+            ignore = ""
         try:
             self.cursor.execute("START TRANSACTION;")
             self.cursor.execute(
-                f"INSERT INTO {table_name} (dtime, humidity, temperature)\
+                f"INSERT {ignore} INTO {table_name} (dtime, humidity, temperature)\
                     VALUES ('{DHT.D}', {DHT.H:0.1f}, {DHT.T: 0.1f});"
             )
             self.cursor.execute("COMMIT;")

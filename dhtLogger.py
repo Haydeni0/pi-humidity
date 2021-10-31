@@ -55,8 +55,8 @@ while True:
     )
 
     # Send the observations to the server
-    pi_humidity_SQL.sendObservation(TABLE_NAME_inside, inside_obs)
-    pi_humidity_SQL.sendObservation(TABLE_NAME_outside, outside_obs)
+    pi_humidity_SQL.sendObservation(TABLE_NAME_inside, inside_obs, ignore_insert_error=True)
+    pi_humidity_SQL.sendObservation(TABLE_NAME_outside, outside_obs, ignore_insert_error=True)
 
     # Wait between sensor readings
     time.sleep(log_interval)
