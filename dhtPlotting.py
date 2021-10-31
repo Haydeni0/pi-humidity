@@ -19,19 +19,9 @@ font = {'size': 19}
 matplotlib.rc('font', **font)
 
 
-def plotDHT(connection_config: dict, *, event_loop_interval: float = 0.5, update_interval=5):
-    # Connect to the database
-    DHT_db = DHTConnection(connection_config, True)
-    
-    # Set up SensorData classes (get data from database and organise)
-    t = time.time()
-    inside_sensor = DHTSensorData(DHT_db, "dht_inside")
-    outside_sensor = DHTSensorData(DHT_db, "dht_outside")
-    print(f"Set up DHTSensorData: {time.time()-t: 2.4f}")
 
-    # Set up plotting
-    # Initial plot
-    t = time.time()
+def setUpFigure(inside_sensor, outside_sensor):
+    # Set up figure
     fig = plt.figure()
     # Make subplots for separate temp/humidity
     ax_H = fig.add_subplot(2, 1, 1)
@@ -44,11 +34,13 @@ def plotDHT(connection_config: dict, *, event_loop_interval: float = 0.5, update
     # Set xtick locations and formats
     minor_tick_interval = max(1, int(DHTSensorData.history_timedelta.days))
     ax_H.xaxis.set_major_locator(mdates.HourLocator(byhour=[0]))
-    ax_H.xaxis.set_minor_locator(mdates.HourLocator(byhour=range(0, 23, minor_tick_interval)))
+    ax_H.xaxis.set_minor_locator(mdates.HourLocator(
+        byhour=range(0, 23, minor_tick_interval)))
     ax_H.xaxis.set_major_formatter(mdates.DateFormatter("%a"))
     ax_H.xaxis.set_minor_formatter(mdates.DateFormatter("%Hh"))
     ax_T.xaxis.set_major_locator(mdates.HourLocator(byhour=[0]))
-    ax_T.xaxis.set_minor_locator(mdates.HourLocator(byhour=range(0, 23, minor_tick_interval)))
+    ax_T.xaxis.set_minor_locator(mdates.HourLocator(
+        byhour=range(0, 23, minor_tick_interval)))
     ax_T.xaxis.set_major_formatter(mdates.DateFormatter("%a"))
     ax_T.xaxis.set_minor_formatter(mdates.DateFormatter("%Hh"))
     line_H_inside, = ax_H.plot(
@@ -93,10 +85,8 @@ def plotDHT(connection_config: dict, *, event_loop_interval: float = 0.5, update
     ax_H.set_ylabel("Humidity (%RH)")
     ax_T.set_ylabel("Temperature ($^\circ$C)")
     ax_T.set_xlabel("waiting for diagnostic info", fontsize=15)
-    print(f"Set up initial figure: {time.time()-t: 2.4f}")
 
     # Draw the initial figure
-    t = time.time()
     fig.canvas.draw()
     fig.canvas.flush_events()
     # Use block=False so that we have control of the figure event loop
@@ -107,6 +97,24 @@ def plotDHT(connection_config: dict, *, event_loop_interval: float = 0.5, update
     fig.canvas.flush_events()
     fig.canvas.draw()
     fig.canvas.flush_events()
+
+    return fig, ax_H, ax_T, line_H_inside, line_T_inside, line_H_outside, line_T_outside
+
+
+def plotDHT(connection_config: dict, *, event_loop_interval: float = 0.5, update_interval=5):
+    # Connect to the database
+    DHT_db = DHTConnection(connection_config, True)
+
+    # Set up SensorData classes (get data from database and organise)
+    t = time.time()
+    inside_sensor = DHTSensorData(DHT_db, "dht_inside")
+    outside_sensor = DHTSensorData(DHT_db, "dht_outside")
+    print(f"Set up DHTSensorData: {time.time()-t: 2.4f}")
+
+    # Set up figure
+    t = time.time()
+    fig, ax_H, ax_T, line_H_inside, line_T_inside, line_H_outside, line_T_outside = \
+        setUpFigure(inside_sensor, outside_sensor)
     print(f"Draw the initial figure: {time.time()-t: 2.4f}")
 
     # Loop intervals
@@ -148,7 +156,7 @@ def plotDHT(connection_config: dict, *, event_loop_interval: float = 0.5, update
                 Average loop|query|draw time (s): {np.mean(looptimes_loop): 0.3f} | {np.mean(looptimes_update): 0.3f} | {np.mean(looptimes_draw): 0.3f}
                 Last updated: {inside_sensor.last_queried_time.strftime("%a %H:%M:%S")}
                 """
-                
+
                 ax_T.set_xlabel(textwrap.dedent(txt), fontsize=15)
 
                 # Set new data
