@@ -1,40 +1,31 @@
 import datetime
+import inspect
+import os
+import sys
 from typing import Tuple
 
 import numpy as np
 
-import mysql.connector
-from mysql.connector import Error
-from mysql.connector import errorcode
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+sys.path.insert(0, parentdir) 
+from DHT_MySQL_interface import DHTConnection, ObsDHT
 
-connection_config = {
-    "host": '192.168.1.46',
-    "database": "pi_humidity",
+HaydensPC_connection_config = {
+    "host": 'localhost',
+    "database": "test_pi_humidity",
     "user": "haydeni0",
-    "password": "raspizeroWH_SQL",
+    "password": "OSzP34,@H0.I2m$sZpI<",
     'raise_on_warnings': True
 }
 
-try:
-    connection_established = True
-    # Connect to server and database
-    connection = mysql.connector.connect(**connection_config)
-    db_Info = connection.get_server_info()
-    print("Connected to MySQL Server version ", db_Info)
+DHT_db = DHTConnection(HaydensPC_connection_config, True)
 
-    # Connect a cursor to the server
-    cursor = connection.cursor()
+# obs = ObsDHT(datetime.datetime.now(), None, None)
+# # obs = ObsDHT(datetime.datetime.now(), 80, 20)
 
-    cursor.execute("SELECT DATABASE();")
-    record = cursor.fetchone()
-    print("Connected to database: ", record[0])
-    print("="*100)
+# DHT_db.sendObservation("dht_inside", obs)
 
-except Error as err:
-    connection_established = False
-    if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-        print("Something is wrong with your user name or password")
-    elif err.errno == errorcode.ER_BAD_DB_ERROR:
-        print("Database does not exist")
-    else:
-        print(err)
+queried_obs = DHT_db.getObservations("dht_inside", datetime.datetime.now()-datetime.timedelta(hours=1), datetime.datetime.now())
+
+print(queried_obs)

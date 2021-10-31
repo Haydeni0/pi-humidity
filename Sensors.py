@@ -129,7 +129,7 @@ class DHTSensorData:
         # Check for new data, and update the grid if required.
         # Returns True if the grid is updated, otherwise returns false
 
-        # Get new data from the csv file
+        # Get new data from the database
         D_new, H_new, T_new = self.__loadNewData()
         # Add to the buffer
         self.__D_buffer.extend(deque(D_new))

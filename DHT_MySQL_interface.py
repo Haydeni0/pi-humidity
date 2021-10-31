@@ -89,6 +89,9 @@ class DHTConnection:
                 D = np.array(next(z))
                 H = np.array(next(z))
                 T = np.array(next(z))
+                # Replace None values with nan so they can be handled more easily
+                H[H == np.array(None)] = np.nan
+                T[T == np.array(None)] = np.nan
             else:
                 D = np.array([])
                 H = np.array([])

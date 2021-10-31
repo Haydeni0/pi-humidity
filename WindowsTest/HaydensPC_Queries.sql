@@ -25,7 +25,9 @@ SOURCE_PASSWORD='raspizeroWH_REPLICA',
 SOURCE_LOG_FILE='mysql-bin.000005',
 SOURCE_LOG_POS=648460;
 
+# Test inserting null values
 
+# TESTING WITH TEST DB
 USE test_pi_humidity;
 SELECT * FROM dht_inside;
 #INSERT IGNORE INTO dht_inside (dtime, humidity, temperature) VALUES ("2021-10-16 13:41:32.8","79.9","20");

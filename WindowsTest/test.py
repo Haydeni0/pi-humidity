@@ -11,13 +11,11 @@ import sys
 import dask.dataframe as dd
 import numpy as np
 import pandas as pd
-import scipy.signal
-from utils import timing
 
 
-a = np.searchsorted([1,5,10], [], side="right")
 
-
+a = np.array([1,2,3, None, 4, None])
+a[a == np.array(None)] = np.nan
 
 print(a)
 pass
