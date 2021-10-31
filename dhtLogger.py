@@ -45,13 +45,13 @@ while True:
     current_time = datetime.datetime.now()
     inside_obs = ObsDHT(
         D=current_time,
-        H=utils.noneToNan(H_inside),
-        T=utils.noneToNan(T_inside)
+        H=H_inside,
+        T=T_inside
     )
     outside_obs = ObsDHT(
         D=current_time,
-        H=utils.noneToNan(H_outside),
-        T=utils.noneToNan(T_outside)
+        H=H_outside,
+        T=T_outside
     )
 
     # Send the observations to the server

@@ -121,11 +121,21 @@ class DHTConnection:
             ignore = "IGNORE"
         else:
             ignore = ""
+
+        if DHT.H is not None:
+            H = f"{DHT.H:0.1f}"
+        else:
+            H = "NULL"
+        if DHT.T is not None:
+            T = f"{DHT.T:0.1f}"
+        else:
+            T = "NULL"
+
         try:
             self.cursor.execute("START TRANSACTION;")
             self.cursor.execute(
                 f"INSERT {ignore} INTO {table_name} (dtime, humidity, temperature)\
-                    VALUES ('{DHT.D}', {DHT.H:0.1f}, {DHT.T: 0.1f});"
+                    VALUES ('{DHT.D}', {H}, {T});"
             )
             self.cursor.execute("COMMIT;")
         except Error as err:
