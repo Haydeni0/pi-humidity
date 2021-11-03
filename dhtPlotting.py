@@ -98,7 +98,8 @@ def setUpFigure(inside_sensor: DHTSensorData, outside_sensor: DHTSensorData):
 # Set up figure and run the event loop for reading from the database and plotting DHT data
 
 
-def plotDHT(connection_config: dict, *, event_loop_interval: float = 0.5, update_interval=5):
+def plotDHT(connection_config: dict, *, event_loop_interval: float = 0.5,
+            update_interval: float = 5, fig_save_path: str = "DHT_graph.png"):
     # Connect to the database
     DHT_db = DHTConnection(connection_config, True)
 
@@ -185,7 +186,7 @@ def plotDHT(connection_config: dict, *, event_loop_interval: float = 0.5, update
 
                 # Save the figure to the local directory (this takes a while)
                 save_start_time = time.time()
-                plt.savefig("./DHT_graph.png")
+                plt.savefig(fig_save_path)
                 looptimes_save.append(time.time() - save_start_time)
 
         else:
