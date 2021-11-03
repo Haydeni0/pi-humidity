@@ -125,6 +125,7 @@ def plotDHT(connection_config: dict, *, event_loop_interval: float = 0.5, update
     looptimes_draw = deque([0], maxlen=20)
     looptimes_update = deque([0], maxlen=20)
     looptimes_loop = deque([0], maxlen=20)
+    looptimes_save = deque([0], maxlen=20)
 
     while True:
         loop_start_time = time.time()
@@ -150,7 +151,7 @@ def plotDHT(connection_config: dict, *, event_loop_interval: float = 0.5, update
 
                 # Set looptime text
                 diagnostic_txt = f"""
-                Average loop|query|draw time (s): {np.mean(looptimes_loop): 0.3f} | {np.mean(looptimes_update): 0.3f} | {np.mean(looptimes_draw): 0.3f}
+                Average loop|query|save|draw time (s): {np.mean(looptimes_loop): 0.3f} | {np.mean(looptimes_update): 0.3f} | {np.mean(looptimes_save): 0.3f} | {np.mean(looptimes_draw): 0.3f}
                 Last updated: {inside_sensor.last_queried_time.strftime("%a %H:%M:%S")}
                 """
 
@@ -181,6 +182,11 @@ def plotDHT(connection_config: dict, *, event_loop_interval: float = 0.5, update
 
                 # Store the time it takes to draw
                 looptimes_draw.append(time.time() - draw_start_time)
+
+                # Save the figure to the local directory (this takes a while)
+                save_start_time = time.time()
+                plt.savefig("./DHT_graph.png")
+                looptimes_save.append(time.time() - save_start_time)
 
         else:
             looptimes_loop.append(time.time() - loop_start_time)

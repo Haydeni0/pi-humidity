@@ -10,7 +10,7 @@ I can't really remember, this is written after I fully set up everything. I'll w
 - PuTTY
   - Pageant, puttygen for ssh keys
 
-### Ordered guide
+### Ordered guide for raspberry pi installation
 
 1. Install raspberry pi OS
 2. Add SSH capabilities (to login remotely)
@@ -19,9 +19,9 @@ I can't really remember, this is written after I fully set up everything. I'll w
 3. ```sudo apt-get update``` and ```sudo apt-get upgrade```
 4. Install python3 and packages, update the required ones to the latest versions
 5. Install [git](https://projects.raspberrypi.org/en/projects/getting-started-with-git)
-   1. Also use an ssh key, as my account requires one
+   1. Also use an ssh key, as my github account requires one
 6. Install python and required modules
-   1. Includeing the [DHT22](https://pimylifeup.com/raspberry-pi-humidity-sensor-dht22/) humidity sensor stuff
+   1. Including the [DHT22](https://pimylifeup.com/raspberry-pi-humidity-sensor-dht22/) humidity sensor packages
 7. Install [MySQL](https://pimylifeup.com/raspberry-pi-mysql/)
    1. Set options in the config file to allow [external connections](https://howtoraspberrypi.com/enable-mysql-remote-connection-raspberry-pi/) and database replication: 
 
