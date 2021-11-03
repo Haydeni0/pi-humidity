@@ -10,4 +10,4 @@ connection_config = {
     'raise_on_warnings': True
 }
 
-plotDHT(connection_config, fig_save_path="/home/pi/pi-humidity/DHT_graph.png")
+plotDHT(connection_config, fig_save_path="/home/pi/pi-humidity/html/DHT_graph.png")

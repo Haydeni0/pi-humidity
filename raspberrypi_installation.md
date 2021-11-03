@@ -37,3 +37,7 @@ I can't really remember, this is written after I fully set up everything. I'll w
    1. Optionally, get it to forward the output to a file just in case an error is raised
 9.  Use the [autostart](https://learn.sparkfun.com/tutorials/how-to-run-a-raspberry-pi-program-on-startup/method-2-autostart) folder ```/home/pi/.config/autostart``` with a ```dhtPlotting.desktop``` file to start the python script once the desktop has loaded.
 10. Install package ```unclutter``` to get rid of idle mouse cursor, run on desktop load in the same manner as the python plotter
+11. Install ```nginx``` for [hosting a website](https://pimylifeup.com/raspberry-pi-nginx/) from the pi. This is to be able to access snapshots of the DHT graph from the internet.
+    - Change the default root directory of nginx in the config file ```/etc/nginx/sites-available/default``` to ```root /home/pi/pi-humidity/html```
+    - Use [noip](https://www.noip.com/support/knowledgebase/install-ip-duc-onto-raspberry-pi/) to host the website
+      - Install the noip dynamic update client on the raspi using that link above
