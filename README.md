@@ -2,14 +2,11 @@
 Repo containing code for humidity and temperature logging and monitoring on a raspberry pi zero, using two DHT22 sensors.
 
 ## To-do
+- set up https on the webserver
 
 ### Other
 - Back up an image of the fully configured pi
   - Or docker container?
-- Be able to access data from my phone?
-  - Maybe instead of something complex, just save an image of the graph every 10 mins or so
-  - Host this on a website or something able to be accessed from outside
-  - Or just send to google drive
 
 ### Data handling & ingesting
 
