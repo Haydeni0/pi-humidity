@@ -16,13 +16,17 @@ class ObsDHT:
 
 
 class DHTConnection:
+    """
+    A sort of API that connects to the DHT table in the MySQL server for easy, high-level access.
+    """
+
     def __init__(self, connection_config, raise_connection_errors=False):
         # Example connection config
         """
         connection_config = {
         "host": 'localhost',
         "database": "pi_humidity",
-        "user": "Haydeni0",
+        "user": "haydeni0",
         "password": "OSzP34,@H0.I2m$sZpI<",
         'raise_on_warnings': True
         }

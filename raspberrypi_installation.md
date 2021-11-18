@@ -1,6 +1,6 @@
 
 # A sort of guide to how the raspberry pi is set up
-I can't really remember, this is written after I fully set up everything. I'll write down what I think I did in the correct order, along with some links to the tutorials if possible.
+I can't really remember, most of this was written after I fully set up everything. I'll write down what I think I did in the correct order, along with some links to the tutorials if possible.
 
 ### Useful tools on secondary computer
 - Git
@@ -35,7 +35,7 @@ I can't really remember, this is written after I fully set up everything. I'll w
             log_bin = /var/log/mysql/mysql-bin.log # Enable binary logging for replication
             bind_address = 0.0.0.0 # Allow the server to check for external connections (using the default port 3306)
     1. Set up [replication](https://www.digitalocean.com/community/tutorials/how-to-set-up-replication-in-mysql) to a different pc
-    2. Set up monthly mysqldump database backups to google drive using rclone (contained in ```dbBackup.sh```, and put on a monthly cronjob)
+    2. Set up monthly mysqldump database backups to google drive using rclone (contained in ```dbBackup.sh``` and ```send_mysqldump.sh```, and put on a monthly cronjob)
 9. Use a cronjob at reboot to start the data logging python script
    1. Optionally, get it to forward the output to a file just in case an error is raised
 10. Use the [autostart](https://learn.sparkfun.com/tutorials/how-to-run-a-raspberry-pi-program-on-startup/method-2-autostart) folder ```/home/pi/.config/autostart``` with a ```dhtPlotting.desktop``` file to start the python script once the desktop has loaded.

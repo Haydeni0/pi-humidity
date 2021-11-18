@@ -1,7 +1,9 @@
 # pi-humidity
-Repo containing code for humidity and temperature logging and monitoring on a raspberry pi zero, using two DHT22 sensors.
+Repo containing code for humidity and temperature logging and monitoring on a (very performance limited) Raspberry Pi Zero WH, using two DHT22 sensors.
 
-Further installation instructions (for me when this eventually breaks) are given in [this guide](raspberrypi_installation.md).
+Plotting is done using a python script, as the Zero can't open a browser.
+
+Raspberry pi setup installation instructions (for me when the pi/microSD eventually breaks) are given in [this guide](raspberrypi_installation.md).
 
 ## Use case
 Logging and plotting the inside and outside humidity/temperature of an indoor terrarium that houses environment sensitive Nepenthes plants.
@@ -17,6 +19,35 @@ The local website is accessible on the internet through the use of a dynamic DNS
 
 ![DHT graph example](Media/DHT_graph_example.png "DHT graph example")
 
+---
+
+## Files
+### Data logging
+Run ```dhtLogger.py``` at boot, configured to the local SQL server and DHT22 sensors.
+
+### Plotting
+The file ```dhtPlotting.py``` contains the plotting code.
+Run this on secondary PC to debug (as raspizeroWH is very slow), set the config inside here to point at the replica SQL server for fast querying.
+
+Run ```plotRaspiDHT.py``` at desktop startup on the rpi. The SQL server config should point to the local server.
+
+### MySQL server backups
+The bash scripts ```dbBackup.sh``` and ```send_mysqldump.sh``` use rclone to backup to google drive.
+
+### Other
+```DHTutils.py```
+- Utility code for reading sensors
+
+```DHT_MySQL_interface.py```
+- Module containing MySQL API
+
+```Sensors.py```
+- Module containing class to handle data pulled from the server.
+
+```html/```
+- Directory containing basic website
+
+---
 
 ## To-do
 

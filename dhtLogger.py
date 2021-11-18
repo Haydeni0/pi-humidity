@@ -32,6 +32,7 @@ for j in range(10):
         time.sleep(5)
         continue
 
+# If we need to create a new table
 # pi_humidity_SQL.createTable(TABLE_NAME_inside)
 # pi_humidity_SQL.createTable(TABLE_NAME_outside)
 

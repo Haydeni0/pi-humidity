@@ -12,6 +12,15 @@ from utils import timing
 
 
 class DHTSensorData:
+    """
+    A class that defines an object connected to a table of the pi_humidity MySQL database 
+    using another object DHTConnection.
+    The object pulls recent data from the table and partitions it into a regular grid with a 
+    specified number of bins, and can be updated when the update() method is called.
+    This attempts to be optimised for a low memory and processing footprint when running consistently.
+    """
+
+
     history_timedelta = datetime.timedelta(days=2)
     # assert(history_timedelta < datetime.timedelta(days=7)) # Should there be a maximum?
     # Y axes limits are also contained within this class as a static variable
