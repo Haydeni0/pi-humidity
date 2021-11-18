@@ -1,7 +1,7 @@
 # pi-humidity
 Repo containing code for humidity and temperature logging and monitoring on a (very performance limited) Raspberry Pi Zero WH, using two DHT22 sensors.
 
-Plotting is done using a python script, as the Zero can't open a browser.
+Plots are displayed on a display connected to the Pi Zero and is done using an easy to run python script, as the Zero can barely open a browser.
 
 Raspberry pi setup installation instructions (for me when the pi/microSD eventually breaks) are given in [this guide](raspberrypi_installation.md).
 
@@ -15,7 +15,7 @@ The local website is accessible on the internet through the use of a dynamic DNS
 
 ![Fish tank terrarium setup](Media/FishTankTerrarium.jpg "Fish tank terrarium setup")
 
-### The graph produced
+### The graph
 
 ![DHT graph example](Media/DHT_graph_example.png "DHT graph example")
 
