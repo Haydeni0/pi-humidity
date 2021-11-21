@@ -25,7 +25,7 @@ class DHTSensorData:
     # assert(history_timedelta < datetime.timedelta(days=7)) # Should there be a maximum?
     # Y axes limits are also contained within this class as a static variable
     ylim_H_buffer = 5  # The amount to add on to the top and bottom of the limits
-    ylim_T_buffer = 3
+    ylim_T_buffer = 1
     # Store ylim in a list to do efficiently (don't repeatedly call max/min on the whole deque)
     ylim_H = []
     ylim_T = []
