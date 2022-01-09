@@ -1,4 +1,5 @@
 import datetime
+import logging
 import time
 
 import Adafruit_DHT
@@ -36,6 +37,12 @@ for j in range(10):
 # pi_humidity_SQL.createTable(TABLE_NAME_inside)
 # pi_humidity_SQL.createTable(TABLE_NAME_outside)
 
+# Set up error logging
+logger = logging.getLogger("dhtLoggerErrorLogger")
+logging_format = '%(name)s:%(levelname)s %(message)s'
+logging.basicConfig(filename='dhtLogger.log', filemode='w',
+                    format=logging_format, level=logging.WARNING)
+
 
 while True:
 
@@ -56,8 +63,11 @@ while True:
     )
 
     # Send the observations to the server
-    pi_humidity_SQL.sendObservation(TABLE_NAME_inside, inside_obs, ignore_insert_error=True)
-    pi_humidity_SQL.sendObservation(TABLE_NAME_outside, outside_obs, ignore_insert_error=True)
+    try:
+        pi_humidity_SQL.sendObservation(TABLE_NAME_inside, inside_obs, ignore_insert_error=True)
+        pi_humidity_SQL.sendObservation(TABLE_NAME_outside, outside_obs, ignore_insert_error=True)
+    except Exception as e:
+        logger.exception("Failed to send dht observation to MySQL server")
 
     # Wait between sensor readings
     time.sleep(log_interval)
