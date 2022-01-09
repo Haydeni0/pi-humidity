@@ -4,9 +4,17 @@ SELECT * FROM dht_inside WHERE dtime BETWEEN "2021-10-31 01:29:43" AND "2021-10-
 
 
 
+
+
+
+SELECT COUNT(humidity) FROM dht_inside;
+
+# Set up replication
+FLUSH TABLES WITH READ LOCK;
 SHOW MASTER STATUS;
 SHOW VARIABLES LIKE "sql_log_bin";
 
 SHOW BINARY LOGS;
+SHOW VARIABLES LIKE 'bind_address'; # Should be 0.0.0.0 to allow connections from anywhere
 
-SHOW VARIABLES LIKE 'bind_address';
+UNLOCK TABLES;

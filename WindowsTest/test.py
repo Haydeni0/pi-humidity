@@ -1,6 +1,6 @@
 import csv
 import datetime
-from logging import error
+import logging
 import os
 from collections import deque
 from typing import Counter, Tuple
@@ -12,10 +12,16 @@ import dask.dataframe as dd
 import numpy as np
 import pandas as pd
 
+logger = logging.getLogger("testLogger")
 
-
-a = np.array([1,2,3, None, 4, None])
-a[a == np.array(None)] = np.nan
-
-print(a)
-pass
+logging_format = '%(name)s:%(levelname)s %(message)s'
+logging.basicConfig(filename='asd.log', filemode='w',
+                    format=logging_format, level=logging.INFO)
+logger.info("aeae")
+logger.warning("warning help")
+a = 5
+b = 0
+try:
+    c = a / b
+except Exception as e:
+    logger.exception("Exception occurred")
