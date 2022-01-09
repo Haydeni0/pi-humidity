@@ -1,6 +1,9 @@
 *.pyc
 __pycache__
-boot_log
 DHT_graph.png
 
+# Don't track sql dumps
 pi_humidity_dump_temp.sql
+
+# Don't track log files
+dhtLogger.log
