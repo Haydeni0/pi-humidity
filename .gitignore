@@ -2,3 +2,5 @@
 __pycache__
 boot_log
 DHT_graph.png
+
+pi_humidity_dump_temp.sql
