@@ -259,6 +259,10 @@ class DHTSensorData:
 
     @staticmethod
     def allocateToGrid(grid_edges: pd.DatetimeIndex, D_bulk: np.array, H_bulk: np.array, T_bulk: np.array) -> Tuple[deque, deque]:
+        # Given a grid (assortment of bins) of dates and dht values:
+        # In each bin assign dht observations by their datetime. 
+        # Take the median within the bins to assign their grid value.
+        
         # By construction, D_bulk should all be greater than grid_edges[0]
         # Throw an error otherwise
 
@@ -275,7 +279,7 @@ class DHTSensorData:
         H_raw = deque()
         T_raw = deque()
         for bin_idx in range(num_grid):
-            valid_indices = np.where(D_bulk_bin_idx == bin_idx+1)
+            valid_indices, = np.where(D_bulk_bin_idx == bin_idx+1)
             if len(valid_indices) > 0:
                 with warnings.catch_warnings():
                     # Catch the warnings these give, as they are useless
@@ -283,6 +287,10 @@ class DHTSensorData:
                     warnings.simplefilter("ignore", category=RuntimeWarning)
                     H_raw.append(np.median(H_bulk[valid_indices]))
                     T_raw.append(np.median(T_bulk[valid_indices]))
+            else:
+                # If there are no values assigned to the current bin, assign NaN
+                H_raw.append(np.nan)
+                T_raw.append(np.nan)
 
         return H_raw, T_raw
 
