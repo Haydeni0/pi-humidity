@@ -198,7 +198,7 @@ def plotDHT(connection_config: dict, *, event_loop_interval: float = 0.5,
 
 # Raspberry pi zero WH MySQL server
 raspi_connection_config = {
-    "host": '192.168.1.46',
+    "host": '192.168.1.109',
     "database": "pi_humidity",
     "user": "haydeni0",
     "password": "raspizeroWH_SQL",
