@@ -32,32 +32,33 @@ class DHTConnection:
         }
         """
         # Start connection
-        try:
-            self.__connection_established = True
-            # Connect to server and database
-            self.connection = mysql.connector.connect(**connection_config)
-            db_Info = self.connection.get_server_info()
-            print("Connected to MySQL Server version ", db_Info)
+        # try:
+        self.__connection_established = True
+        # Connect to server and database
+        self.connection = mysql.connector.connect(**connection_config)
+        db_Info = self.connection.get_server_info()
+        print("Connected to MySQL Server version ", db_Info)
 
-            # Connect a cursor to the server
-            self.cursor = self.connection.cursor()
+        # Connect a cursor to the server
+        self.cursor = self.connection.cursor()
 
-            self.cursor.execute("SELECT DATABASE();")
-            record = self.cursor.fetchone()
-            print("Connected to database: ", record[0])
-            print("="*100)
+        self.cursor.execute("SELECT DATABASE();")
+        record = self.cursor.fetchone()
+        print("Connected to database: ", record[0])
+        print("="*100)
 
-        except Error as err:
-            self.__connection_established = False
-            if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-                print("Something is wrong with your user name or password")
-            elif err.errno == errorcode.ER_BAD_DB_ERROR:
-                print("Database does not exist")
-            else:
-                print(err)
+        # except Error as err:
+        #     self.__connection_established = False
+        #     if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
+        #         print("Something is wrong with your user name or password")
+        #         raise()
+        #     elif err.errno == errorcode.ER_BAD_DB_ERROR:
+        #         print("Database does not exist")
+        #     else:
+        #         print(err)
 
-            if raise_connection_errors:
-                raise(err)
+        #     if raise_connection_errors:
+        #         raise(err)
 
     def __del__(self):
         # Close the server connection when instance is destroyed
