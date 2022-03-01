@@ -43,31 +43,33 @@ logging_format = '%(name)s:%(levelname)s %(message)s'
 logging.basicConfig(filename='dhtLogger.log', filemode='w',
                     format=logging_format, level=logging.WARNING)
 
+try:
+    while True:
 
-while True:
+        # Read from the sensor
+        H_inside, T_inside, H_outside, T_outside = DHTutils.read_retry_inout(DHT_SENSOR, DHT_PIN_INSIDE, DHT_PIN_OUTSIDE)
 
-    # Read from the sensor
-    H_inside, T_inside, H_outside, T_outside = DHTutils.read_retry_inout(DHT_SENSOR, DHT_PIN_INSIDE, DHT_PIN_OUTSIDE)
+        # Put observations into an ObsDHT struct 
+        current_time = datetime.datetime.now()
+        inside_obs = ObsDHT(
+            D=current_time,
+            H=H_inside,
+            T=T_inside
+        )
+        outside_obs = ObsDHT(
+            D=current_time,
+            H=H_outside,
+            T=T_outside
+        )
 
-    # Put observations into an ObsDHT struct 
-    current_time = datetime.datetime.now()
-    inside_obs = ObsDHT(
-        D=current_time,
-        H=H_inside,
-        T=T_inside
-    )
-    outside_obs = ObsDHT(
-        D=current_time,
-        H=H_outside,
-        T=T_outside
-    )
+        # Send the observations to the server
+        try:
+            pi_humidity_SQL.sendObservation(TABLE_NAME_inside, inside_obs, ignore_insert_error=True)
+            pi_humidity_SQL.sendObservation(TABLE_NAME_outside, outside_obs, ignore_insert_error=True)
+        except Exception as e:
+            logger.exception("Failed to send dht observation to MySQL server")
 
-    # Send the observations to the server
-    try:
-        pi_humidity_SQL.sendObservation(TABLE_NAME_inside, inside_obs, ignore_insert_error=True)
-        pi_humidity_SQL.sendObservation(TABLE_NAME_outside, outside_obs, ignore_insert_error=True)
-    except Exception as e:
-        logger.exception("Failed to send dht observation to MySQL server")
-
-    # Wait between sensor readings
-    time.sleep(log_interval)
+        # Wait between sensor readings
+        time.sleep(log_interval)
+except Exception as e:
+    logger.exception("Something went wrong.........")
