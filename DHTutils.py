@@ -38,4 +38,4 @@ def read_retry_inout(sensor, pin_inside, pin_outside, retries=10, delay_seconds=
     elif not done_inside and done_outside:
         return (None, None, humidity_outside, temperature_outside)
     else:
-        return (None, None)
+        return (None, None, None, None)

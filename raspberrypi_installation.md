@@ -65,6 +65,9 @@ I can't really remember, most of this was written after I fully set up everythin
             certbot certonly --webroot -w /home/pi/pi-humidity/html -d raspidht.webredirect.org
       to properly set up the certificate
     - And probably do the dhparam bit on a fast computer, other wise it will take years on the rpi
+    - Make sure both port 80 and 443 are port forwarded, and that nginx is listening on 443
+  - RENEWAL
+    - Not working at the moment, same problem as in [this](https://github.com/certbot/certbot/issues/9144) thread...
 15. [Secure](https://arstechnica.com/gadgets/2012/11/how-to-set-up-a-safe-and-secure-web-server/4/) the web server
   - Not sure this works easily, the location ```deny all``` bit caused it to not work (likely due to not knowing what is happening here)
 16. Use android app "Widgetify" to display on phone home screen, now that SSL is working
