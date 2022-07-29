@@ -37,8 +37,22 @@ I can't really remember, most of this was written after I fully set up everythin
     1. Set up [replication](https://www.digitalocean.com/community/tutorials/how-to-set-up-replication-in-mysql) to a different pc
     2. Set up monthly mysqldump database backups to google drive using rclone (contained in ```dbBackup.sh``` and ```send_mysqldump.sh```, and put on a monthly cronjob)
 9. Use a cronjob at reboot to start the data logging python script
-   1. Optionally, get it to forward the output to a file just in case an error is raised
+   
+   for example:
+
+         @reboot python3 ~/pi-humidity/dhtLogger.py 
+
+   Optionally, get it to forward the output to a file just in case an error is raised
+   
 10. Use the [autostart](https://learn.sparkfun.com/tutorials/how-to-run-a-raspberry-pi-program-on-startup/method-2-autostart) folder ```/home/pi/.config/autostart``` with a ```dhtPlotting.desktop``` file to start the python script once the desktop has loaded.
+
+    Example file contents of ```dhtPlotting.desktop```:
+    
+        [Desktop Entry]
+        Type=Application
+        Name=dhtPlotter
+        Exec=/usr/bin/python3 /home/pi/pi-humidity/plotRaspiDHT.py
+
 11. Install package ```unclutter``` to get rid of idle mouse cursor, run on desktop load in the same manner as the python plotter
 12. Install ```nginx``` for [hosting a website](https://pimylifeup.com/raspberry-pi-nginx/) from the pi. This is to be able to access snapshots of the DHT graph from the internet.
     - Change the default root directory of nginx in the config file ```/etc/nginx/sites-available/default``` to ```root /home/pi/pi-humidity/html;```
@@ -58,6 +72,11 @@ I can't really remember, most of this was written after I fully set up everythin
          login=haydeni0
          password='??????????'
          raspidht.webredirect.org
+   
+   - Run the daemon at reboot with a cronjob: edit cronjobs ->
+   
+         @reboot  sudo /usr/sbin/ddclient -daemon 300 -syslog
+
 14. Install an SSL certificate for the server
   - Use [certbot](https://certbot.eff.org/lets-encrypt/otherpip-nginx), but maybe follow the rest of the tutorial from [pimylifeup](https://pimylifeup.com/raspberry-pi-ssl-lets-encrypt/) as this is the one that finally worked.
     - Make sure to use the command
@@ -71,3 +90,4 @@ I can't really remember, most of this was written after I fully set up everythin
 15. [Secure](https://arstechnica.com/gadgets/2012/11/how-to-set-up-a-safe-and-secure-web-server/4/) the web server
   - Not sure this works easily, the location ```deny all``` bit caused it to not work (likely due to not knowing what is happening here)
 16. Use android app "Widgetify" to display on phone home screen, now that SSL is working
+17. Backup the database on a schedule monthly with crontab using [```dbBackup.sh```](dbBackup.sh)
