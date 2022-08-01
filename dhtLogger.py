@@ -38,10 +38,10 @@ for j in range(10):
 # pi_humidity_SQL.createTable(TABLE_NAME_outside)
 
 # Set up error logging
-logger = logging.getLogger("dhtLoggerErrorLogger")
+logger = logging.getLogger(__name__)
 logging_format = '%(name)s:%(levelname)s %(message)s'
 logging.basicConfig(filename='dhtLogger.log', filemode='w',
-                    format=logging_format, level=logging.WARNING)
+                    format=logging_format, level=logging.DEBUG)
 
 try:
     while True:

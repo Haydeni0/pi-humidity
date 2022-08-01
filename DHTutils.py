@@ -1,5 +1,8 @@
 import Adafruit_DHT
 import time
+import logging
+
+logger = logging.getLogger(__name__)
 
 def read_retry_inout(sensor, pin_inside, pin_outside, retries=10, delay_seconds=1, platform=None):
     """Read DHT sensor of specified sensor type (DHT11, DHT22, or AM2302) on
@@ -34,8 +37,11 @@ def read_retry_inout(sensor, pin_inside, pin_outside, retries=10, delay_seconds=
             time.sleep(delay_seconds)
 
     if done_inside and not done_outside:
+        logger.debug(f"Logging inside only: H({humidity_inside}) T({temperature_inside})")
         return (humidity_inside, temperature_inside, None, None)
     elif not done_inside and done_outside:
+        logger.debug(f"Logging outside only: H({humidity_outside}) T({temperature_outside})")
         return (None, None, humidity_outside, temperature_outside)
     else:
+        logger.debug(f"Logging none")
         return (None, None, None, None)
