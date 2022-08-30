@@ -91,3 +91,5 @@ I can't really remember, most of this was written after I fully set up everythin
   - Not sure this works easily, the location ```deny all``` bit caused it to not work (likely due to not knowing what is happening here)
 16. Use android app "Widgetify" to display on phone home screen, now that SSL is working
 17. Backup the database on a schedule monthly with crontab using [```dbBackup.sh```](dbBackup.sh)
+18. Run a [glances](https://glances.readthedocs.io/en/latest/docker.html) webserver with docker to monitor the pi
+    - Run it at startup probably
