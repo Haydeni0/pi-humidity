@@ -50,6 +50,11 @@ The bash scripts ```dbBackup.sh``` and ```send_mysqldump.sh``` use rclone to bac
 ---
 
 ## To-do
+- Make it all docker integrated so it's really easy and reliable to set up (once I have access to a more powerful pi4)
+  - Web app inside docker mapped to port 80
+  - set up a mysql or postgreSQL server inside the container
+  - How to get it to display onto the attached monitor?
+    - Maybe just from a browser on the pi
 
 ### Ideas
 - Make a detector that detects when the top door is open (high variance in humidity data)
@@ -60,6 +65,7 @@ The bash scripts ```dbBackup.sh``` and ```send_mysqldump.sh``` use rclone to bac
 
 ### Database
 - Better secure SQL server, password shouldn't be written in code (even though its purely local)
+  - Use an ini file with an ini reader module in python
 
 ### Data processing
 - do smoothing on the bins, particularly on temperature, as it looks jagged due to low resolution
