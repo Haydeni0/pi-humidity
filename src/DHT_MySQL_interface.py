@@ -3,62 +3,55 @@ from typing import Tuple
 
 import numpy as np
 
-import mysql.connector
-from mysql.connector import Error
-from mysql.connector import errorcode
+import psycopg2
+import psycopg2.extensions
 
+from dataclasses import dataclass
 
+import logging
+
+logger = logging.getLogger(__name__)
+
+@dataclass
 class ObsDHT:
-    def __init__(self, D: datetime.datetime, H: float, T: float):
-        self.D = D
-        self.H = H
-        self.T = T
+    D: datetime.datetime
+    H: float
+    T: float
 
-
+@dataclass(init=False)
 class DHTConnection:
     """
     A sort of API that connects to the DHT table in the MySQL server for easy, high-level access.
     """
+    __connection_established: bool
+    connection: psycopg2.extensions.connection
+    cursor: psycopg2.extensions.cursor
 
-    def __init__(self, connection_config, raise_connection_errors=False):
+    def __init__(self, connection_config):
         # Example connection config
         """
         connection_config = {
-        "host": 'localhost',
-        "database": "pi_humidity",
-        "user": "haydeni0",
-        "password": "OSzP34,@H0.I2m$sZpI<",
-        'raise_on_warnings': True
+        "host": 'timescaledb',
+        "dbname": "pi_humidity",
+        "user": "postgres",
+        "password": "password"
         }
         """
         # Start connection
         # try:
         self.__connection_established = True
         # Connect to server and database
-        self.connection = mysql.connector.connect(**connection_config)
-        db_Info = self.connection.get_server_info()
-        print("Connected to MySQL Server version ", db_Info)
+        self.connection = psycopg2.connect(**connection_config)
 
         # Connect a cursor to the server
         self.cursor = self.connection.cursor()
 
-        self.cursor.execute("SELECT DATABASE();")
-        record = self.cursor.fetchone()
-        print("Connected to database: ", record[0])
-        print("="*100)
+        self.cursor.execute("SELECT version();")
+        record = self.cursor.fetchall()
+        print("Connected to database: ", record[0][0])
+        print("=" * 100)
 
-        # except Error as err:
-        #     self.__connection_established = False
-        #     if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-        #         print("Something is wrong with your user name or password")
-        #         raise()
-        #     elif err.errno == errorcode.ER_BAD_DB_ERROR:
-        #         print("Database does not exist")
-        #     else:
-        #         print(err)
 
-        #     if raise_connection_errors:
-        #         raise(err)
 
     def __del__(self):
         # Close the server connection when instance is destroyed
@@ -69,11 +62,15 @@ class DHTConnection:
             # https://stackoverflow.com/a/1482477
             # self.cursor.close()
             self.connection.close()
-            print("_"*100)
-            print(f"MySQL connection closed ({datetime.datetime.now()})")
+            print("_" * 100)
+            print(f"Connection closed ({datetime.datetime.now()})")
 
-    def getObservations(self, table_name: str, start_dtime: datetime.datetime,
-                        end_dtime: datetime.datetime) -> Tuple[np.array, np.array, np.array]:
+    def getObservations(
+        self,
+        table_name: str,
+        start_dtime: datetime.datetime,
+        end_dtime: datetime.datetime,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
         # Query the database for DHT observations between two times
         # Return D, H and T separately as arrays
         query = f"""
@@ -84,7 +81,7 @@ class DHTConnection:
 
         try:
             # Reconnect to the server to ensure we get the latest data
-            self.connection.reconnect()
+            # self.connection.reconnect()
             self.cursor.execute(query, (start_dtime, end_dtime))
             observations = self.cursor.fetchall()
 
@@ -104,25 +101,30 @@ class DHTConnection:
 
             return D, H, T
 
-        except Error as err:
+        except psycopg2.Error as err:
             print(err)
             return np.array([]), np.array([]), np.array([])
 
     def createTable(self, table_name: str):
         # Function to create a table in DHT format if it doesn't already exist
-        try:
-            # Don't bother with START TRANSACTION or COMMIT, as CREATE TABLE does an implicit commit
-            self.cursor.execute(
-                f"CREATE TABLE {table_name} (dtime DATETIME(1) NOT NULL UNIQUE PRIMARY KEY, \
-                    humidity FLOAT, temperature FLOAT);"
-            )
-        except Error as err:
-            if err.errno == errorcode.ER_TABLE_EXISTS_ERROR:
-                print(f"Table {table_name} exists")
-            else:
-                print(err)
+        self.beginTransaction()
+        self.cursor.execute(
+            f"CREATE TABLE IF NOT EXISTS {table_name} (dtime timestamp NOT NULL UNIQUE PRIMARY KEY, \
+                humidity float8, temperature float8);"
+        )
+        self.commit()
+    
+    def beginTransaction(self):
+        self.cursor.execute("BEGIN TRANSACTION;")
+    
+    def commit(self):
+        self.cursor.execute("COMMIT;")
 
-    def sendObservation(self, table_name: str, DHT: ObsDHT, *, ignore_insert_error: bool = False):
+
+
+    def sendObservation(
+        self, table_name: str, DHT: ObsDHT, *, ignore_insert_error: bool = False
+    ):
         # Send a DHT observation to the table in the database
         if ignore_insert_error:
             # Ignore insertion errors if specified
@@ -140,11 +142,27 @@ class DHTConnection:
             T = "NULL"
 
         try:
-            self.cursor.execute("START TRANSACTION;")
+            self.beginTransaction()
             self.cursor.execute(
                 f"INSERT {ignore} INTO {table_name} (dtime, humidity, temperature)\
                     VALUES ('{DHT.D}', {H}, {T});"
             )
-            self.cursor.execute("COMMIT;")
-        except Error as err:
+            self.commit()
+        except psycopg2 as err:
             print(err)
+
+
+if __name__ == "__main__":
+    connection_config = {
+        "host": "timescaledb",
+        "port": 5432,
+        "dbname": "pi_humidity",
+        "user": "postgres",
+        "password": "password",
+    }
+    dht_connection = DHTConnection(connection_config)
+
+    random_dht = ObsDHT(datetime.datetime.now(), np.random.normal(1), np.random.normal(1))
+
+    dht_connection.createTable("test")
+    dht_connection.sendObservation("test", random_dht)
