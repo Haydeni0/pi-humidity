@@ -7,6 +7,10 @@ services:
       - timescaledb
     volumes:
       - ./logs:/logs
+      - ./src:/src
+    # devices:
+      # Access to GPIO pins (https://stackoverflow.com/a/48234752)
+      # - /dev/gpiomem
   timescaledb:
     image: timescale/timescaledb:latest-pg14
     ports:
@@ -15,3 +19,6 @@ services:
       - ./postgresql/data:/var/lib/postgresql/data
     environment:
       - POSTGRES_PASSWORD=password
+  # pgadmin:
+  #   image: dpage/pgadmin4:6.15 #amd64
+  #   image: hunnguye/pgadmin4-armv7:6.14 #arm/v7
