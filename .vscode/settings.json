@@ -1,8 +1,0 @@
-{
-    "code-runner.executorMap": {
-        "python": "$pythonPath $fullFileName"
-    },
-    "python.defaultInterpreterPath": "C:\\ProgramData\\Anaconda3\\python.exe",
-    "code-runner.saveFileBeforeRun": true,
-    "code-runner.runInTerminal": false
-}
