@@ -2,3 +2,4 @@ numpy
 psycopg2
 pandas
 matplotlib
+black
