@@ -105,6 +105,14 @@ class DHTConnection:
             print(err)
             return np.array([]), np.array([]), np.array([])
 
+    def createSchema(self, schema_name: str):
+        # Function to create a schema if it doesn't already exist
+        self.beginTransaction()
+        self.cursor.execute(
+            f"CREATE SCHEMA IF NOT EXISTS {schema_name};"
+        )
+        self.commit()
+
     def createTable(self, table_name: str):
         # Function to create a table in DHT format if it doesn't already exist
         self.beginTransaction()
