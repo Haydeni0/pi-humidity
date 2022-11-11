@@ -12,7 +12,13 @@
 
 ## TimescaleDB container
 
+Connect to database
+
     docker exec -it pi-humidity-timescaledb-1 psql -U postgres -d pi_humidity
+
+View table entries
+
+    SELECT * FROM test.dht_inside ORDER BY dtime DESC LIMIT 10;
 
 ## Reset everything
 
