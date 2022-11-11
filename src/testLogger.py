@@ -1,14 +1,11 @@
 import datetime
 import math
+import os
 import time
 
 import numpy as np
 
-import os
-import sys
-import inspect
-
-from DHT_MySQL_interface import ObsDHT, DHTConnection
+from DHT_MySQL_interface import DHTConnection, ObsDHT
 
 SCHEMA_NAME = "test"
 TABLE_NAME_inside = "dht_inside"
@@ -43,11 +40,11 @@ def updateAR(x0: float, sigma: float, C: float, mean: float) -> float:
 # ---- MySQL functions and connection ----
 
 connection_config = {
-    "host": "timescaledb",
-    "port": 5432,
-    "dbname": "pi_humidity",
-    "user": "postgres",
-    "password": "password",
+    "host": os.environ.get("POSTGRES_HOST"),
+    "port": os.environ.get("POSTGRES_PORT"),
+    "dbname": os.environ.get("POSTGRES_DB"),
+    "user": os.environ.get("POSTGRES_USER"),
+    "password": os.environ.get("POSTGRES_PASSWORD"),
 }
 
 
