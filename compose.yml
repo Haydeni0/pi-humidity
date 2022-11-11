@@ -8,6 +8,7 @@ services:
     volumes:
       - ./logs:/logs
       - ./src:/src
+    entrypoint: python -u "/src/testLogger.py"
     # devices:
       # Access to GPIO pins (https://stackoverflow.com/a/48234752)
       # - /dev/gpiomem
