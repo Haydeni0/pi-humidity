@@ -12,7 +12,7 @@
 
 ## TimescaleDB container
 
-    docker exec -it pi-humidity-timescaledb-1 psql -U postgres
+    docker exec -it pi-humidity-timescaledb-1 psql -U postgres -d pi_humidity
 
 ## Reset everything
 
