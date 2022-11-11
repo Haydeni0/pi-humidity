@@ -1,14 +1,11 @@
 import datetime
-from typing import Tuple
-
-import numpy as np
-
-import psycopg2
-import psycopg2.extensions
-
+import logging
+import os
 from dataclasses import dataclass
 
-import logging
+import numpy as np
+import psycopg2
+import psycopg2.extensions
 
 logger = logging.getLogger(__name__)
 
@@ -30,18 +27,17 @@ class DHTConnection:
     connection: psycopg2.extensions.connection
     cursor: psycopg2.extensions.cursor
 
-    def __init__(self, connection_config):
-        # Example connection config
-        """
-        connection_config = {
-        "host": 'timescaledb',
-        "dbname": "pi_humidity",
-        "user": "postgres",
-        "password": "password"
-        }
-        """
+    def __init__(self):
         # Start connection
-        # try:
+
+        connection_config = {
+            "host": os.environ.get("POSTGRES_HOST"),
+            "port": os.environ.get("POSTGRES_PORT"),
+            "dbname": os.environ.get("POSTGRES_DB"),
+            "user": os.environ.get("POSTGRES_USER"),
+            "password": os.environ.get("POSTGRES_PASSWORD"),
+        }
+
         self.__connection_established = True
         # Connect to server and database
         self.connection = psycopg2.connect(**connection_config)

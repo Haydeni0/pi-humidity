@@ -39,16 +39,7 @@ def updateAR(x0: float, sigma: float, C: float, mean: float) -> float:
 
 # ---- MySQL functions and connection ----
 
-connection_config = {
-    "host": os.environ.get("POSTGRES_HOST"),
-    "port": os.environ.get("POSTGRES_PORT"),
-    "dbname": os.environ.get("POSTGRES_DB"),
-    "user": os.environ.get("POSTGRES_USER"),
-    "password": os.environ.get("POSTGRES_PASSWORD"),
-}
-
-
-pi_humidity_SQL = DHTConnection(connection_config)
+pi_humidity_SQL = DHTConnection()
 
 pi_humidity_SQL.createSchema(SCHEMA_NAME)
 pi_humidity_SQL.createTable(TABLE_NAME_inside)

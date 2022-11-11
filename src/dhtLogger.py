@@ -7,6 +7,7 @@ import Adafruit_DHT
 import DHTutils
 import utils
 from DHT_MySQL_interface import DHTConnection, ObsDHT
+import asyncio
 
 # Set up error logging
 logging.basicConfig(
@@ -21,22 +22,16 @@ DHT_SENSOR = Adafruit_DHT.DHT22
 DHT_PIN_INSIDE = 4
 DHT_PIN_OUTSIDE = 27
 
-connection_config = {
-    "host": "timescaledb",
-    "database": "pi_humidity",
-    "user": "haydeni0",
-    "password": "raspizeroWH_SQL",
-    "raise_on_warnings": True,
-}
 TABLE_NAME_inside = "dht_inside"
 TABLE_NAME_outside = "dht_outside"
+
 
 log_interval = 2  # in seconds
 
 # Try to connect to the server, and retry if fail
 for j in range(10):
     try:
-        pi_humidity_SQL = DHTConnection(connection_config)
+        pi_humidity_SQL = DHTConnection()
         break
     except:
         time.sleep(5)
