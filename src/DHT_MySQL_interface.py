@@ -12,17 +12,20 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 @dataclass
 class ObsDHT:
     D: datetime.datetime
     H: float
     T: float
 
+
 @dataclass(init=False)
 class DHTConnection:
     """
     A sort of API that connects to the DHT table in the MySQL server for easy, high-level access.
     """
+
     __connection_established: bool
     connection: psycopg2.extensions.connection
     cursor: psycopg2.extensions.cursor
@@ -50,8 +53,6 @@ class DHTConnection:
         record = self.cursor.fetchall()
         print("Connected to database: ", record[0][0])
         print("=" * 100)
-
-
 
     def __del__(self):
         # Close the server connection when instance is destroyed
@@ -108,9 +109,7 @@ class DHTConnection:
     def createSchema(self, schema_name: str):
         # Function to create a schema if it doesn't already exist
         self.beginTransaction()
-        self.cursor.execute(
-            f"CREATE SCHEMA IF NOT EXISTS {schema_name};"
-        )
+        self.cursor.execute(f"CREATE SCHEMA IF NOT EXISTS {schema_name};")
         self.commit()
 
     def createTable(self, table_name: str):
@@ -121,14 +120,12 @@ class DHTConnection:
                 humidity float8, temperature float8);"
         )
         self.commit()
-    
+
     def beginTransaction(self):
         self.cursor.execute("BEGIN TRANSACTION;")
-    
+
     def commit(self):
         self.cursor.execute("COMMIT;")
-
-
 
     def sendObservation(
         self, table_name: str, DHT: ObsDHT, *, ignore_insert_error: bool = False
@@ -170,7 +167,9 @@ if __name__ == "__main__":
     }
     dht_connection = DHTConnection(connection_config)
 
-    random_dht = ObsDHT(datetime.datetime.now(), np.random.normal(1), np.random.normal(1))
+    random_dht = ObsDHT(
+        datetime.datetime.now(), np.random.normal(1), np.random.normal(1)
+    )
 
     dht_connection.createTable("test")
     dht_connection.sendObservation("test", random_dht)
