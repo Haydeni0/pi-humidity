@@ -3,13 +3,16 @@ from Sensors import DHTSensorData
 from dash import Dash, dcc, html
 from dash.dependencies import Input, Output
 import plotly.graph_objects as go
+from flask import Flask
+import numpy as np
+
 
 GREEN_HEX = "#74A122"
 RED_HEX = "#D3042F"
 
 conn = DHTConnection()
 
-
+server = Flask(__name__)
 app = Dash(name=__name__)
 
 inside_sensor = DHTSensorData(conn, "test.dht_inside")
@@ -52,14 +55,18 @@ def updateGraph(n: int) -> tuple[go.Figure, go.Figure]:
         inside_sensor.update()
         outside_sensor.update()
 
+        D = np.array(sensor.D_grid_centres)
+        H = np.array(sensor.H)
+        T = np.array(sensor.T)
+
         fig_H.add_trace(
             go.Scatter(
-                x=sensor.D_grid_centres, y=sensor.H, marker_color=colour, name=name
+                x=D, y=H, marker_color=colour, name=name
             )
         )
         fig_T.add_trace(
             go.Scatter(
-                x=sensor.D_grid_centres, y=sensor.T, marker_color=colour, name=name
+                x=D, y=T, marker_color=colour, name=name
             )
         )
 
