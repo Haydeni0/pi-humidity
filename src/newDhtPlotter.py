@@ -24,12 +24,6 @@ update_interval = 2
 app = Dash(name=__name__)
 app.layout = html.Div(
     children=[
-        html.H1(children="pi-humidity"),
-        html.Div(
-            children="""
-        Humidity and temperature monitoring
-    """
-        ),
         dcc.Graph(id="humidity-graph"),
         dcc.Graph(id="temperature-graph"),
         dcc.Interval(id="update-tick", interval=update_interval * 1000, n_intervals=0),
