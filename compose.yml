@@ -1,4 +1,5 @@
 services:
+
   dhtlogger:
     build: .
     depends_on:
@@ -14,6 +15,23 @@ services:
       # Access to GPIO pins (https://stackoverflow.com/a/48234752)
       # - /dev/gpiomem
     restart: always
+
+  dhtplotter:
+    build: .
+    # ports:
+    #   - 80:8050
+    tty: true
+    stdin_open: true
+    depends_on:
+      - timescaledb
+    volumes:
+      - ./logs:/logs
+      - ./src:/src
+    env_file:
+      - postgres.env
+      - password.env
+    restart: always
+
   timescaledb:
     image: timescale/timescaledb:latest-pg14
     ports:
@@ -23,6 +41,7 @@ services:
     env_file:
       - postgres.env
       - password.env
+
   # pgadmin:
   #   image: dpage/pgadmin4:6.15 #amd64
   #   image: hunnguye/pgadmin4-armv7:6.14 #arm/v7
