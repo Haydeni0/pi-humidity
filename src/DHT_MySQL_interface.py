@@ -74,6 +74,7 @@ class DHTConnection:
             SELECT dtime, humidity, temperature 
                 FROM {table_name}
                 WHERE dtime BETWEEN %s AND %s
+                ORDER BY dtime DESC;
             """
 
         try:
@@ -149,23 +150,17 @@ class DHTConnection:
                     VALUES ('{DHT.D}', {H}, {T});"
             )
             self.commit()
-        except psycopg2 as err:
+        except psycopg2.Error as err:
             print(err)
+            self.commit()
 
 
 if __name__ == "__main__":
-    connection_config = {
-        "host": "timescaledb",
-        "port": 5432,
-        "dbname": "pi_humidity",
-        "user": "postgres",
-        "password": "password",
-    }
-    dht_connection = DHTConnection(connection_config)
+    dht_connection = DHTConnection()
 
     random_dht = ObsDHT(
         datetime.datetime.now(), np.random.normal(1), np.random.normal(1)
     )
-
+    
     dht_connection.createTable("test")
     dht_connection.sendObservation("test", random_dht)
