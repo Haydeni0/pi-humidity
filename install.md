@@ -15,9 +15,9 @@ Clone this repository
     git clone git@github.com:Haydeni0/pi-humidity.git
     cd pi-humidity
 
-Add password to an environment file (change ```my_password``` to something else)
+Add password to an environment file (change ```my_postgres_password``` to something else)
 
-    echo POSTGRES_PASSWORD=my_password > password.env
+    echo POSTGRES_PASSWORD=my_postgres_password > password.env
 
 Use docker compose to build and run containers
 

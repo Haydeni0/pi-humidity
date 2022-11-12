@@ -8,7 +8,7 @@
 
 ## Python container
 
-    docker exec -it pi-humidity-python-1 bash
+    docker exec -it pi-humidity-dhtlogger-1 bash
 
 ## TimescaleDB container
 
