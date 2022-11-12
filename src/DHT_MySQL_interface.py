@@ -116,6 +116,9 @@ class DHTConnection:
             f"CREATE TABLE IF NOT EXISTS {table_name} (dtime timestamp NOT NULL UNIQUE PRIMARY KEY, \
                 humidity float8, temperature float8);"
         )
+        self.cursor.execute(
+            f"SELECT create_hypertable('{table_name}', 'dtime', if_not_exists => TRUE)"
+        )
         self.commit()
 
     def beginTransaction(self):
@@ -161,6 +164,6 @@ if __name__ == "__main__":
     random_dht = ObsDHT(
         datetime.datetime.now(), np.random.normal(1), np.random.normal(1)
     )
-    
+
     dht_connection.createTable("test")
     dht_connection.sendObservation("test", random_dht)
