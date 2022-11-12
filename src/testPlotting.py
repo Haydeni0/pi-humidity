@@ -39,14 +39,6 @@ app.layout = html.Div(
     ]
 )
 
-end_dtime = datetime.datetime.now()
-start_dtime = end_dtime - datetime.timedelta(days=2)
-
-# Inside
-D, H, T = conn.getObservations(
-    TABLE_NAME_inside, start_dtime=start_dtime, end_dtime=end_dtime
-)
-
 
 @app.callback(
     [Output("humidity-graph", "figure"), Output("temperature-graph", "figure")],
@@ -61,7 +53,7 @@ def updateGraph(n: int) -> tuple[go.Figure, go.Figure]:
     fig_H.update_yaxes(title_text="Humidity (%RH)")
 
     end_dtime = datetime.datetime.now()
-    start_dtime = end_dtime - datetime.timedelta(minutes=20)
+    start_dtime = end_dtime - datetime.timedelta(seconds = 20)
 
     # Inside
     D, H, T = conn.getObservations(
