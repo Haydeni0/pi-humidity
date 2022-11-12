@@ -16,7 +16,7 @@ TABLE_NAME_outside = f"{SCHEMA_NAME}.{TABLE_NAME_outside}"
 
 # Data generation parameters
 # Use same AR parameters for both inside and outside
-log_interval = 1  # in seconds
+log_interval = 2  # in seconds
 AR_time_constant = 60 * 60  # Time constant of the AR(1) processes (in seconds)
 C = math.exp(-log_interval / AR_time_constant)
 sigma_H = 6
