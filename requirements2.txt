@@ -1,4 +1,4 @@
 # Secondary requirements
 # For some reason, pip installing adafruit_DHT at the same time 
 # as numpy is slow (numpy is forced to build?).
-adafruit_DHT --install-option='--force-pi'
+adafruit_DHT==1.4.0 --install-option='--force-pi'

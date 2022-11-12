@@ -1,6 +1,7 @@
-numpy
-psycopg2
-pandas
-matplotlib
+numpy==1.23
+psycopg2==2.9.5
+pandas==1.5.1
+matplotlib==3.6.2
+plotly==5.11.0
+dash==2.7.0
 black
-toml
