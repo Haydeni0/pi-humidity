@@ -14,7 +14,7 @@
 
 Connect to database
 
-    docker exec -it pi-humidity-timescaledb-1 psql -U postgres -d pi_humidity
+    docker exec -it pi-humidity-timescaledb-1 psql -U postgres -d ${POSTGRES_DB}
 
 View table entries
 
