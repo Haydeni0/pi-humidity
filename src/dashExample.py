@@ -1,9 +1,8 @@
 from dash import Dash, html, dcc
 import plotly.express as px
 import pandas as pd
-from flask import Flask
 app = Dash(__name__)
-server = Flask(__name__)
+server = app.server
 
 # assume you have a "long-form" data frame
 # see https://plotly.com/python/px-arguments/ for more options
