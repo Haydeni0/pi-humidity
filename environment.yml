@@ -8,8 +8,8 @@ dependencies:
   - pandas
   - matplotlib
   - plotly=5.11.0
-  - dash
   - black
   - pip:
-    - psycopg2-binary
-    - adafruit_DHT==1.4.0 --install-option='--force-pi'
+      - psycopg2-binary
+      - adafruit_DHT==1.4.0 --install-option='--force-pi'
+      - dash
