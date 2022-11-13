@@ -40,8 +40,20 @@ class DHTConnection:
 
         self.__connection_established = True
         # Connect to server and database
-        self.connection = psycopg2.connect(**connection_config)
+        try:
+            self.connection = psycopg2.connect(**connection_config)
+        except psycopg2.OperationalError:
+            # Create database if it doesn't exist
+            connection_config["dbname"] = "postgres"
+            self.connection = psycopg2.connect(**connection_config)
+            pg_db = os.environ.get("POSTGRES_DB")
+            self.cursor.execute(f"SELECT 'CREATE DATABASE {pg_db}' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '{pg_db}')\\gexec")
+            self.connection.close()
 
+            # Reconnect to the server and correct database
+            connection_config["dbname"] = pg_db
+            self.connection = psycopg2.connect(**connection_config)
+            
         # Connect a cursor to the server
         self.cursor = self.connection.cursor()
 
