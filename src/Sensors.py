@@ -10,7 +10,9 @@ import pandas as pd
 from DHT_MySQL_interface import DHTConnection
 from utils import timing
 
+from dataclasses import dataclass
 
+@dataclass
 class DHTSensorData:
     """
     A class that defines an object connected to a table of the pi_humidity MySQL database 
@@ -223,7 +225,7 @@ class DHTSensorData:
             DHTSensorData.ylim_T, DHTSensorData.ylim_T_buffer, T_new_grid)
         return True
 
-    def __loadNewData(self) -> Tuple[np.array, np.array, np.array]:
+    def __loadNewData(self) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         # Load new values of D, H and T from the server
 
         # Query datetimes that are new since we last queried the server
@@ -258,7 +260,7 @@ class DHTSensorData:
         return data_LOCF, was_nan
 
     @staticmethod
-    def allocateToGrid(grid_edges: pd.DatetimeIndex, D_bulk: np.array, H_bulk: np.array, T_bulk: np.array) -> Tuple[deque, deque]:
+    def allocateToGrid(grid_edges: pd.DatetimeIndex, D_bulk: np.ndarray, H_bulk: np.ndarray, T_bulk: np.ndarray) -> Tuple[deque, deque]:
         # Given a grid (assortment of bins) of dates and dht values:
         # In each bin assign dht observations by their datetime. 
         # Take the median within the bins to assign their grid value.
