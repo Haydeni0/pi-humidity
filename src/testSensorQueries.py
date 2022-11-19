@@ -1,5 +1,5 @@
-from DHT_MySQL_interface import DHTConnection
-from Sensors import DHTSensorData
+from database_api import DatabaseDHT
+from Sensors import SensorData
 import numpy as np
 from time import sleep
 
@@ -7,10 +7,10 @@ from time import sleep
 GREEN_HEX = "#74A122"
 RED_HEX = "#D3042F"
 
-conn = DHTConnection()
+conn = DatabaseDHT()
 
-inside_sensor = DHTSensorData(conn, "test.dht_inside")
-outside_sensor = DHTSensorData(conn, "test.dht_outside")
+inside_sensor = SensorData(conn, "test.dht_inside")
+outside_sensor = SensorData(conn, "test.dht_outside")
 
 # Update interval in seconds
 update_interval = 2

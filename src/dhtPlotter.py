@@ -1,20 +1,23 @@
-from DHT_MySQL_interface import DHTConnection
-from Sensors import DHTSensorData
+from database_api import DatabaseDHT
+from Sensors import SensorData
 from dash import Dash, dcc, html
 from dash.dependencies import Input, Output
 import plotly.graph_objects as go
 import numpy as np
+from datetime import timedelta
 
 
 GREEN_HEX = "#74A122"
 RED_HEX = "#D3042F"
 
-conn = DHTConnection()
+conn = DatabaseDHT()
 
 app = Dash(name=__name__)
 
-inside_sensor = DHTSensorData(conn, "test.dht_inside")
-outside_sensor = DHTSensorData(conn, "test.dht_outside")
+sensor_history = timedelta(days=2)
+
+inside_sensor = SensorData(conn, "test.dht_inside", sensor_history=sensor_history)
+outside_sensor = SensorData(conn, "test.dht_outside", sensor_history=sensor_history)
 
 # Update interval in seconds
 update_interval = 2

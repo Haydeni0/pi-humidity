@@ -18,7 +18,7 @@ class ObsDHT:
 
 
 @dataclass(init=False)
-class DHTConnection:
+class DatabaseDHT:
     """
     A sort of API that connects to the DHT table in the MySQL server for easy, high-level access.
     """
@@ -171,7 +171,7 @@ class DHTConnection:
 
 
 if __name__ == "__main__":
-    dht_connection = DHTConnection()
+    dht_connection = DatabaseDHT()
 
     random_dht = ObsDHT(
         datetime.datetime.now(), np.random.normal(1), np.random.normal(1)

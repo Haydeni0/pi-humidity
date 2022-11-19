@@ -6,7 +6,7 @@ import Adafruit_DHT
 
 import DHTutils
 import utils
-from DHT_MySQL_interface import DHTConnection, ObsDHT
+from database_api import DatabaseDHT, ObsDHT
 import asyncio
 
 # Set up error logging
@@ -31,7 +31,7 @@ log_interval = 2  # in seconds
 # Try to connect to the server, and retry if fail
 for j in range(10):
     try:
-        pi_humidity_SQL = DHTConnection()
+        pi_humidity_SQL = DatabaseDHT()
         break
     except:
         time.sleep(5)

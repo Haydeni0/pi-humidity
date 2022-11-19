@@ -7,14 +7,14 @@ from typing import Tuple
 import numpy as np
 import pandas as pd
 
-from DHT_MySQL_interface import DHTConnection
+from database_api import DatabaseDHT
 from utils import timing
 
 from dataclasses import dataclass
 
 
 @dataclass
-class DHTSensorData:
+class SensorData:
     """
     A class that defines an object connected to a table of the pi_humidity MySQL database
     using another object DHTConnection.
@@ -24,12 +24,10 @@ class DHTSensorData:
     """
 
     # Declarations
-    DHT_db: DHTConnection
+    database: DatabaseDHT
     table_name: str
     num_grid: int
-    history_timedelta: datetime.timedelta
-    D_grid_edges: deque
-    D_grid_centres: deque
+    sensor_history: datetime.timedelta
     grid_resolution: datetime.timedelta
 
     H_raw: deque
@@ -41,6 +39,8 @@ class DHTSensorData:
     __D_buffer: deque
     __H_buffer: deque
     __T_buffer: deque
+    D_grid_edges: deque
+    D_grid_centres: deque
 
     # Static variables
     # These must be common and 
@@ -53,18 +53,18 @@ class DHTSensorData:
 
     def __init__(
         self,
-        DHT_db: DHTConnection,
+        DHT_db: DatabaseDHT,
         table_name: str,
         num_grid: int = 800,
-        history_timedelta: datetime.timedelta = datetime.timedelta(minutes=2),
+        sensor_history: datetime.timedelta = datetime.timedelta(minutes=2),
     ):
-        self.DHT_db = DHT_db
+        self.database = DHT_db
         self.table_name = table_name
         self.num_grid = num_grid
-        self.history_timedelta = history_timedelta
+        self.sensor_history = sensor_history
 
         self.grid_resolution = (
-            history_timedelta / num_grid
+            sensor_history / num_grid
         )  # Width of one grid bin
 
         # Load H and T from database (in raw format with possible nans)
@@ -75,19 +75,19 @@ class DHTSensorData:
         )
         # Process H and T to remove nans using last observation carried forward (LOCF)
         # Also record which values were nan
-        self.H, self.H_was_nan = DHTSensorData.replaceNanLOCF(self.H_raw)
-        self.T, self.T_was_nan = DHTSensorData.replaceNanLOCF(self.T_raw)
+        self.H, self.H_was_nan = SensorData.replaceNanLOCF(self.H_raw)
+        self.T, self.T_was_nan = SensorData.replaceNanLOCF(self.T_raw)
 
         # Initialise deques to hold new data from the next bin in the future
         self.__D_buffer = deque()
         self.__H_buffer = deque()
         self.__T_buffer = deque()
 
-        DHTSensorData.ylim_H = DHTSensorData.updateYlim(
-            DHTSensorData.ylim_H, DHTSensorData.YLIM_H_BUFFER, self.H
+        SensorData.ylim_H = SensorData.updateYlim(
+            SensorData.ylim_H, SensorData.YLIM_H_BUFFER, self.H
         )
-        DHTSensorData.ylim_T = DHTSensorData.updateYlim(
-            DHTSensorData.ylim_T, DHTSensorData.YLIM_T_BUFFER, self.T
+        SensorData.ylim_T = SensorData.updateYlim(
+            SensorData.ylim_T, SensorData.YLIM_T_BUFFER, self.T
         )
 
         # Remake grid deques with a max length
@@ -112,7 +112,7 @@ class DHTSensorData:
 
         # Get the datetime interval to query data from
         current_time = datetime.datetime.now()
-        start_dtime = current_time - self.history_timedelta
+        start_dtime = current_time - self.sensor_history
         # Store the last time that the server was queried
         self.last_queried_time = current_time
 
@@ -140,7 +140,7 @@ class DHTSensorData:
             H_raw = deque()
             T_raw = deque()
             for grid_idx in range(self.num_grid):
-                _, H_bin, T_bin = self.DHT_db.getObservations(
+                _, H_bin, T_bin = self.database.getObservations(
                     self.table_name,
                     D_grid_edges[grid_idx],  # type: ignore
                     D_grid_edges[grid_idx + 1],  # type: ignore
@@ -156,7 +156,7 @@ class DHTSensorData:
             # This takes O(history_timedelta) compute time
 
             # Find and load the data from the database into arrays
-            D_bulk, H_bulk, T_bulk = self.DHT_db.getObservations(
+            D_bulk, H_bulk, T_bulk = self.database.getObservations(
                 self.table_name, start_dtime, current_time
             )
             # Allocate the correct data to each bin
@@ -212,7 +212,7 @@ class DHTSensorData:
             new_grid_edges = pd.DatetimeIndex(
                 [
                     current_time
-                    - self.history_timedelta
+                    - self.sensor_history
                     + _ * self.grid_resolution
                     for _ in range(num_new_edges)
                 ]
@@ -244,15 +244,15 @@ class DHTSensorData:
 
         # Remove nans
         if not overwrite_entire_grid:
-            H_new_grid, H_new_was_nan = DHTSensorData.replaceNanLOCF(
+            H_new_grid, H_new_was_nan = SensorData.replaceNanLOCF(
                 H_raw_new_grid, self.H[-1]
             )
-            T_new_grid, T_new_was_nan = DHTSensorData.replaceNanLOCF(
+            T_new_grid, T_new_was_nan = SensorData.replaceNanLOCF(
                 T_raw_new_grid, self.T[-1]
             )
         else:
-            H_new_grid, H_new_was_nan = DHTSensorData.replaceNanLOCF(H_raw_new_grid)
-            T_new_grid, T_new_was_nan = DHTSensorData.replaceNanLOCF(T_raw_new_grid)
+            H_new_grid, H_new_was_nan = SensorData.replaceNanLOCF(H_raw_new_grid)
+            T_new_grid, T_new_was_nan = SensorData.replaceNanLOCF(T_raw_new_grid)
 
         # Add these new values to the grid, and update the grid edges & centres
         # Since these deques have a maxlen attribute, old values are popped off the left side
@@ -266,11 +266,11 @@ class DHTSensorData:
         self.T_was_nan.extend(T_new_was_nan)
 
         # Update y limits, using the new bins
-        DHTSensorData.ylim_H = DHTSensorData.updateYlim(
-            DHTSensorData.ylim_H, DHTSensorData.YLIM_H_BUFFER, H_new_grid
+        SensorData.ylim_H = SensorData.updateYlim(
+            SensorData.ylim_H, SensorData.YLIM_H_BUFFER, H_new_grid
         )
-        DHTSensorData.ylim_T = DHTSensorData.updateYlim(
-            DHTSensorData.ylim_T, DHTSensorData.YLIM_T_BUFFER, T_new_grid
+        SensorData.ylim_T = SensorData.updateYlim(
+            SensorData.ylim_T, SensorData.YLIM_T_BUFFER, T_new_grid
         )
         return True
 
@@ -280,7 +280,7 @@ class DHTSensorData:
         # Query datetimes that are new since we last queried the server
         start_dtime = self.last_queried_time + datetime.timedelta(seconds=0.1)
         current_time = datetime.datetime.now()
-        D_new, H_new, T_new = self.DHT_db.getObservations(
+        D_new, H_new, T_new = self.database.getObservations(
             self.table_name, start_dtime, current_time
         )
 

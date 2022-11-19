@@ -5,7 +5,7 @@ import time
 
 import numpy as np
 
-from DHT_MySQL_interface import DHTConnection, ObsDHT
+from database_api import DatabaseDHT, ObsDHT
 
 SCHEMA_NAME = "test"
 TABLE_NAME_inside = "dht_inside"
@@ -39,7 +39,7 @@ def updateAR(x0: float, sigma: float, C: float, mean: float) -> float:
 
 # ---- MySQL functions and connection ----
 
-conn = DHTConnection()
+conn = DatabaseDHT()
 
 conn.beginTransaction()
 conn.cursor.execute(f"DROP TABLE {TABLE_NAME_inside};")
