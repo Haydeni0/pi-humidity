@@ -32,6 +32,16 @@ class DHTSensorData:
     D_grid_centres: deque
     grid_resolution: datetime.timedelta
 
+    H_raw: deque
+    T_raw: deque
+    H: deque
+    T: deque
+    H_was_nan:deque
+    H_was_nan:deque
+    __D_buffer: deque
+    __H_buffer: deque
+    __T_buffer: deque
+
     # Static variables
     # Y axes limits are also contained within this class as a static variable
     ylim_H_buffer: float = 5  # The amount to add on to the top and bottom of the limits
