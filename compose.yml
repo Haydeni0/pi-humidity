@@ -42,6 +42,7 @@ services:
     env_file:
       - postgres.env
       - password.env
+    restart: always
   # pgadmin:
   #   image: dpage/pgadmin4:6.15 #amd64
   #   image: hunnguye/pgadmin4-armv7:6.14 #arm/v7
