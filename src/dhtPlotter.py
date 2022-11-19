@@ -1,5 +1,5 @@
 from database_api import DatabaseDHT
-from Sensors import SensorData
+from sensors import SensorData
 from dash import Dash, dcc, html
 from dash.dependencies import Input, Output
 import plotly.graph_objects as go

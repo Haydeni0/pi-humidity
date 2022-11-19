@@ -1,5 +1,5 @@
 from database_api import DatabaseDHT
-from Sensors import SensorData
+from sensors import SensorData
 import numpy as np
 from time import sleep
 
