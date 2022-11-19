@@ -177,9 +177,9 @@ def plotDHT(connection_config: dict, *, event_loop_interval: float = 0.5,
                 if next(decay_counter) == int(decay_interval/event_loop_interval):
                     decay_counter = count()  # Reset counter
                     DHTSensorData.decayLimits(
-                        DHTSensorData.ylim_H, DHTSensorData.ylim_H_buffer, inside_sensor.H, outside_sensor.H)
+                        DHTSensorData.ylim_H, DHTSensorData.YLIM_H_BUFFER, inside_sensor.H, outside_sensor.H)
                     DHTSensorData.decayLimits(
-                        DHTSensorData.ylim_T, DHTSensorData.ylim_T_buffer, inside_sensor.T, outside_sensor.T)
+                        DHTSensorData.ylim_T, DHTSensorData.YLIM_T_BUFFER, inside_sensor.T, outside_sensor.T)
 
                 # Store the time it takes to draw
                 looptimes_draw.append(time.time() - draw_start_time)

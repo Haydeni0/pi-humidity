@@ -43,9 +43,10 @@ class DHTSensorData:
     __T_buffer: deque
 
     # Static variables
+    # These must be common and 
     # Y axes limits are also contained within this class as a static variable
-    ylim_H_buffer: float = 5  # The amount to add on to the top and bottom of the limits
-    ylim_T_buffer: float = 1
+    YLIM_H_BUFFER: float = 5  # The amount to add on to the top and bottom of the limits
+    YLIM_T_BUFFER: float = 1
     # Store ylim in a list to do efficiently (don't repeatedly call max/min on the whole deque)
     ylim_H: tuple = ()
     ylim_T: tuple = ()
@@ -83,10 +84,10 @@ class DHTSensorData:
         self.__T_buffer = deque()
 
         DHTSensorData.ylim_H = DHTSensorData.updateYlim(
-            DHTSensorData.ylim_H, DHTSensorData.ylim_H_buffer, self.H
+            DHTSensorData.ylim_H, DHTSensorData.YLIM_H_BUFFER, self.H
         )
         DHTSensorData.ylim_T = DHTSensorData.updateYlim(
-            DHTSensorData.ylim_T, DHTSensorData.ylim_T_buffer, self.T
+            DHTSensorData.ylim_T, DHTSensorData.YLIM_T_BUFFER, self.T
         )
 
         # Remake grid deques with a max length
@@ -266,10 +267,10 @@ class DHTSensorData:
 
         # Update y limits, using the new bins
         DHTSensorData.ylim_H = DHTSensorData.updateYlim(
-            DHTSensorData.ylim_H, DHTSensorData.ylim_H_buffer, H_new_grid
+            DHTSensorData.ylim_H, DHTSensorData.YLIM_H_BUFFER, H_new_grid
         )
         DHTSensorData.ylim_T = DHTSensorData.updateYlim(
-            DHTSensorData.ylim_T, DHTSensorData.ylim_T_buffer, T_new_grid
+            DHTSensorData.ylim_T, DHTSensorData.YLIM_T_BUFFER, T_new_grid
         )
         return True
 
