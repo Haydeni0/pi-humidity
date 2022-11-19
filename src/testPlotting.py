@@ -1,9 +1,5 @@
 from DHT_MySQL_interface import DHTConnection
 from Sensors import DHTSensorData
-from dash import Dash, dcc, html
-from dash.dependencies import Input, Output
-import plotly.graph_objects as go
-from flask import Flask
 import numpy as np
 from time import sleep
 
@@ -12,9 +8,6 @@ GREEN_HEX = "#74A122"
 RED_HEX = "#D3042F"
 
 conn = DHTConnection()
-
-server = Flask(__name__)
-app = Dash(name=__name__)
 
 inside_sensor = DHTSensorData(conn, "test.dht_inside")
 outside_sensor = DHTSensorData(conn, "test.dht_outside")
@@ -37,11 +30,4 @@ while True:
         print(H)
         print(T)
 
-
-    
-
     sleep(update_interval)
-
-
-
-
