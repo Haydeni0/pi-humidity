@@ -31,7 +31,7 @@ services:
     restart: always
     ports:
       - 80:8080
-    entrypoint: python -u "/src/newDhtPlotter.py"
+    entrypoint: python -u "/src/dhtPlotter.py"
 
   timescaledb:
     image: timescale/timescaledb:latest-pg14
