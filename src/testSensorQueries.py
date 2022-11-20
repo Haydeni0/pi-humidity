@@ -2,18 +2,28 @@ from database_api import DatabaseDHT
 from sensors import SensorData
 import numpy as np
 from time import sleep
-
+from datetime import timedelta
 
 GREEN_HEX = "#74A122"
 RED_HEX = "#D3042F"
 
 conn = DatabaseDHT()
 
-inside_sensor = SensorData(conn, "test.dht_inside")
-outside_sensor = SensorData(conn, "test.dht_outside")
-
 # Update interval in seconds
 update_interval = 2
+
+sensor_history = timedelta(minutes=2)
+
+# There are still some major problems with 
+# stability when num_grid is too big or small...
+num_grid = 8000
+# Define num_grid by the desired update interval
+# num_grid = int(sensor_history / timedelta(seconds=update_interval))
+# print(num_grid)
+# sys.exit()
+
+inside_sensor = SensorData(conn, "test.dht_inside", sensor_history=sensor_history, num_grid=num_grid)
+outside_sensor = SensorData(conn, "test.dht_outside", sensor_history=sensor_history, num_grid=num_grid)
 
 while True:
 
