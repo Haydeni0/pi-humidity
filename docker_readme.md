@@ -1,5 +1,8 @@
 # Notes for docker use in this project
 
+## TimescaleDB toolkit (more hyperfunctions)
+This isn't available as a docker container in linux/arm yet, see github [issue](https://github.com/timescale/timescaledb-docker-ha/issues/259).
+
 ## Docker compose
 
     docker compose build

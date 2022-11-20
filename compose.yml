@@ -1,7 +1,9 @@
 services:
 
   dhtlogger:
-    build: .
+    build:
+      context: .
+      dockerfile: pythonDockerfile
     depends_on:
       - timescaledb
     volumes:
@@ -17,7 +19,9 @@ services:
     restart: always
 
   dhtplotter:
-    build: .
+    build:
+      context: .
+      dockerfile: pythonDockerfile
     tty: true
     stdin_open: true
     depends_on:
