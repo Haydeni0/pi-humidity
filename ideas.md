@@ -8,16 +8,12 @@
 
 - Would be much better than the current logging implementation
 
-### Use timescaledb hypertables
+### Use timescaledb features
 
-- Try out compression
-
-### Use plotly to do real time plotting
-
-- Outsource timeseries window computations that I wrote by hand before to timescaledb, using commands similar to those [here](https://corpglory.com/s/timescaledb-grafana-plotly-time-series-analysis/)
-- Make a demo live-updating plotly graph first
-  - Show on a website somehow
-    - Use [gunicorn](https://www.devcoons.com/how-to-deploy-your-plotly-dash-dashboard-using-docker/)
+- Try out hypertable compression 
+- Improve the Sensor class with use of TimescaleDB better querying
+  - E.g. with time_bucket and percentile_cont
+  - Outsource timeseries window computations that I wrote by hand before to timescaledb, using commands similar to those [here](https://corpglory.com/s/timescaledb-grafana-plotly-time-series-analysis/)
 
 ### Add [glances](https://hub.docker.com/r/nicolargo/glances)
 
