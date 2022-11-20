@@ -16,7 +16,7 @@ conn = DatabaseDHT()
 # Update interval in seconds
 update_interval = 5
 
-sensor_history = timedelta(minutes=2)
+sensor_history = timedelta(days=2)
 
 # There are still some major problems with
 # stability when num_grid is too big or small...
@@ -41,11 +41,14 @@ fig_T = go.Figure()
 app = Dash(name=__name__, update_title="")
 app.layout = html.Div(
     children=[
-        dcc.Loading(dcc.Graph(id="humidity-graph", figure=fig_H, animate=False)),
-        dcc.Loading(dcc.Graph(id="temperature-graph", figure=fig_T, animate=False)),
+        dcc.Graph(id="humidity-graph", figure=fig_H, animate=False),
+        dcc.Graph(id="temperature-graph", figure=fig_T, animate=False),
+        # dcc.Loading(dcc.Graph(id="humidity-graph", figure=fig_H, animate=False)),
+        # dcc.Loading(dcc.Graph(id="temperature-graph", figure=fig_T, animate=False)),
         dcc.Interval(id="update-tick", interval=update_interval * 1000, n_intervals=0),
     ]
 )
+
 
 
 @app.callback(
