@@ -8,9 +8,14 @@
 
 - Would be much better than the current logging implementation
 
+### Dash
+
+- Use animations for smoother graph updating
+  - <https://stackoverflow.com/questions/63589249/plotly-dash-display-real-time-data-in-smooth-animation>
+
 ### Use timescaledb features
 
-- Try out hypertable compression 
+- Try out hypertable compression
 - Improve the Sensor class with use of TimescaleDB better querying
   - E.g. with time_bucket and percentile_cont
   - Outsource timeseries window computations that I wrote by hand before to timescaledb, using commands similar to those [here](https://corpglory.com/s/timescaledb-grafana-plotly-time-series-analysis/)
@@ -22,3 +27,5 @@
 - Classes:
   - dataclasses + type hints
 - proper type hints for everything
+- Rename functions, classes
+- Clean up [raspberrypi_installation.md](raspberrypi_installation.md)

@@ -21,5 +21,7 @@ Add password to an environment file (change ```my_postgres_password``` to someth
 
 Use docker compose to build and run containers
 
+> The build may take a *long* time
+
     docker compose build
     docker compose up -d

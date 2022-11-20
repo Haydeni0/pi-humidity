@@ -13,9 +13,9 @@ services:
     env_file:
       - postgres.env
       - password.env
-      # devices:
+    devices:
       # Access to GPIO pins (https://stackoverflow.com/a/48234752)
-      # - /dev/gpiomem
+      - /dev/gpiomem
     restart: always
 
   dhtplotter:
