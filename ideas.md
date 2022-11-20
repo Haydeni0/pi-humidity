@@ -18,6 +18,7 @@
 - Try out hypertable compression
 - Improve the Sensor class with use of TimescaleDB better querying
   - E.g. with time_bucket and percentile_cont
+  - timescaledb has ```locf```
   - Outsource timeseries window computations that I wrote by hand before to timescaledb, using commands similar to those [here](https://corpglory.com/s/timescaledb-grafana-plotly-time-series-analysis/)
 
 ### Add [glances](https://hub.docker.com/r/nicolargo/glances)
