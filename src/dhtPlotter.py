@@ -37,8 +37,8 @@ fig_T = go.Figure()
 app = Dash(name=__name__, update_title="asdohg")
 app.layout = html.Div(
     children=[
-        dcc.Graph(id="humidity-graph", figure=fig_H, animate=False),
-        dcc.Graph(id="temperature-graph", figure=fig_T, animate=False),
+        dcc.Loading(dcc.Graph(id="humidity-graph", figure=fig_H, animate=False)),
+        dcc.Loading(dcc.Graph(id="temperature-graph", figure=fig_T, animate=False)),
         dcc.Interval(id="update-tick", interval=update_interval * 1000, n_intervals=0),
     ]
 )
