@@ -38,7 +38,7 @@ fig_H = go.Figure()
 fig_T = go.Figure()
 
 
-app = Dash(name=__name__, update_title="asdohg")
+app = Dash(name=__name__, update_title="")
 app.layout = html.Div(
     children=[
         dcc.Loading(dcc.Graph(id="humidity-graph", figure=fig_H, animate=False)),
