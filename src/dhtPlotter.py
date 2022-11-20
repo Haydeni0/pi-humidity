@@ -65,8 +65,8 @@ def updateGraph(n: int) -> tuple[dict, dict]:
         H_traces.append(go.Scatter(x=D, y=H, marker_color=colour, name=name))
         T_traces.append(go.Scatter(x=D, y=T, marker_color=colour, name=name))
 
-    H_layout = go.Layout(yaxis=go.layout.YAxis(title = "Humidity (%RH)"))
-    T_layout = go.Layout(yaxis=go.layout.YAxis(title = "Temperature (<sup>o</sup>C)"))
+    H_layout = go.Layout(yaxis=go.layout.YAxis(title = "Humidity (%RH)"), font=go.layout.Font(size=18))
+    T_layout = go.Layout(yaxis=go.layout.YAxis(title = "Temperature (<sup>o</sup>C)"), font=go.layout.Font(size=18))
 
     # Only update elements of the figure, rather than returning a whole new figure. This is much faster.
     return {"data": H_traces, "layout": H_layout}, {"data": T_traces, "layout": T_layout}
