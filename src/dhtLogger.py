@@ -9,7 +9,7 @@ import utils
 from database_api import DatabaseDHT, ObsDHT
 import asyncio
 
-# Set up error logging
+# Set up logging
 logging.basicConfig(
     filename="/logs/dhtLogger.log",
     filemode="w",

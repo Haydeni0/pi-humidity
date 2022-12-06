@@ -6,7 +6,16 @@ import plotly.graph_objects as go
 import numpy as np
 from datetime import timedelta, datetime
 import sys
+import logging
 
+# Set up logging
+logging.basicConfig(
+    filename="/logs/dhtPlotter.log",
+    filemode="w",
+    format="[%(asctime)s - %(levelname)s] %(funcName)20s: %(message)s",
+    level=logging.DEBUG,
+)
+logger = logging.getLogger("__name__")
 
 GREEN_HEX = "#74A122"
 RED_HEX = "#D3042F"
@@ -57,7 +66,7 @@ app.layout = html.Div(
     Input("graph-update-tick", "n_intervals"),
 )
 def updateGraph(n: int) -> tuple[dict, dict, datetime]:
-
+    logger.debug("Started graph update")
     H_traces = []
     T_traces = []
 
@@ -65,7 +74,9 @@ def updateGraph(n: int) -> tuple[dict, dict, datetime]:
         [inside_sensor, outside_sensor], ["Inside", "Outside"], [GREEN_HEX, RED_HEX]
     ):
         inside_sensor.update()
+        logger.debug("Updated inside sensor")
         outside_sensor.update()
+        logger.debug("Updated outside sensor")
 
         D = np.array(sensor.D_grid_centres)
         H = np.array(sensor.H)
