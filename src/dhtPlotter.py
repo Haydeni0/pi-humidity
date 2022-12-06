@@ -4,7 +4,7 @@ from dash import Dash, dcc, html
 from dash.dependencies import Input, Output
 import plotly.graph_objects as go
 import numpy as np
-from datetime import timedelta
+from datetime import timedelta, datetime
 import sys
 
 
@@ -39,16 +39,14 @@ fig_T = go.Figure()
 
 
 app = Dash(name=__name__, update_title="", title="pi-humidity")
+
 app.layout = html.Div(
     children=[
-        dcc.Graph(id="humidity-graph", figure=fig_H, animate=False),
-        dcc.Graph(id="temperature-graph", figure=fig_T, animate=False),
-        # dcc.Loading(dcc.Graph(id="humidity-graph", figure=fig_H, animate=False)),
-        # dcc.Loading(dcc.Graph(id="temperature-graph", figure=fig_T, animate=False)),
+        dcc.Graph(id="humidity-graph", figure=fig_H, animate=True),
+        dcc.Graph(id="temperature-graph", figure=fig_T, animate=True),
         dcc.Interval(id="update-tick", interval=update_interval * 1000, n_intervals=0),
     ]
 )
-
 
 
 @app.callback(
@@ -73,10 +71,15 @@ def updateGraph(n: int) -> tuple[dict, dict]:
         H_traces.append(go.Scatter(x=D, y=H, marker_color=colour, name=name))
         T_traces.append(go.Scatter(x=D, y=T, marker_color=colour, name=name))
 
+    current_time = datetime.now()
+    xaxis_range = [current_time - sensor_history, current_time]
     H_layout = go.Layout(
-        yaxis=go.layout.YAxis(title="Humidity (%RH)"), font=go.layout.Font(size=18)
+        xaxis=go.layout.XAxis(range=xaxis_range),
+        yaxis=go.layout.YAxis(title="Humidity (%RH)"),
+        font=go.layout.Font(size=18),
     )
     T_layout = go.Layout(
+        xaxis=go.layout.XAxis(range=xaxis_range),
         yaxis=go.layout.YAxis(title="Temperature (<sup>o</sup>C)"),
         font=go.layout.Font(size=18),
     )
