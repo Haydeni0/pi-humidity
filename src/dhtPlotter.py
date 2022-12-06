@@ -7,6 +7,7 @@ import numpy as np
 from datetime import timedelta, datetime
 import sys
 import logging
+import copy
 
 # Set up logging
 logging.basicConfig(
@@ -73,10 +74,8 @@ def updateGraph(n: int) -> tuple[dict, dict, datetime]:
     for sensor, name, colour in zip(
         [inside_sensor, outside_sensor], ["Inside", "Outside"], [GREEN_HEX, RED_HEX]
     ):
-        inside_sensor.update()
-        logger.debug("Updated inside sensor")
-        outside_sensor.update()
-        logger.debug("Updated outside sensor")
+        sensor.update()
+        logger.debug(f"Updated sensor ({name})")
 
         D = np.array(sensor.D_grid_centres)
         H = np.array(sensor.H)
@@ -87,13 +86,13 @@ def updateGraph(n: int) -> tuple[dict, dict, datetime]:
 
     current_time = datetime.now()
     xaxis_range = [current_time - sensor_history, current_time]
-    H_layout = T_layout = go.Layout(
+    H_layout = go.Layout(
         xaxis=go.layout.XAxis(range=xaxis_range),
-        yaxis=go.layout.YAxis(title="Humidity (%RH)"),
         font=go.layout.Font(size=18),
         margin={"t": 0},  # https://plotly.com/javascript/reference/#layout-margin
         height=400,
     )
+    T_layout = copy.deepcopy(H_layout)
     H_layout.yaxis = go.layout.YAxis(title="Humidity (%RH)")
     T_layout.yaxis = go.layout.YAxis(title="Temperature (<sup>o</sup>C)")
 
