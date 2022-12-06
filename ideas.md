@@ -30,3 +30,17 @@
 - proper type hints for everything
 - Rename functions, classes
 - Clean up [raspberrypi_installation.md](raspberrypi_installation.md)
+
+### Improve and generalise install process
+
+- Make a config file that contains a bunch of user configurable settings
+  - Make the number of dht sensors variable
+    - Specify in the config the sensor GPIO pin and name
+    - Set up database tables and plotting dependent on the sensors
+  - Number of bins
+  - Sensor history
+  - ...
+- Make an install script that automates the install process
+  - which writes the config files to the local directory (including ```password.env```)
+    - allowing the user to type in settings or leave things default
+  - Sets up the services to start on boot and display the webpage on the local gui
