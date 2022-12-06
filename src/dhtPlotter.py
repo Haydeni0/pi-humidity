@@ -44,16 +44,19 @@ app.layout = html.Div(
     children=[
         dcc.Graph(id="humidity-graph", figure=fig_H, animate=True),
         dcc.Graph(id="temperature-graph", figure=fig_T, animate=True),
-        dcc.Interval(id="update-tick", interval=update_interval * 1000, n_intervals=0),
+        html.Time(id="time"),
+        dcc.Interval(id="graph-update-tick", interval=update_interval * 1000, n_intervals=0),
+        dcc.Interval(id="time-update-tick", interval=100, n_intervals=0),
+
+        dcc.Store(id="graph-update-time")
     ]
 )
 
-
 @app.callback(
-    [Output("humidity-graph", "figure"), Output("temperature-graph", "figure")],
-    Input("update-tick", "n_intervals"),
+    [Output("humidity-graph", "figure"), Output("temperature-graph", "figure"), Output("graph-update-time", "data")],
+    Input("graph-update-tick", "n_intervals"),
 )
-def updateGraph(n: int) -> tuple[dict, dict]:
+def updateGraph(n: int) -> tuple[dict, dict, datetime]:
 
     H_traces = []
     T_traces = []
@@ -73,23 +76,34 @@ def updateGraph(n: int) -> tuple[dict, dict]:
 
     current_time = datetime.now()
     xaxis_range = [current_time - sensor_history, current_time]
-    H_layout = go.Layout(
+    H_layout = T_layout = go.Layout(
         xaxis=go.layout.XAxis(range=xaxis_range),
         yaxis=go.layout.YAxis(title="Humidity (%RH)"),
         font=go.layout.Font(size=18),
+        margin={"t": 0},  # https://plotly.com/javascript/reference/#layout-margin
+        height=400,
     )
-    T_layout = go.Layout(
-        xaxis=go.layout.XAxis(range=xaxis_range),
-        yaxis=go.layout.YAxis(title="Temperature (<sup>o</sup>C)"),
-        font=go.layout.Font(size=18),
-    )
+    H_layout.yaxis = go.layout.YAxis(title="Humidity (%RH)")
+    T_layout.yaxis = go.layout.YAxis(title="Temperature (<sup>o</sup>C)")
 
     # Only update elements of the figure, rather than returning a whole new figure. This is much faster.
     return {"data": H_traces, "layout": H_layout}, {
         "data": T_traces,
         "layout": T_layout,
-    }
+    }, current_time
 
+
+@app.callback([Output("time", "children"), Output("time", "dateTime")], [Input("time-update-tick", "n_intervals"), Input("graph-update-time", "data")])
+def updateTimeDisplay(n, graph_last_updated):
+    current_time = datetime.now()
+    time_passed = current_time - datetime.strptime(graph_last_updated, "%Y-%m-%dT%H:%M:%S.%f")
+    
+    # rounded_time = current_time - timedelta(microseconds=current_time.microsecond)
+    rounded_time = datetime.strftime(current_time, "%H:%M:%S")
+
+    return f"""
+    {rounded_time}.{str(current_time.microsecond)[0]} (last updated {time_passed.seconds} seconds ago)
+    """, current_time
 
 if __name__ == "__main__":
     app.run_server(host="0.0.0.0", port="8080", debug=True)
