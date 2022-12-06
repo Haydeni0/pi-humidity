@@ -105,7 +105,7 @@ def updateGraph(n: int) -> tuple[dict, dict, datetime]:
 
 
 @app.callback([Output("time", "children"), Output("time", "dateTime")], [Input("time-update-tick", "n_intervals"), Input("graph-update-time", "data")])
-def updateTimeDisplay(n, graph_last_updated):
+def updateTimeDisplay(n: int, graph_last_updated: str) -> tuple[str, datetime]:
     current_time = datetime.now()
     time_passed = current_time - datetime.strptime(graph_last_updated, "%Y-%m-%dT%H:%M:%S.%f")
     
