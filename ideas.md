@@ -44,3 +44,9 @@
   - which writes the config files to the local directory (including ```password.env```)
     - allowing the user to type in settings or leave things default
   - Sets up the services to start on boot and display the webpage on the local gui
+
+### WAN webpage
+
+- Set up dynamic DNS service with dynu + docker compose somehow?
+- Make sure there is an ssl certificate for https
+  - certbot docker service?
