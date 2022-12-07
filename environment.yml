@@ -3,6 +3,7 @@ channels:
   - defaults
   - plotly
 dependencies:
+  - python=3.10
   - pip
   - numpy=1.23
   - pandas
