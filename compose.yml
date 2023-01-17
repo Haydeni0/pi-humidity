@@ -1,3 +1,8 @@
+
+volumes:
+  tsdb_data:
+  padmin_data:
+
 services:
 
   dhtlogger:
@@ -42,7 +47,7 @@ services:
     ports:
       - 5432:5432
     volumes:
-      - ./data:/var/lib/postgresql/data
+      - tsdb_data:/var/lib/postgresql/data
     env_file:
       - postgres.env
       - password.env
