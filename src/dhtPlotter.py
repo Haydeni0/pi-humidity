@@ -11,7 +11,7 @@ import copy
 
 # Set up logging
 logging.basicConfig(
-    filename="/logs/dhtPlotter.log",
+    filename="/shared/logs/dhtPlotter.log",
     filemode="w",
     format="[%(asctime)s - %(levelname)s] %(funcName)20s: %(message)s",
     level=logging.DEBUG,
