@@ -47,13 +47,15 @@ class DatabaseDHT:
             connection_config["dbname"] = "postgres"
             self.connection = psycopg2.connect(**connection_config)
             pg_db = os.environ.get("POSTGRES_DB")
-            self.cursor.execute(f"SELECT 'CREATE DATABASE {pg_db}' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '{pg_db}')\\gexec")
+            self.cursor.execute(
+                f"SELECT 'CREATE DATABASE {pg_db}' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '{pg_db}')\\gexec"
+            )
             self.connection.close()
 
             # Reconnect to the server and correct database
             connection_config["dbname"] = pg_db
             self.connection = psycopg2.connect(**connection_config)
-            
+
         # Connect a cursor to the server
         self.cursor = self.connection.cursor()
 
@@ -122,14 +124,26 @@ class DatabaseDHT:
         self.commit()
 
     def createTable(self, table_name: str):
-        # Function to create a table in DHT format if it doesn't already exist
+        # Function to create a table in the correct format if it doesn't already exist
         self.beginTransaction()
         self.cursor.execute(
-            f"CREATE TABLE IF NOT EXISTS {table_name} (dtime timestamp NOT NULL UNIQUE PRIMARY KEY, \
-                humidity float8, temperature float8);"
+            f"""
+            CREATE TABLE IF NOT EXISTS {table_name} (
+                dtime timestamp NOT NULL,
+                sensor_name varchar(32) NOT NULL 
+                humidity float8, 
+                temperature float8,
+
+                PRIMARY KEY (dtime, sensor_name)
+            );
+            """
         )
         self.cursor.execute(
-            f"SELECT create_hypertable('{table_name}', 'dtime', if_not_exists => TRUE)"
+            f"""
+            SELECT create_hypertable(
+                '{table_name}', 'dtime', if_not_exists => TRUE
+            );
+            """
         )
         self.commit()
 
