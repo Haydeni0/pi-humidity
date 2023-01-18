@@ -1,5 +1,9 @@
 # Installation instructions
 
+## Physical installation instructions
+
+## Software installation instructions
+
 Update
 
     sudo apt-get update
@@ -19,9 +23,20 @@ Add password to an environment file (change ```my_postgres_password``` to someth
 
     echo POSTGRES_PASSWORD=my_postgres_password > password.env
 
-Use docker compose to build and run containers
+Run Docker
 
-> The build may take a *long* time
+> ***Development notes***
+>
+> To build the container use the docker file [```./pythonDockerfile```](./pythonDockerfile)
+>
+> The build may take a *long* time on a raspberry pi.
+> > It is recommended to use a faster computer using ```docker buildx build``` to build for ```linux/arm/v7```, and optionally for ```linux/amd64```.
+> >
+> >     docker buildx build -f pythonDockerfile . -t haydeni0/pi-humidity:python --platform linux/arm/v7,linux/amd64
+>
+>     docker build -f pythonDockerfile . -t haydeni0/pi-humidity:python
+>     docker push haydeni0/pi-humidity:python
 
-    docker compose build
+Use images available on docker hub, specified in the compose file. Run the command:
+
     docker compose up -d

@@ -6,9 +6,9 @@ volumes:
 services:
 
   dhtlogger:
-    build:
-      context: .
-      dockerfile: pythonDockerfile
+    image: haydeni0/pi-humidity:python
+    tty: true
+    stdin_open: true
     depends_on:
       - timescaledb
     volumes:
@@ -24,9 +24,7 @@ services:
     restart: always
 
   dhtplotter:
-    build:
-      context: .
-      dockerfile: pythonDockerfile
+    image: haydeni0/pi-humidity:python
     tty: true
     stdin_open: true
     depends_on:
