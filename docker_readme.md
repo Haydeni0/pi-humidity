@@ -21,7 +21,7 @@ Connect to database
 
 View table entries
 
-    SELECT * FROM test.dht_inside ORDER BY dtime DESC LIMIT 10;
+    SELECT * FROM dht ORDER BY dtime DESC LIMIT 10;
 
 ## Reset everything
 
