@@ -17,7 +17,7 @@ This isn't available as a docker container in linux/arm yet, see github [issue](
 
 Connect to database
 
-    docker exec -it pi-humidity-timescaledb-1 psql -U postgres -d ${POSTGRES_DB}
+    docker exec -it pi-humidity-timescaledb /bin/bash -c 'psql -U postgres -d ${POSTGRES_DB}'
 
 View table entries
 
