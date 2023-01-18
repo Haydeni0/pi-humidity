@@ -1,4 +1,4 @@
-from database_api import DatabaseDHT
+from database_api import DatabaseApi
 from sensors import SensorData
 from dash import Dash, dcc, html
 from dash.dependencies import Input, Output
@@ -12,7 +12,7 @@ import sys
 GREEN_HEX = "#74A122"
 RED_HEX = "#D3042F"
 
-conn = DatabaseDHT()
+conn = DatabaseApi()
 
 # Update interval in seconds
 update_interval = 5

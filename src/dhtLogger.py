@@ -6,7 +6,7 @@ import Adafruit_DHT
 
 import DHTutils
 import utils
-from database_api import DatabaseDHT, ObsDHT
+from database_api import DatabaseApi, DhtObservation
 import asyncio
 
 # Set up logging
@@ -31,7 +31,7 @@ log_interval = 2  # in seconds
 # Try to connect to the server, and retry if fail
 for j in range(10):
     try:
-        pi_humidity_SQL = DatabaseDHT()
+        pi_humidity_SQL = DatabaseApi()
         break
     except:
         time.sleep(5)
@@ -41,8 +41,8 @@ else:
     raise
 
 # Create table if it doesn't exist
-pi_humidity_SQL.createTable(TABLE_NAME_inside)
-pi_humidity_SQL.createTable(TABLE_NAME_outside)
+pi_humidity_SQL.createDhtTable(TABLE_NAME_inside)
+pi_humidity_SQL.createDhtTable(TABLE_NAME_outside)
 
 
 try:
@@ -55,8 +55,8 @@ try:
 
         # Put observations into an ObsDHT struct
         current_time = datetime.datetime.now()
-        inside_obs = ObsDHT(D=current_time, H=H_inside, T=T_inside)
-        outside_obs = ObsDHT(D=current_time, H=H_outside, T=T_outside)
+        inside_obs = DhtObservation(dtime=current_time, humidity=H_inside, temperature=T_inside)
+        outside_obs = DhtObservation(dtime=current_time, humidity=H_outside, temperature=T_outside)
 
         # Send the observations to the server
         try:

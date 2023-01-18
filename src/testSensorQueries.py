@@ -1,4 +1,4 @@
-from database_api import DatabaseDHT
+from database_api import DatabaseApi
 from sensors import SensorData
 import numpy as np
 from time import sleep
@@ -7,7 +7,7 @@ from datetime import timedelta
 GREEN_HEX = "#74A122"
 RED_HEX = "#D3042F"
 
-conn = DatabaseDHT()
+conn = DatabaseApi()
 
 # Update interval in seconds
 update_interval = 2

@@ -7,7 +7,7 @@ from typing import Tuple
 import numpy as np
 import pandas as pd
 
-from database_api import DatabaseDHT
+from database_api import DatabaseApi
 from utils import timing
 
 from dataclasses import dataclass
@@ -24,7 +24,7 @@ class SensorData:
     """
 
     # Declarations
-    database: DatabaseDHT
+    database: DatabaseApi
     table_name: str
     num_grid: int
     sensor_history: datetime.timedelta
@@ -53,7 +53,7 @@ class SensorData:
 
     def __init__(
         self,
-        DHT_db: DatabaseDHT,
+        DHT_db: DatabaseApi,
         table_name: str,
         num_grid: int = 800,
         sensor_history: datetime.timedelta = datetime.timedelta(minutes=2),

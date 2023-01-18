@@ -6,6 +6,7 @@ volumes:
 services:
 
   dhtlogger:
+    container_name: pi-humidity-dhtlogger
     image: haydeni0/pi-humidity:python
     tty: true
     stdin_open: true
@@ -14,7 +15,7 @@ services:
     volumes:
       - ./src:/src
       - ./shared:/shared
-    entrypoint: python -u "/src/testLogger.py"
+    # entrypoint: python -u "/src/testLogger.py"
     env_file:
       - postgres.env
       - password.env
@@ -24,6 +25,7 @@ services:
     restart: always
 
   dhtplotter:
+    container_name: pi-humidity-dhtplotter
     image: haydeni0/pi-humidity:python
     tty: true
     stdin_open: true
@@ -41,6 +43,7 @@ services:
     entrypoint: python -u "/src/dhtPlotter.py"
 
   timescaledb:
+    container_name: pi-humidity-timescaledb
     image: timescale/timescaledb:latest-pg14
     ports:
       - 5432:5432

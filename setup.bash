@@ -60,6 +60,8 @@ if ! test -f "$CONFIG_FILE"; then
 
     # Save default values
     echo "sensor_retry_seconds: 2" >> $CONFIG_FILE
+    echo "schema_name:" >> $CONFIG_FILE
+    echo "table_name: dht" >> $CONFIG_FILE
 
     echo "Successfully saved to '$CONFIG_FILE' (including other default parameters)"
 else

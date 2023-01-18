@@ -5,7 +5,7 @@ import time
 
 import numpy as np
 
-from database_api import DatabaseDHT, ObsDHT
+from database_api import DatabaseApi, DhtObservation
 
 SCHEMA_NAME = "test"
 TABLE_NAME_inside = "dht_inside"
@@ -26,8 +26,8 @@ mean_T_inside = 23
 mean_H_outside = 66
 mean_T_outside = 22
 
-inside_obs = ObsDHT(D=datetime.datetime.now(), H=80, T=20)
-outside_obs = ObsDHT(D=datetime.datetime.now(), H=60, T=20)
+inside_obs = DhtObservation(dtime=datetime.datetime.now(), humidity=80, temperature=20)
+outside_obs = DhtObservation(dtime=datetime.datetime.now(), humidity=60, temperature=20)
 
 
 def updateAR(x0: float, sigma: float, C: float, mean: float) -> float:
@@ -39,30 +39,30 @@ def updateAR(x0: float, sigma: float, C: float, mean: float) -> float:
 
 # ---- MySQL functions and connection ----
 
-conn = DatabaseDHT()
+conn = DatabaseApi()
 
 conn.beginTransaction()
 conn.cursor.execute(f"DROP TABLE {TABLE_NAME_inside};")
 conn.cursor.execute(f"DROP TABLE {TABLE_NAME_outside};")
 
 conn.createSchema(SCHEMA_NAME)
-conn.createTable(TABLE_NAME_inside)
-conn.createTable(TABLE_NAME_outside)
+conn.createDhtTable(TABLE_NAME_inside)
+conn.createDhtTable(TABLE_NAME_outside)
 conn.commit()
 
 dtime = datetime.datetime.now() - datetime.timedelta(days=0.5)
 
 while dtime < datetime.datetime.now():
     # Update DHT observations (using an AR(1))
-    inside_obs = ObsDHT(
-        D=dtime,
-        H=updateAR(inside_obs.H, sigma_H, C, mean_H_inside),
-        T=updateAR(inside_obs.T, sigma_T, C, mean_T_inside),
+    inside_obs = DhtObservation(
+        dtime=dtime,
+        humidity=updateAR(inside_obs.humidity, sigma_H, C, mean_H_inside),
+        temperature=updateAR(inside_obs.temperature, sigma_T, C, mean_T_inside),
     )
-    outside_obs = ObsDHT(
-        D=dtime,
-        H=updateAR(outside_obs.H, sigma_H, C, mean_H_outside),
-        T=updateAR(outside_obs.T, sigma_T, C, mean_T_outside),
+    outside_obs = DhtObservation(
+        dtime=dtime,
+        humidity=updateAR(outside_obs.humidity, sigma_H, C, mean_H_outside),
+        temperature=updateAR(outside_obs.temperature, sigma_T, C, mean_T_outside),
     )
 
     # Send the observation to the server
