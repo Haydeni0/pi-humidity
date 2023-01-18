@@ -8,3 +8,5 @@ pi_humidity_dump_temp.sql
 
 # Dont track password environment variable
 password.env
+
+./shared/

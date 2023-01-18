@@ -1,9 +1,12 @@
 #!/bin/bash
-PASSWORD_FILE=./password.env
-GPIO_FILE=./shared/gpio.yaml
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+PASSWORD_FILE=$SCRIPT_DIR/password.env
+
+mkdir -p $SCRIPT_DIR/shared
+CONFIG_FILE=$SCRIPT_DIR/shared/config.yaml
 
 if ! test -f "$PASSWORD_FILE"; then
-    echo "Enter TimescaleDB password: (defaultL 'pwd')"
+    echo "Enter TimescaleDB password: (default: 'pwd')"
     read -s PASSWORD
 
     # If no password was given, set it to "pwd"
@@ -19,7 +22,7 @@ fi
 
 re='^[0-9]+$'
 namere='^[A-Za-z0-9_]+$'
-if ! test -f "$GPIO_FILE"; then
+if ! test -f "$CONFIG_FILE"; then
     echo "Enter number of GPIO pins"
     read NUM_PINS
 
@@ -29,7 +32,7 @@ if ! test -f "$GPIO_FILE"; then
         exit 1
     fi
 
-    echo "SensorGPIO:" >> $GPIO_FILE
+    echo "SensorGPIO:" >> $CONFIG_FILE
     
     for ((i=1; i<=$NUM_PINS; i++))
     do
@@ -40,7 +43,7 @@ if ! test -f "$GPIO_FILE"; then
         read NAME
         if ! [[ $NAME =~ $namere ]] ; then
             echo "error: Not a valid name" >&2
-            rm -f $GPIO_FILE
+            rm -f $CONFIG_FILE
             exit 1
         fi
 
@@ -48,17 +51,20 @@ if ! test -f "$GPIO_FILE"; then
         read PIN
         if ! [[ $PIN =~ $re ]] ; then
             echo "error: Not a number" >&2
-            rm -f $GPIO_FILE
+            rm -f $CONFIG_FILE
             exit 1
         fi
         
-        echo "  $NAME: $PIN" >> $GPIO_FILE
+        echo "  $NAME: $PIN" >> $CONFIG_FILE
     done
 
-    echo "Successfully saved to '$GPIO_FILE'"
+    # Save default values
+    echo "sensor_retry_seconds: 2" >> $CONFIG_FILE
+
+    echo "Successfully saved to '$CONFIG_FILE' (including other default parameters)"
 else
     # Display the full filepath of the GPIO env file
-    echo "GPIO pin file already exists: '$(readlink -f $GPIO_FILE)'"
+    echo "GPIO pin file already exists: '$(readlink -f $CONFIG_FILE)'"
 fi
 
 
