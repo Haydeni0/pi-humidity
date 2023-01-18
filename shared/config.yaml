@@ -1,4 +1,0 @@
-SensorGPIO:
-  inside: 13
-  outside: 26
-sensor_retry_seconds: 2
