@@ -12,8 +12,8 @@ services:
     depends_on:
       - timescaledb
     volumes:
-      - ./logs:/logs
       - ./src:/src
+      - ./shared:/shared
     entrypoint: python -u "/src/testLogger.py"
     env_file:
       - postgres.env
@@ -30,8 +30,8 @@ services:
     depends_on:
       - timescaledb
     volumes:
-      - ./logs:/logs
       - ./src:/src
+      - ./shared:/shared
     env_file:
       - postgres.env
       - password.env

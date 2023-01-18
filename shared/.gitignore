@@ -1,0 +1,5 @@
+# GPIO pin config
+gpio.yaml
+
+# Log files
+logs/

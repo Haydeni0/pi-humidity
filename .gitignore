@@ -5,10 +5,5 @@ DHT_graph.png
 # Don't track sql dumps
 pi_humidity_dump_temp.sql
 
-# Log files
-logs/
-# Database
-data/
-
 # Dont track password environment variable
 password.env
