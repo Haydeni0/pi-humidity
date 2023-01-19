@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 import psycopg2
 import psycopg2.extensions
-from psycopg2 import Error, errors
+from psycopg2 import Error, errors, sql
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +85,10 @@ class DatabaseApi:
             logger.debug(f"Connection closed ({datetime.datetime.now()})")
 
     def execute(
-        self, query: str, parameters: tuple[Any, ...] = (), raise_errors: bool = True
+        self,
+        query: str | sql.Composed,
+        parameters: tuple[Any, ...] = (),
+        raise_errors: bool = True,
     ) -> list[tuple[Any, ...]]:
         """Execute and commit a query
 
@@ -155,47 +158,6 @@ class DatabaseApi:
     def version(self):
         return self.execute("SELECT version();")[0][0]
 
-    def getObservations(
-        self,
-        table_name: str,
-        start_dtime: datetime.datetime,
-        end_dtime: datetime.datetime,
-    ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        # Query the database for DHT observations between two times
-        # Return D, H and T separately as arrays
-        query = f"""
-            SELECT dtime, humidity, temperature 
-                FROM {table_name}
-                WHERE dtime BETWEEN %s AND %s
-                ORDER BY dtime DESC;
-            """
-
-        try:
-            # Reconnect to the server to ensure we get the latest data
-            # self.connection.reconnect()
-            self.cursor.execute(query, (start_dtime, end_dtime))
-            observations = self.cursor.fetchall()
-
-            if len(observations) > 0:
-                # Convert the list of sequential observations into arrays D, H and T
-                z = zip(*observations)
-                D = np.array(next(z))
-                H = np.array(next(z))
-                T = np.array(next(z))
-                # Replace None values with nan so they can be handled more easily
-                H[H == np.array(None)] = np.nan
-                T[T == np.array(None)] = np.nan
-            else:
-                D = np.array([])
-                H = np.array([])
-                T = np.array([])
-
-            return D, H, T
-
-        except psycopg2.Error as err:
-            print(err)
-            return np.array([]), np.array([]), np.array([])
-
     def createSchema(
         self,
         schema_name: str,
@@ -245,7 +207,12 @@ class DatabaseApi:
         )
 
     def sendObservation(
-        self, table_name: str, sensor_name: str, dht: DhtObservation, *, ignore_insert_error: bool = False
+        self,
+        table_name: str,
+        sensor_name: str,
+        dht: DhtObservation,
+        *,
+        ignore_insert_error: bool = False,
     ):
         # Send a DHT observation to the table in the database
         if ignore_insert_error:
@@ -263,26 +230,33 @@ class DatabaseApi:
         else:
             temperature = "NULL"
 
-        self.execute(
+        query = sql.SQL(
             f"""
-            INSERT {ignore} INTO {table_name} 
+            INSERT {ignore} INTO {{table_name}} 
             (dtime, sensor_name, humidity, temperature)
-            VALUES ('{dht.dtime}', '{sensor_name}', {humidity}, {temperature});
+            VALUES (%s, %s, %s, %s);
             """
+        ).format(
+            table_name=sql.Identifier(table_name)
         )
+
+        self.execute(query, (dht.dtime, sensor_name, humidity, temperature))
 
     def size(self, human_readable: bool = True):
         # Get total size of the connected database (in MB)
         try:
             if human_readable:
-                result = self.execute(
-                    f"SELECT pg_size_pretty( pg_database_size('{self.connection.info.dbname}'));"
-                )
+                query = sql.SQL(
+                    "SELECT pg_size_pretty( pg_database_size({dbname}));"
+                ).format(dbname=sql.Literal(db.connection.info.dbname))
             else:
-                result = self.execute(
-                    f"SELECT pg_database_size('{self.connection.info.dbname}');"
+                query = sql.SQL("SELECT pg_database_size({dbname});").format(
+                    dbname=sql.Literal(db.connection.info.dbname)
                 )
+
+            result = self.execute(query)
             return result[0][0]
+
         except Error as err:
             logger.error(err)
 
@@ -296,11 +270,11 @@ class DatabaseApi:
 
 
 if __name__ == "__main__":
-    dht_connection = DatabaseApi()
+    db = DatabaseApi()
 
     random_dht = DhtObservation(
         datetime.datetime.now(), np.random.normal(1), np.random.normal(1)
     )
 
-    dht_connection.createDhtTable("test")
-    dht_connection.sendObservation("test", sensor_name="testsensor", dht=random_dht)
+    db.createDhtTable("test")
+    db.sendObservation("test", sensor_name="testsensor", dht=random_dht)

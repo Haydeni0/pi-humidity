@@ -1,5 +1,5 @@
 from database_api import DatabaseApi
-from sensors import SensorData
+from sensors import SensorOld
 import numpy as np
 from time import sleep
 from datetime import timedelta
@@ -22,8 +22,8 @@ num_grid = 8000
 # print(num_grid)
 # sys.exit()
 
-inside_sensor = SensorData(conn, "test.dht_inside", sensor_history=sensor_history, num_grid=num_grid)
-outside_sensor = SensorData(conn, "test.dht_outside", sensor_history=sensor_history, num_grid=num_grid)
+inside_sensor = SensorOld(conn, "test.dht_inside", sensor_history=sensor_history, num_grid=num_grid)
+outside_sensor = SensorOld(conn, "test.dht_outside", sensor_history=sensor_history, num_grid=num_grid)
 
 while True:
 

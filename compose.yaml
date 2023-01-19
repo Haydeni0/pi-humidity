@@ -8,8 +8,8 @@ services:
   dhtlogger:
     container_name: pi-humidity-dhtlogger
     image: haydeni0/pi-humidity:python
-    # tty: true
-    # stdin_open: true
+    tty: true
+    stdin_open: true
     depends_on:
       - timescaledb
     volumes:
@@ -27,8 +27,8 @@ services:
   dhtplotter:
     container_name: pi-humidity-dhtplotter
     image: haydeni0/pi-humidity:python
-    # tty: true
-    # stdin_open: true
+    tty: true
+    stdin_open: true
     depends_on:
       - timescaledb
     volumes:

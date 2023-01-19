@@ -1,5 +1,5 @@
 from database_api import DatabaseApi
-from sensors import SensorData
+from sensors import SensorOld
 from dash import Dash, dcc, html
 from dash.dependencies import Input, Output
 import plotly.graph_objects as go
@@ -27,10 +27,10 @@ num_grid = 800
 # print(num_grid)
 # sys.exit()
 
-inside_sensor = SensorData(
+inside_sensor = SensorOld(
     conn, "test.dht_inside", sensor_history=sensor_history, num_grid=num_grid
 )
-outside_sensor = SensorData(
+outside_sensor = SensorOld(
     conn, "test.dht_outside", sensor_history=sensor_history, num_grid=num_grid
 )
 
