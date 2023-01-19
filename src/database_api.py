@@ -106,7 +106,7 @@ class DatabaseApi:
             self.beginTransaction()
 
             self.cursor.execute(query, parameters)
-            if self.cursor.description is not None:
+            if self.cursor.rowcount >= 0:
                 result = self.cursor.fetchall()
 
             self.commit()
