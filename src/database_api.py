@@ -112,9 +112,13 @@ class DatabaseApi:
             self.commit()
         except errors.InFailedSqlTransaction as err:
             logger.error(err)
+            logger.debug("Rolling back...")
+            self.rollback()
             raise err
         except Error as err:
             logger.error(err)
+            logger.debug("Rolling back...")
+            self.rollback()
             if raise_errors:
                 raise err
 
