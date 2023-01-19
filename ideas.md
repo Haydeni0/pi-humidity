@@ -2,16 +2,21 @@
 
 ## To do
 
+
 ### Run pgadmin in a container, so that the postgres server can be monitored by website
   
 ### Use python asyncio to do asynchronous logging
 
-- Would be much better than the current logging implementation
+- Would be better than the current logging implementation, but only necessary for high frequency logging with many sensors...
 
-### Dash
+### Plotly Dash
 
+- Add y axis labels to the right side as well
+- Add buttons to increase/decrease parameters
+- Test parameter limits
 - Use animations for smoother graph updating
   - <https://stackoverflow.com/questions/63589249/plotly-dash-display-real-time-data-in-smooth-animation>
+  - Can't seem to get this to work...
 
 ### Use timescaledb features
 
@@ -25,11 +30,8 @@
 
 ### Clean up code
 
-- Classes:
-  - dataclasses + type hints
-- proper type hints for everything
-- Rename functions, classes
 - Clean up [raspberrypi_installation.md](raspberrypi_installation.md)
+- Remove test files, other useless things
 
 ### Improve and generalise install process
 
