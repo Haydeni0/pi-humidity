@@ -18,11 +18,12 @@ RED_HEX = "#D3042F"
 colourmap = [GREEN_HEX, RED_HEX] + px.colors.qualitative.G10
 
 # Set up logging
-start_time = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+start_time = datetime.now()
+start_time_formatted = datetime.now().strftime("%Y-%m-%d_%H%M%S")
 # Worry about this potentially clogging up the device storage
 # if the container keeps restarting or too many things are logged...
 logging.basicConfig(
-    filename=f"/shared/logs/dhtPlotter_{start_time}.log",
+    filename=f"/shared/logs/dhtPlotter_{start_time_formatted}.log",
     filemode="w",
     format="[%(asctime)s - %(levelname)s] %(funcName)20s: %(message)s",
     level=logging.DEBUG,
@@ -115,11 +116,14 @@ def updateGraph(n: int) -> tuple[dict, dict, datetime]:
 
 @app.callback([Output("time", "children"), Output("time", "dateTime")], [Input("time-update-tick", "n_intervals"), Input("graph-update-time", "data")])
 def updateTimeDisplay(n: int, graph_last_updated: str) -> tuple[str, datetime]:
+
     current_time = datetime.now()
-    time_passed = current_time - datetime.strptime(graph_last_updated, "%Y-%m-%dT%H:%M:%S.%f")
-    
-    # rounded_time = current_time - timedelta(microseconds=current_time.microsecond)
     rounded_time = datetime.strftime(current_time, "%H:%M:%S")
+    if graph_last_updated is not None:
+        time_passed = current_time - datetime.strptime(graph_last_updated, "%Y-%m-%dT%H:%M:%S.%f")
+    else:
+        time_passed = current_time - start_time
+        
 
     return f"""
     {rounded_time}.{str(current_time.microsecond)[0]} (last updated {time_passed.seconds} seconds ago)
