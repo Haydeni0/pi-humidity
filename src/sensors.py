@@ -174,9 +174,14 @@ class SensorData:
         ).format(table_name=sql.Identifier(self.table_name))
         result = self.db.execute(query_names, (start_dtime, end_dtime))
 
-        unique_sensors = tuple([_[0] for _ in result])
 
-        return unique_sensors
+        if result[0]:
+            unique_sensors = tuple([_[0] for _ in result])
+            return unique_sensors
+        else:
+            return ()
+
+        
 
 
 if __name__ == "__main__":
