@@ -13,7 +13,9 @@ from database_api import DatabaseApi
 from utils import timing
 import yaml
 from psycopg2 import sql
+import logging
 
+logger = logging.getLogger("__name__")
 
 @dataclass
 class SensorDht:
@@ -80,17 +82,21 @@ class SensorData:
         sensor_names = self.getSensorNames(start_dtime, end_dtime)
         for sensor_name in sensor_names:
             # Load from the database
+            logger.debug(f"({sensor_name}) Start")
             df = self.getObservations(sensor_name, start_dtime, end_dtime)
+            logger.debug(f"({sensor_name}) Queried")
             df.set_index("dtime", inplace=True)
 
             df.fillna(method="ffill", inplace=True)
             # Group data for each period in time, and aggregate by median
             df_grouped = df.groupby(pd.Grouper(level="dtime", freq=self.grid_frequency))
             df = df_grouped[["humidity", "temperature"]].agg("median")
+            logger.debug(f"({sensor_name}) Grouped")
 
             # Realign the data with regular indices, and a fixed amount of points
             bin_dtimes = pd.date_range(start_dtime, end_dtime, periods=self.num_bins)
             df = df.reindex(bin_dtimes, method="ffill")
+            logger.debug(f"({sensor_name}) Reindexed")
 
             # This reindexing will create NaNs if we are missing data from the beginning
             # Backfill them with real values

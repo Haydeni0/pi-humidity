@@ -12,21 +12,22 @@ import copy
 import yaml
 from collections import deque
 
+# Make colourmap for line plots https://plotly.com/python/discrete-color/
+GREEN_HEX = "#74A122"
+RED_HEX = "#D3042F"
+colourmap = [GREEN_HEX, RED_HEX] + px.colors.qualitative.G10
+
 # Set up logging
 start_time = datetime.now().strftime("%Y-%m-%d_%H%M%S")
 # Worry about this potentially clogging up the device storage
 # if the container keeps restarting or too many things are logged...
 logging.basicConfig(
-    filename="/shared/logs/dhtPlotter_{start_time}.log",
+    filename=f"/shared/logs/dhtPlotter_{start_time}.log",
     filemode="w",
     format="[%(asctime)s - %(levelname)s] %(funcName)20s: %(message)s",
     level=logging.DEBUG,
 )
 logger = logging.getLogger("__name__")
-
-GREEN_HEX = "#74A122"
-RED_HEX = "#D3042F"
-
 
 db = DatabaseApi()
 
@@ -84,10 +85,8 @@ def updateGraph(n: int) -> tuple[dict, dict, datetime]:
         humidity = np.array(sensor.data["humidity"])
         temperature = np.array(sensor.data["temperature"])
 
-        # https://plotly.com/python/discrete-color/
-        colours = [GREEN_HEX, RED_HEX] + px.colors.qualitative.G10
-        colour_idx = colour_idx % len(colours)
-        colour = colours[colour_idx]
+        colour_idx = colour_idx % len(colourmap)
+        colour = colourmap[colour_idx]
         
         H_traces.append(go.Scatter(x=dtime, y=humidity, marker_color=colour, name=sensor.name))
         T_traces.append(go.Scatter(x=dtime, y=temperature, marker_color=colour, name=sensor.name))

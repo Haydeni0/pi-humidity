@@ -72,7 +72,7 @@ class DatabaseApi:
         # Connect a cursor to the server
         self.cursor = self.connection.cursor()
 
-        logger.debug(f"Connected to database: {self.version()}")
+        logger.debug(f"Connected to server: {self.version()}")
         dbname = self.execute("SELECT current_database();")[0][0]
         logger.debug(f"Connected to database: {dbname}")
 
