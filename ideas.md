@@ -14,6 +14,8 @@
 - Add y axis labels to the right side as well
 - Add buttons to increase/decrease parameters
 - Test parameter limits
+- Do some sort of postprocessing?
+  - Smoothing on the temperature
 - Use animations for smoother graph updating
   - <https://stackoverflow.com/questions/63589249/plotly-dash-display-real-time-data-in-smooth-animation>
   - Can't seem to get this to work...

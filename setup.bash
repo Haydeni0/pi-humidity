@@ -69,7 +69,3 @@ else
     # Display the full filepath of the GPIO env file
     echo "GPIO pin file already exists: '$(readlink -f $CONFIG_FILE)'"
 fi
-
-
-# docker compose build
-# docker compose up -d
