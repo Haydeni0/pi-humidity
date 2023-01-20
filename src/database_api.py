@@ -37,7 +37,6 @@ class DatabaseApi:
 
     __connection_established: bool
     connection: psycopg2.extensions.connection
-    cursor: psycopg2.extensions.cursor
     connection_config: ConnectionConfig
 
     def __init__(self):
@@ -61,16 +60,13 @@ class DatabaseApi:
             temp_connection_config["dbname"] = "postgres"
             self.connection = psycopg2.connect(**temp_connection_config)
             pg_db = os.environ.get("POSTGRES_DB")
-            self.cursor.execute(
+            self.execute(
                 f"SELECT 'CREATE DATABASE {pg_db}' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '{pg_db}')\\gexec"
             )
             self.connection.close()
 
             # Reconnect to the server and correct database
             self.connection = psycopg2.connect(**self.connection_config._asdict())
-
-        # Connect a cursor to the server
-        self.cursor = self.connection.cursor()
 
         logger.debug(f"Connected to server: {self.version()}")
         dbname = self.execute("SELECT current_database();")[0][0]
@@ -80,34 +76,31 @@ class DatabaseApi:
         # Close the server connection when instance is destroyed
         # Only if the connection was successful
         if self.__connection_established:
-            self.cursor.close()
             self.connection.close()
             logger.debug(f"Connection closed ({datetime.datetime.now()})")
 
-    def execute(
+    def _execute(
         self,
+        cursor: psycopg2.extensions.cursor,
         query: str | sql.Composed,
         parameters: tuple[Any, ...] = (),
-        raise_errors: bool = True,
     ) -> list[tuple[Any, ...]]:
         """Execute and commit a query
 
         Args:
+            cursor (psycopg2.extensions.cursor): Database cursor
             query (str): SQL query
             parameters (tuple[Any, ...], optional): Tuple containing parameters if used in the query. Defaults to ().
-            raise_errors (bool, optional): Set False to ignore errors. Defaults to True.
 
         Returns:
             list[tuple[Any, ...]]: List of records returned by the executed statement.
         """
 
-        result = [()]
+        result = []
         try:
-            self.beginTransaction()
-
-            self.cursor.execute(query, parameters)
-            if self.cursor.rowcount >= 0:
-                result = self.cursor.fetchall()
+            cursor.execute(query, parameters)
+            if cursor.rowcount >= 0:
+                result = cursor.fetchall()
 
             self.commit()
         except errors.InFailedSqlTransaction as err:
@@ -119,19 +112,45 @@ class DatabaseApi:
             logger.error(err)
             logger.debug("Rolling back...")
             self.rollback()
-            if raise_errors:
-                raise err
+            raise err
 
         return result
 
-    def executeDf(self, *args, **kwargs) -> pd.DataFrame:
+    def execute(
+        self,
+        query: str | sql.Composed,
+        parameters: tuple[Any, ...] = (),
+    ) -> list[tuple[Any, ...]]:
+        """Execute and commit a query
+
+        Args:
+            query (str): SQL query
+            parameters (tuple[Any, ...], optional): Tuple containing parameters if used in the query. Defaults to ().
+
+        Returns:
+            list[tuple[Any, ...]]: List of records returned by the executed statement.
+        """
+        with self.connection.cursor() as cursor:
+            return self._execute(cursor, query, parameters)
+
+    def executeDf(
+        self,
+        query: str | sql.Composed,
+        parameters: tuple[Any, ...] = (),
+    ) -> pd.DataFrame:
         """The same as execute, but returns the results in the form of a pandas DataFrame
+
+        Args:
+            query (str): SQL query
+            parameters (tuple[Any, ...], optional): Tuple containing parameters if used in the query. Defaults to ().
 
         Returns:
             pd.DataFrame: Result of the query
         """
-        result = self.execute(*args, **kwargs)
-        desc = self.cursor.description
+        with self.connection.cursor() as cursor:
+            result = self._execute(cursor, query, parameters)
+            desc = cursor.description
+
         if desc is not None:
             colnames = [col[0] for col in desc]
         else:
@@ -140,12 +159,6 @@ class DatabaseApi:
         df = pd.DataFrame(result, columns=colnames)
 
         return df
-
-    def beginTransaction(self):
-        try:
-            self.cursor.execute("BEGIN TRANSACTION;")
-        except Error as err:
-            logger.error(err)
 
     def commit(self):
         try:
@@ -240,9 +253,7 @@ class DatabaseApi:
             (dtime, sensor_name, humidity, temperature)
             VALUES (%s, %s, %s, %s);
             """
-        ).format(
-            table_name=sql.Identifier(table_name)
-        )
+        ).format(table_name=sql.Identifier(table_name))
 
         self.execute(query, (dht.dtime, sensor_name, humidity, temperature))
 

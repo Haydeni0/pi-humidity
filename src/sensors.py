@@ -86,13 +86,15 @@ class SensorData:
             df = self.getObservations(sensor_name, start_dtime, end_dtime)
             logger.debug(f"({sensor_name}) Queried")
 
-            # Strange error where df is sometimes empty, not sure why atm
-            if len(df) == 0:
-                logger.error("Dataframe is empty...")
-                continue
-            if "dtime" not in df.columns:
-                logger.error("Dataframe doesn't have dtime...")
-                continue
+            # # Strange error where df is sometimes empty, not sure why atm
+            # # Seems to happen when dash does two callbacks that use
+            # # the same cursor object for multiple sensors at once
+            # if len(df) == 0:
+            #     logger.error("Dataframe is empty...")
+            #     continue
+            # if "dtime" not in df.columns:
+            #     logger.error("Dataframe doesn't have dtime...")
+            #     continue
 
             df.set_index("dtime", inplace=True)
 
@@ -178,7 +180,7 @@ class SensorData:
         result = self.db.execute(query_names, (start_dtime, end_dtime))
 
 
-        if result[0]:
+        if result and result[0]:
             unique_sensors = tuple([_[0] for _ in result])
             return unique_sensors
         else:
