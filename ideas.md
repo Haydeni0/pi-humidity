@@ -1,9 +1,6 @@
 # Ideas
 
 ## To do
-
-
-### Run pgadmin in a container, so that the postgres server can be monitored by website
   
 ### Use python asyncio to do asynchronous logging
 
@@ -19,6 +16,12 @@
 - Use animations for smoother graph updating
   - <https://stackoverflow.com/questions/63589249/plotly-dash-display-real-time-data-in-smooth-animation>
   - Can't seem to get this to work...
+
+### Optimise plotter
+
+- The current implementation is simple and could be made faster by
+  - querying more efficiently (see below section)
+  - using double ended queues to push new data as it comes in and pop old data (automatically using python deque's ```maxlen``` option)
 
 ### Use timescaledb features
 
