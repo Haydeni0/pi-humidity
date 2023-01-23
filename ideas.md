@@ -13,15 +13,26 @@
 - Test parameter limits
 - Do some sort of postprocessing?
   - Smoothing on the temperature
-- Use animations for smoother graph updating
-  - <https://stackoverflow.com/questions/63589249/plotly-dash-display-real-time-data-in-smooth-animation>
-  - Can't seem to get this to work...
+- Turn off animations for the moment, mt might be the cause of this issue where the graph stays on old values if left in the background for a while?
 
 ### Optimise plotter
 
 - The current implementation is simple and could be made faster by
   - querying more efficiently (see below section)
   - using double ended queues to push new data as it comes in and pop old data (automatically using python deque's ```maxlen``` option)
+- Make things server-side not client side
+  - If we have several windows open, we don't want each one independently querying postgres as they'll all just receive the same info...
+Also, for simplicity, change the bins to time buckets with a time window based on absolute time, e.g. every four minutes starting at the hour.
+
+Example process
+
+- for 2 days of sensor history
+- bins are time buckets of 4 minutes, starting cleanly at the hour (the bucket time period must be a factor of 60 minutes)
+  - 720 bins in two days
+- The datetime is 2023-01-04 13:05:00
+
+1. Use timescaledb to find the timebucket averages of every four minutes, starting at the hour
+  1. e.g. 12:52:00 -> 12:56:00 -> 13:00:00
 
 ### Use timescaledb features
 
@@ -57,3 +68,8 @@
 - Set up dynamic DNS service with dynu + docker compose somehow?
 - Make sure there is an ssl certificate for https
   - certbot docker service?
+
+### Database backups
+
+- What is the best way to do this?
+  - Dump database and rclone?

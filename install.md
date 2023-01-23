@@ -2,8 +2,6 @@
 
 ## Physical installation instructions
 
-
-
 ## Software installation instructions
 
 Update
@@ -21,9 +19,9 @@ Clone this repository
     git clone git@github.com:Haydeni0/pi-humidity.git
     cd pi-humidity
 
-Add password to an environment file (change ```my_postgres_password``` to something else)
+Run ```./setup.bash``` to set the database password and set up initial config (including DHT22 sensor names and their corresponding GPIO pins). This writes to ```./password.env``` and ```./shared/config.yaml``` respectively, which can be edited by hand to change further parameters.
 
-    echo POSTGRES_PASSWORD=my_postgres_password > password.env
+    ./setup.bash
 
 Run Docker
 
@@ -42,3 +40,9 @@ Run Docker
 Use images available on docker hub, specified in the compose file. Run the command:
 
     docker compose up -d
+
+Now, if the GPIO pins are set correctly, this will display the temperature and humidity graphs to port 80 of the raspberry pi, and can be seen by entering in the local ip of the pi into a web browser from a computer on the same LAN (or localhost on a browser in the GUI of the raspberry pi).
+
+The database containing the data is accessible on port 5432 of the raspberry pi (Username ```postgres``` and password set in ```./password.env```). This also can be accessed through the raspberry pi command line with docker (schema and table names defined in ```./config.yaml```)
+
+    docker exec -it pi-humidity-timescaledb /bin/bash -c 'psql -U postgres -d ${POSTGRES_DB}'
