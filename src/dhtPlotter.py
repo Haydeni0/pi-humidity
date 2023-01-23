@@ -59,7 +59,7 @@ app = Dash(name=__name__, update_title="", title="pi-humidity")
 app.layout = html.Div(
     children=[
         dcc.Graph(id="humidity-graph", figure=fig_H, animate=True),
-        dcc.Graph(id="temperature-graph", figure=fig_T, animate=True),
+        dcc.Graph(id="temperature-graph", figure=fig_T, animate=False), # Try no animation on one as a test
         html.Time(id="time"),
         dcc.Interval(id="graph-update-tick", interval=figure_update_interval_seconds * 1000, n_intervals=0),
         dcc.Interval(id="time-update-tick", interval=100, n_intervals=0),

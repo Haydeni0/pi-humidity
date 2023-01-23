@@ -3,14 +3,12 @@ import time
 import warnings
 from collections import deque
 from dataclasses import dataclass
-from typing import Tuple
 
 import numpy as np
 import pandas as pd
 from pandas.core import frame
 
 from database_api import DatabaseApi
-from utils import timing
 import yaml
 from psycopg2 import sql
 import logging
