@@ -32,7 +32,7 @@ Run Docker
 > The build may take a *long* time on a raspberry pi.
 > > It is recommended to use a faster computer using ```docker buildx build``` to build for ```linux/arm/v7```, and optionally for ```linux/amd64```.
 > >
-> >     docker buildx build -f pythonDockerfile . -t haydeni0/pi-humidity:python --platform linux/arm/v7,linux/amd64
+> >     docker buildx build -f python.Dockerfile . -t haydeni0/pi-humidity:python --platform linux/arm/v7,linux/amd64
 >
 >     docker build -f pythonDockerfile . -t haydeni0/pi-humidity:python
 >     docker push haydeni0/pi-humidity:python
