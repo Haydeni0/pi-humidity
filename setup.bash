@@ -2,6 +2,8 @@
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 PASSWORD_FILE=$SCRIPT_DIR/password.env
 
+WEBSERVER_FILE=$SCRIPT_DIR/webserver.env
+
 mkdir -p $SCRIPT_DIR/shared
 CONFIG_FILE=$SCRIPT_DIR/shared/config.yaml
 
@@ -13,7 +15,7 @@ if ! test -f "$PASSWORD_FILE"; then
     if [ -z "$PASSWORD" ]; then 
         PASSWORD="pwd"
     fi
-    echo "Saving to '$PASSWORD_FILE'"
+    echo "Saving to '$(readlink -f $PASSWORD_FILE)'"
     echo POSTGRES_PASSWORD=$PASSWORD > $PASSWORD_FILE
 else
     # Display the full filepath of the password env file
@@ -64,8 +66,35 @@ if ! test -f "$CONFIG_FILE"; then
     echo "schema_name:" >> $CONFIG_FILE
     echo "table_name: dht" >> $CONFIG_FILE
 
-    echo "Successfully saved to '$CONFIG_FILE' (including other default parameters)"
+    echo "Successfully saved to '$(readlink -f $CONFIG_FILE)' (including other default parameters)"
 else
     # Display the full filepath of the GPIO env file
     echo "GPIO pin file already exists: '$(readlink -f $CONFIG_FILE)'"
+fi
+
+if ! test -f "$WEBSERVER_FILE"; then
+    echo "Website hostname (defaults to empty)"
+    read WEBSITE_HOSTNAME
+
+    # If no hostname was given, set it to ""
+    if [ -z "$WEBSITE_HOSTNAME" ]; then 
+        WEBSITE_HOSTNAME=""
+    fi
+
+    echo "WEBSITE_HOSTNAME=$WEBSITE_HOSTNAME" >> $WEBSERVER_FILE
+
+    echo "Email (defaults to empty)"
+    read EMAIL
+
+    # If no email was given, set it to ""
+    if [ -z "$EMAIL" ]; then 
+        EMAIL=""
+    fi
+
+    echo "EMAIL=$EMAIL" >> $WEBSERVER_FILE
+
+    echo "Successfully saved to '$(readlink -f $WEBSERVER_FILE)'"
+else
+    # Display the full filepath of the GPIO env file
+    echo "Webserver file already exists: '$(readlink -f $WEBSERVER_FILE)'"
 fi

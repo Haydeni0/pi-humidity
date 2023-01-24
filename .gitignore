@@ -3,10 +3,8 @@ __pycache__
 DHT_graph.png
 tempCodeRunnerFile.py
 
-# Don't track sql dumps
-pi_humidity_dump_temp.sql
-
-# Dont track password environment variable
+# Dont track secret environment variables
 password.env
+webserver.env
 
 shared/
