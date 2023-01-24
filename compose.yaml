@@ -1,6 +1,7 @@
 
 volumes:
   tsdb_data:
+  certbot:
 
 services:
 
@@ -33,14 +34,16 @@ services:
     volumes:
       - ./src:/src
       - ./shared:/shared
+      - certbot:/etc/letsencrypt
     env_file:
       - postgres.env
       - password.env
     restart: always
     ports:
-      - 80:8080
+      - 80:80
       - 443:443
-    entrypoint: ["python", "-u", "/src/dhtPlotter.py"]
+    # entrypoint: ["python", "/src/dhtPlotter.py"]
+    # entrypoint: gunicorn --certfile=/src/fullchain1.pem --keyfile=/src/privkey1.pem --bind 0.0.0.0:443 /src/dhtPlotter:server
 
   timescaledb:
     container_name: pi-humidity-timescaledb

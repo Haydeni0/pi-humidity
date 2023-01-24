@@ -1,13 +1,13 @@
 # Based on https://stackoverflow.com/a/72186728
-from gunicorn.app.wsgiapp import WSGIApplication
-from gunicorn.config import Config
 import multiprocessing
 import os
 from pathlib import Path
 
-from dhtPlotter import server
-
 import gunicorn.app.base
+from gunicorn.config import Config
+
+from dhtPlotter import server, app
+from my_certbot import Cert
 
 
 class StandaloneApplication(gunicorn.app.base.BaseApplication):
@@ -33,31 +33,36 @@ class StandaloneApplication(gunicorn.app.base.BaseApplication):
 
 def gunicornConfig() -> dict:
 
-    WEBSITE_HOSTNAME = os.environ.get("WEBSITE_HOSTNAME")
+    cert = Cert()
 
-    certbot_path = Path(f"/etc/letsencrypt/live/{WEBSITE_HOSTNAME}")
-    certfile = certbot_path.joinpath(f"fullchain.pem")
-    keyfile = certbot_path.joinpath(f"privkey.pem")
-
-    if certfile.exists() and keyfile.exists():
+    if cert:
         bind = "0.0.0.0:443"
     else:
-        certfile = None
-        keyfile = None
         bind = "0.0.0.0:80"
 
     workers = (multiprocessing.cpu_count() * 2) + 1
 
     options = {
         "bind": bind,
-        "workers": workers,
-        "certfile": certfile,
-        "keyfile": keyfile,
+        # "workers": workers, # Currently not working with multiple workers, gunicorn has weird interactions with psycopg2 with forked processes...
+        "certfile": str(cert.certfile),
+        "keyfile": str(cert.keyfile),
+        "reload": True,
+        "preload_app": False, # To stop this error https://github.com/psycopg/psycopg2/issues/281#issuecomment-985387977
     }
 
     return options
 
 
 if __name__ == "__main__":
-    options = gunicornConfig()
-    StandaloneApplication(server, options).run()
+    # options = gunicornConfig()
+    # StandaloneApplication(server, options).run()
+
+    cert = Cert()
+
+    if cert:
+        port = 443
+    else:
+        port = 80
+    ssl_context = cert.getSslContext()
+    app.run_server(host="0.0.0.0", port = port, debug=True, ssl_context=ssl_context)
