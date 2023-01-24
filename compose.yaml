@@ -38,6 +38,7 @@ services:
     env_file:
       - postgres.env
       - password.env
+      - webserver.env
     restart: always
     ports:
       - 80:80
@@ -56,14 +57,3 @@ services:
       - password.env
     restart: always
 
-  # certbot:
-  #   container_name: pi-humidity-certbot
-  #   image: certbot/certbot:arm32v6-latest
-  #   # entrypoint: ["tail", "-f", "/dev/null"]
-  #   entrypoint: /certbot/certbot.sh
-  #   ports:
-  #     - 80:80
-  #   volumes:
-  #     - ./certbot:/certbot
-  #     - ./certbot/etc/letsencrypt:/etc/letsencrypt
-  #     # - ./certbot/var/lib/letsencrypt:/var/lib/letsencrypt

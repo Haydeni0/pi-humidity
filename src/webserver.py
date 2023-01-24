@@ -59,8 +59,9 @@ if __name__ == "__main__":
     # options = gunicornConfig()
     # StandaloneApplication(server, options).run()
 
+    # Set up a cronjob to renew the certificate every day at 0030
     os.system("crontab -l > my_cron")
-    os.system("echo 30 * * * * python /src/my_certbot.py  >> /tmp/my_cron")
+    os.system("echo 30 \* \* \* \* python /src/my_certbot.py  >> /tmp/my_cron")
     os.system("crontab /tmp/my_cron")
     os.system("rm /tmp/my_cron")
 
