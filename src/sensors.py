@@ -86,7 +86,6 @@ class SensorData:
 
             df.set_index("dtime", inplace=True)
 
-            df.fillna(method="ffill", inplace=True)
             # Group data for each period in time, and aggregate by median
             df_grouped = df.groupby(pd.Grouper(level="dtime", freq=self.grid_frequency))
             df = df_grouped[["humidity", "temperature"]].agg("median")
@@ -97,8 +96,10 @@ class SensorData:
             df = df.reindex(bin_dtimes, method="ffill")
             logger.debug(f"({sensor_name}) Reindexed")
 
+            
             # This reindexing will create NaNs if we are missing data from the beginning
             # Backfill them with real values
+            df.fillna(method="ffill", inplace=True)
             df.fillna(method="bfill", inplace=True)
 
             # Check, just in case
