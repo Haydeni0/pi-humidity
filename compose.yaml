@@ -38,7 +38,7 @@ services:
       - password.env
     restart: always
     ports:
-      - 80:8080
+      - 8080:8080
     entrypoint: python -u "/src/dhtPlotter.py"
 
   timescaledb:
@@ -53,14 +53,14 @@ services:
       - password.env
     restart: always
 
-  # certbot:
-  #   container_name: pi-humidity-certbot
-  #   image: certbot/certbot:arm32v6-latest
-  #   # entrypoint: ["tail", "-f", "/dev/null"]
-  #   entrypoint: certbot certonly -d pi-humidity.webredirect.org --email hayden.dorahy@gmail.com --agree-tos --keep-until-expiring --standalone
-  #   ports:
-  #     - 80:80
-  #   volumes:
-  #     - ./certbot/etc/letsencrypt:/etc/letsencrypt
-  #     - ./certbot/var/lib/letsencrypt:/var/lib/letsencrypt
-  #     - ./certbot/webroot:/webroot
+  certbot:
+    container_name: pi-humidity-certbot
+    image: certbot/certbot:arm32v6-latest
+    # entrypoint: ["tail", "-f", "/dev/null"]
+    entrypoint: /certbot/certbot.sh
+    ports:
+      - 80:80
+    volumes:
+      - ./certbot:/certbot
+      - ./certbot/etc/letsencrypt:/etc/letsencrypt
+      # - ./certbot/var/lib/letsencrypt:/var/lib/letsencrypt
