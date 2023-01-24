@@ -52,7 +52,7 @@ def createCertificate():
         "--standalone",
         "--non-interactive",
     ]
-    sys.exit(main(args))
+    main(args)
 
 
 if __name__ == "__main__":
