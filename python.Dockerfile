@@ -19,11 +19,12 @@ RUN python -m pip install pyyaml
 RUN python -m pip install RPi.GPIO
 RUN python -m adafruit-circuitpython-dht==3.7.8
 
-# Requirements for pyopenssl
+# Requirements for pyopenssl (cryptography)
 RUN apt-get install -y build-essential 
 RUN apt-get install -y libssl-dev 
 RUN apt-get install -y libffi-dev 
 RUN apt-get install -y python3-dev 
 RUN apt-get install -y cargo 
 RUN apt-get install -y pkg-config
+RUN python -m pip install cryptography
 RUN python -m pip install pyopenssl
