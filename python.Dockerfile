@@ -6,6 +6,7 @@ RUN apt-get update
 RUN python -m pip install --upgrade pip
 
 # Typical libraries
+COPY ./requirements.txt .
 RUN python -m pip install -r ./requirements.txt
 
 # Requirements for pyopenssl (cryptography)
