@@ -14,7 +14,7 @@ services:
     volumes:
       - ./src:/src
       - ./shared:/shared
-    entrypoint: python -u "/src/dhtLogger.py"
+    entrypoint: ["python", "-u", "/src/dhtLogger.py"]
     env_file:
       - postgres.env
       - password.env
@@ -40,7 +40,7 @@ services:
     ports:
       - 80:8080
       - 443:443
-    entrypoint: python -u "/src/dhtPlotter.py"
+    entrypoint: ["python", "-u", "/src/dhtPlotter.py"]
 
   timescaledb:
     container_name: pi-humidity-timescaledb
