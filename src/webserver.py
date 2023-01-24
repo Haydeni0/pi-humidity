@@ -7,7 +7,7 @@ import gunicorn.app.base
 from gunicorn.config import Config
 
 from dhtPlotter import server, app
-from my_certbot import Cert
+from my_certbot import Cert, createCertificate
 
 
 class StandaloneApplication(gunicorn.app.base.BaseApplication):
@@ -55,14 +55,24 @@ def gunicornConfig() -> dict:
 
 
 if __name__ == "__main__":
+    # Use gunicorn for the webserver
     # options = gunicornConfig()
     # StandaloneApplication(server, options).run()
 
     cert = Cert()
 
+    # Create a certificate if one doesn't already exist and a hostname is given
+    if not cert and cert.getHostname():
+        createCertificate()
+        cert = Cert()
+    
     if cert:
+        # Certificate exists, use https
         port = 443
     else:
+        # Certificate doesn't exist, use http
         port = 80
+    
+    # Use Dash instead of gunicorn for the webserver
     ssl_context = cert.getSslContext()
     app.run_server(host="0.0.0.0", port = port, debug=True, ssl_context=ssl_context)
