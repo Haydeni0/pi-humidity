@@ -69,6 +69,14 @@ Example process
 - Make sure there is an ssl certificate for https
   - certbot docker service?
 
+Use a combination of:
+
+https://blog.miguelgrinberg.com/post/running-your-flask-application-over-https
+
+https://certbot.eff.org/instructions?ws=other&os=pip
+
+Run certbot inside the python docker image
+
 ### Database backups
 
 - What is the best way to do this?
