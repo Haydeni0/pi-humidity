@@ -42,8 +42,7 @@ services:
     ports:
       - 80:80
       - 443:443
-    # entrypoint: ["python", "/src/dhtPlotter.py"]
-    # entrypoint: gunicorn --certfile=/src/fullchain1.pem --keyfile=/src/privkey1.pem --bind 0.0.0.0:443 /src/dhtPlotter:server
+    entrypoint: ["python", "/src/webserver.py"]
 
   timescaledb:
     container_name: pi-humidity-timescaledb
