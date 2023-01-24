@@ -9,6 +9,10 @@ RUN python -m pip install --upgrade pip
 COPY ./requirements.txt .
 RUN python -m pip install -r ./requirements.txt
 
-# Requirements for pyopenssl (cryptography)
-RUN apt-get install -y build-essential libssl-dev libffi-dev python3-dev cargo pkg-config
-RUN python -m pip install pyopenssl
+RUN python -m pip install gunicorn
+RUN python -m pip install certbot
+
+
+# # Requirements for pyopenssl (cryptography) https://github.com/pyca/cryptography/blob/main/docs/installation.rst#debianubuntu
+# RUN apt-get install -y build-essential libssl-dev libffi-dev python3-dev cargo pkg-config
+# RUN python -m pip install pyopenssl
