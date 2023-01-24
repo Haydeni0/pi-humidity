@@ -73,7 +73,7 @@ else
 fi
 
 if ! test -f "$WEBSERVER_FILE"; then
-    echo "Website hostname (defaults to empty)"
+    echo "Website hostname (must be nonempty to use https, defaults to empty)"
     read WEBSITE_HOSTNAME
 
     # If no hostname was given, set it to ""
@@ -83,7 +83,7 @@ if ! test -f "$WEBSERVER_FILE"; then
 
     echo "WEBSITE_HOSTNAME=$WEBSITE_HOSTNAME" >> $WEBSERVER_FILE
 
-    echo "Email (defaults to empty)"
+    echo "Email (must be nonempty to use https, defaults to empty)"
     read EMAIL
 
     # If no email was given, set it to ""
