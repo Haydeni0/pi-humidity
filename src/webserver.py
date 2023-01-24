@@ -48,7 +48,7 @@ def gunicornConfig() -> dict:
         "certfile": str(cert.certfile),
         "keyfile": str(cert.keyfile),
         "reload": True,
-        "preload_app": False, # To stop this error https://github.com/psycopg/psycopg2/issues/281#issuecomment-985387977
+        "preload_app": False,  # To stop this error https://github.com/psycopg/psycopg2/issues/281#issuecomment-985387977
     }
 
     return options
@@ -59,20 +59,25 @@ if __name__ == "__main__":
     # options = gunicornConfig()
     # StandaloneApplication(server, options).run()
 
+    os.system("crontab -l > my_cron")
+    os.system("echo 30 * * * * python /src/my_certbot.py  >> /tmp/my_cron")
+    os.system("crontab /tmp/my_cron")
+    os.system("rm /tmp/my_cron")
+
     cert = Cert()
 
     # Create a certificate if one doesn't already exist and a hostname is given
     if not cert and cert.getHostname():
         createCertificate()
         cert = Cert()
-    
+
     if cert:
         # Certificate exists, use https
         port = 443
     else:
         # Certificate doesn't exist, use http
         port = 80
-    
+
     # Use Dash instead of gunicorn for the webserver
     ssl_context = cert.getSslContext()
-    app.run_server(host="0.0.0.0", port = port, debug=True, ssl_context=ssl_context)
+    app.run_server(host="0.0.0.0", port=port, debug=True, ssl_context=ssl_context)

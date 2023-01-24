@@ -56,4 +56,5 @@ def createCertificate():
 
 
 if __name__ == "__main__":
-    createCertificate()
+    if (WEBSITE_HOSTNAME is not None) and (EMAIL is not None):
+        createCertificate()
