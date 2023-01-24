@@ -99,7 +99,10 @@ class DatabaseApi:
         result = []
         try:
             cursor.execute(query, parameters)
-            if cursor.rowcount >= 0:
+            # How to properly check if results exist and we aren't going to get a "psycopg2.ProgrammingError: no results to fetch" error?
+            # results_exist = cursor.rowcount >= 0 and cursor.description is not None
+            results_exist = cursor.pgresult_ptr is not None
+            if results_exist:
                 result = cursor.fetchall()
 
             self.commit()
