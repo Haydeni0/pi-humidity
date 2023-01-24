@@ -5,4 +5,7 @@ matplotlib==3.6.2
 plotly==5.11.0
 dash==2.7.0
 black
+pyyaml
+
 adafruit-circuitpython-dht==3.7.8
+RPi.GPIO==0.7.1
