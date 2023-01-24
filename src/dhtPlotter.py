@@ -11,6 +11,8 @@ import logging
 import copy
 import yaml
 from collections import deque
+from my_certbot import Cert, createCertificate
+import os
 
 # Make colourmap for line plots https://plotly.com/python/discrete-color/
 GREEN_HEX = "#74A122"
@@ -130,4 +132,26 @@ def updateTimeDisplay(n: int, graph_last_updated: str) -> tuple[str, datetime]:
     """, current_time
 
 if __name__ == "__main__":
-    app.run_server(host="0.0.0.0", port = 80, debug=True)
+    # Set up a cronjob to renew the certificate every day at 0030
+    os.system("crontab -l > my_cron")
+    os.system(r"echo 30 \* \* \* \* python /src/my_certbot.py  >> /tmp/my_cron")
+    os.system("crontab /tmp/my_cron")
+    os.system("rm /tmp/my_cron")
+
+    cert = Cert()
+
+    # Create a certificate if one doesn't already exist and a hostname is given
+    if not cert and cert.getHostname():
+        createCertificate()
+        cert = Cert()
+
+    if cert:
+        # Certificate exists, use https
+        port = 443
+    else:
+        # Certificate doesn't exist, use http
+        port = 80
+
+    # Use Dash instead of gunicorn for the webserver
+    ssl_context = cert.getSslContext()
+    app.run_server(host="0.0.0.0", port=port, debug=True, ssl_context=ssl_context)

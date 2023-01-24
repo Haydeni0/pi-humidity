@@ -22,6 +22,8 @@
   - using double ended queues to push new data as it comes in and pop old data (automatically using python deque's ```maxlen``` option)
 - Make things server-side not client side
   - If we have several windows open, we don't want each one independently querying postgres as they'll all just receive the same info...
+  - Or maybe just have the initial load client side, but the regular updates server side? Basicallly, just do as few queries as possible
+
 Also, for simplicity, change the bins to time buckets with a time window based on absolute time, e.g. every four minutes starting at the hour.
 
 Example process
@@ -65,17 +67,7 @@ Example process
 
 ### WAN webpage
 
-- Set up dynamic DNS service with dynu + docker compose somehow?
-- Make sure there is an ssl certificate for https
-  - certbot docker service?
-
-Use a combination of:
-
-https://blog.miguelgrinberg.com/post/running-your-flask-application-over-https
-
-https://certbot.eff.org/instructions?ws=other&os=pip
-
-Run certbot inside the python docker image
+Test out bash script with cert for pi-humidity.webredirect.org
 
 ### Database backups
 
