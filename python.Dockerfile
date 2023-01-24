@@ -7,13 +7,13 @@ RUN python -m pip install --upgrade pip
 # Don't use a pip requirements file so we can easily segment the build
 
 # Typical libraries
-RUN python -m numpy==1.23
-RUN python -m psycopg2==2.9.5
-RUN python -m pandas==1.5.1
-RUN python -m matplotlib==3.6.2
-RUN python -m plotly==5.11.0
-RUN python -m dash==2.7.0
-RUN python -m black
+RUN python -m pip install numpy==1.23
+RUN python -m pip install psycopg2==2.9.5
+RUN python -m pip install pandas==1.5.1
+RUN python -m pip install matplotlib==3.6.2
+RUN python -m pip install plotly==5.11.0
+RUN python -m pip install dash==2.7.0
+RUN python -m pip install black
 RUN python -m pip install pyyaml
 # Raspberry pi GPIO and sensor libraries
 RUN python -m pip install RPi.GPIO
