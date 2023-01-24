@@ -55,6 +55,7 @@ fig_T = go.Figure()
 
 
 app = Dash(name=__name__, update_title="", title="pi-humidity")
+server = app.server
 
 app.layout = html.Div(
     children=[
@@ -130,7 +131,4 @@ def updateTimeDisplay(n: int, graph_last_updated: str) -> tuple[str, datetime]:
     """, current_time
 
 if __name__ == "__main__":
-    # ssl_context = ("fullchain1.pem", "privkey1.pem")
-    # app.run_server(host="0.0.0.0", port="8080", debug=True, ssl_context=ssl_context)
-    app.run_server(host="0.0.0.0", port="8080", debug=True)
-    # app.run_server(host="0.0.0.0", port="8080", debug=True, ssl_context="adhoc")
+    app.run_server(host="0.0.0.0", port = 80, debug=True)
