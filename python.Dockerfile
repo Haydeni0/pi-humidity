@@ -1,5 +1,5 @@
 FROM python:3.10.9-bullseye
-WORKDIR /pytest
+WORKDIR /build_workdir
 
 RUN apt-get update
 
