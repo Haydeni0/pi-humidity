@@ -17,7 +17,7 @@ RUN python -m pip install black
 RUN python -m pip install pyyaml
 # Raspberry pi GPIO and sensor libraries
 RUN python -m pip install RPi.GPIO
-RUN python -m adafruit-circuitpython-dht==3.7.8
+RUN python -m pip install adafruit-circuitpython-dht==3.7.8
 
 # Requirements for pyopenssl (cryptography)
 RUN apt-get install -y build-essential 
