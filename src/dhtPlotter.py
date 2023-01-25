@@ -132,9 +132,9 @@ def updateTimeDisplay(n: int, graph_last_updated: str) -> tuple[str, datetime]:
     """, current_time
 
 if __name__ == "__main__":
-    # Set up a cronjob to renew the certificate every day at 0030
-    os.system("crontab -l > my_cron")
-    os.system(r"echo 30 \* \* \* \* python /src/my_certbot.py  >> /tmp/my_cron")
+    # Set up a cronjob to renew the certificate every day at 0230
+    # os.system("crontab -l > my_cron")
+    os.system(r"echo 30 2 \* \* \* python /src/my_certbot.py  >> /tmp/my_cron")
     os.system("crontab /tmp/my_cron")
     os.system("rm /tmp/my_cron")
 
