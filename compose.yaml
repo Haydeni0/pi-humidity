@@ -45,6 +45,25 @@ services:
       - 443:443
     entrypoint: ["python", "/src/dhtPlotter.py"]
 
+  testplotter:
+    container_name: pi-humidity-testplotter
+    image: haydeni0/pi-humidity:python
+    tty: true
+    stdin_open: true
+    depends_on:
+      - timescaledb
+    volumes:
+      - ./src:/src
+      - ./shared:/shared
+    env_file:
+      - postgres.env
+      - password.env
+    restart: always
+    ports:
+      - 8080:80
+      - 8443:443
+    # entrypoint: ["python", "/src/dhtPlotter.py"]
+
   timescaledb:
     container_name: pi-humidity-timescaledb
     image: timescale/timescaledb:latest-pg14
