@@ -2,6 +2,10 @@
 
 ## To do
   
+- Fix dhtplotter crash when two instances connect at the same time, e.g. opening two tabs with raspidht.webredirect.org
+  - Something to do with ssl?
+  - Look at ```docker compose logs -f```
+
 ### Use python asyncio to do asynchronous logging
 
 - Would be better than the current logging implementation, but only necessary for high frequency logging with many sensors...
@@ -34,7 +38,7 @@ Example process
 - The datetime is 2023-01-04 13:05:00
 
 1. Use timescaledb to find the timebucket averages of every four minutes, starting at the hour
-  1. e.g. 12:52:00 -> 12:56:00 -> 13:00:00
+1. e.g. 12:52:00 -> 12:56:00 -> 13:00:00
 
 ### Use timescaledb features
 
