@@ -4,6 +4,10 @@ from pathlib import Path
 import sys
 
 from certbot.main import main
+from certbot.errors import Error
+
+import logging
+logger = logging.getLogger(__name__)
 
 WEBSITE_HOSTNAME = os.environ.get("WEBSITE_HOSTNAME")
 EMAIL = os.environ.get("EMAIL")
@@ -52,7 +56,11 @@ def createCertificate():
         "--standalone",
         "--non-interactive",
     ]
-    main(args)
+    try:
+        main(args)
+    except Error as err:
+        logger.error(err)
+
 
 
 if __name__ == "__main__":
