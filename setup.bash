@@ -4,7 +4,7 @@ PASSWORD_FILE=$SCRIPT_DIR/password.env
 
 WEBSERVER_FILE=$SCRIPT_DIR/webserver.env
 
-mkdir -p $SCRIPT_DIR/shared
+mkdir -p $SCRIPT_DIR/shared/logs
 CONFIG_FILE=$SCRIPT_DIR/shared/config.yaml
 
 if ! test -f "$PASSWORD_FILE"; then
