@@ -37,23 +37,61 @@ class SensorData:
         return self._history
 
     @history.setter
-    def history(self, value: datetime.timedelta):
-        if value < self._history:
+    def history(self, new_history: datetime.timedelta):
+        # Try to merge this somehow with update() or updateExtend()
+        if new_history < self._history:
             # If the history is smaller, we don't need to do anything
             # Values now considered old will be removed with an update
-            self._history = value
+            self._history = new_history
             self.update()
             return
-        elif value == self._history:
+        elif new_history == self._history:
             return
 
-        return NotImplemented
-        # sensor_names = self.querySensorNames(start=self._last_bucket, end=current_dtime)
+        current_dtime = datetime.datetime.now()
+        start = current_dtime - new_history
+        end = current_dtime - self._history
+        # Leave bucket width the same, but change the max number of buckets
+        self._max_buckets = math.ceil(new_history / self._bucket_width)
+        self._history = new_history
 
-        # for sensor_name in sensor_names:
-        #     self.updateExtendRight(sensor_name=sensor_name, current_dtime=current_dtime)
+        sensor_names = self.querySensorNames(start=start, end=end)
+        for sensor_name in sensor_names:
+            # Just in case an update hasn't already removed old values for the previous history,
+            # remove them so the don't overlap with the newly queried data
+            while self._sensors[sensor_name][0][0] < end:
+                self._sensors[sensor_name].popleft()
 
-    # need to recompute max_buckets every time bucket width and history is changed
+            df = self.queryBuckets(
+                sensor_name=sensor_name,
+                start=start,
+                end=end,
+                bucket_width=self._bucket_width,
+                origin=self._origin_dtime,
+            )
+
+            if len(df.index) == 0:
+                logger.warning(f"[{sensor_name}] No data...")
+                continue
+
+            df.set_index("time_bucket", inplace=True)
+            # Just in case of NaN values forward and backward fill NaNs
+            df.ffill(inplace=True)
+            df.bfill(inplace=True)
+
+            newdata = deque(df.itertuples(index=True, name="SensorDht"))
+
+            if sensor_name not in self._sensors:
+                self._sensors[sensor_name] = newdata
+                continue
+
+            # Add new data to the right side of the deque
+            if self._sensors[sensor_name][0][0] == newdata[-1][0]:
+                # If the new time bucket is the same as the old one, just replace it.
+                # Stops problems where an extra time bucket is added
+                self._sensors[sensor_name][0] = newdata.pop()
+
+            self._sensors[sensor_name].extendleft(newdata)
 
     def __init__(
         self,
@@ -69,11 +107,11 @@ class SensorData:
         self._history = history
 
         # Width of the buckets such that the number of buckets within the history time window is less than the maximum
-        self._bucket_width = history / max_buckets
+        self._bucket_width = self._history / self._max_buckets
 
         # Get a reference origin time so that buckets are aligned relative to this
         current_dtime = datetime.datetime.now()
-        self._origin_dtime = current_dtime - history
+        self._origin_dtime = current_dtime - self._history
         self._last_bucket = self._origin_dtime
 
         self._sensors = dict()
@@ -106,7 +144,7 @@ class SensorData:
             self._sensors[sensor_name] = newdata
             return
 
-        # Add new data to the right side
+        # Add new data to the right side of the deque
         if self._sensors[sensor_name][-1][0] == newdata[0][0]:
             # If the new time bucket is the same as the old one, just replace it.
             # Stops problems where the latest time bucket is added on every update
