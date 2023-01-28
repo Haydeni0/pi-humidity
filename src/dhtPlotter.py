@@ -133,6 +133,7 @@ def updateGraphs(n: int) -> tuple[dict, dict, datetime]:
 
     logger.debug(f"Plotting...")
     colour_idx = 0
+    # STOP USING _sensors, use sensors instead
     for sensor_name, data in sensor_data._sensors.items():
         df = pd.DataFrame(data)
         dtime = np.array(df["Index"])
