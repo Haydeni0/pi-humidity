@@ -86,12 +86,12 @@ app.layout = html.Div(
             children=[
                 NumericInput(
                     id="numinput:history",
-                    min=0,
+                    min=1,
                     max=100,
                     label="History (days)",
                     labelPosition="right",
                     value=history.days,
-                    persistence=True,
+                    persistence=False,
                 )
             ],
             id="div:config",
@@ -109,10 +109,17 @@ app.layout = html.Div(
                     id="interval:time-update-tick", interval=100, n_intervals=0
                 ),
                 dcc.Store(id="graph-update-time"),
+                html.Div(id="manual-graph-update", n_clicks=0)
             ],
         ),
     ]
 )
+
+@app.callback(Output("manual-graph-update", "n_clicks"), Input("numinput:history", "value"), prevent_initial_call=True)
+def changeHistory(value: float):
+    sensor_data.history = timedelta(days=value)
+    # Return something so that graphs are updated
+    return 0
 
 @app.callback(
     [
@@ -120,9 +127,9 @@ app.layout = html.Div(
         Output("graph:temperature", "figure"),
         Output("graph-update-time", "data"),
     ],
-    Input("interval:graph-update-tick", "n_intervals"),
+    [Input("interval:graph-update-tick", "n_intervals"), Input("manual-graph-update", "n_clicks")],
 )
-def updateGraphs(n: int) -> tuple[dict, dict, datetime]:
+def updateGraphs(n: int, manual_update_clicks: int) -> tuple[dict, dict, datetime]:
     t = time()
     H_traces = []
     T_traces = []
@@ -153,7 +160,7 @@ def updateGraphs(n: int) -> tuple[dict, dict, datetime]:
         colour_idx += 1
 
     current_time = datetime.now()
-    xaxis_range = [current_time - history, current_time]
+    xaxis_range = [current_time - sensor_data.history, current_time]
     H_layout = go.Layout(
         xaxis=go.layout.XAxis(range=xaxis_range),
         font=go.layout.Font(size=18),

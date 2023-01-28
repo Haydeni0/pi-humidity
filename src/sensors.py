@@ -80,6 +80,8 @@ class SensorData:
             df.bfill(inplace=True)
 
             newdata = deque(df.itertuples(index=True, name="SensorDht"))
+            # Must be reversed to extendleft
+            newdata.reverse() 
 
             if sensor_name not in self._sensors:
                 self._sensors[sensor_name] = newdata
