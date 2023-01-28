@@ -114,7 +114,7 @@ def updateGraphs(n: int) -> tuple[dict, dict, datetime]:
     T_layout = copy.deepcopy(H_layout)
     H_layout.yaxis = go.layout.YAxis(title="Humidity (%RH)")
     T_layout.yaxis = go.layout.YAxis(title="Temperature (<sup>o</sup>C)")
-    t_plotting = time() - t_update
+    t_plotting = time() - (t + t_update)
     logger.debug(f"Done [{t_update:2g}, {t_plotting:2g}]")
 
     # Only update elements of the figure, rather than returning a whole new figure. This is much faster.
