@@ -2,16 +2,25 @@
 
 ## Updates
 
-- Upgrade to a docker-based implementation for easy install
-- Use TimescaleDB, time series optimised database
-- Improve webpage, using the Dash Plotly framework
+*Version 2.0*
+
+- Upgrade to a docker-based implementation for simple install (tested on a Raspberry Pi 4)
+- Use TimescaleDB (time series optimised database, extension of PostgreSQL)
+- Improve webpage using the Dash Plotly framework to visualise real-time data
+- Generalised to multiple DHT22 sensors
+- Automatic SSL certificate generation
+
+*Version 1.0*
+
+- Very lightweight (for use on a low-power Raspberry Pi Zero) implementation that output the graph as a static image.
+- Works with two DHT22 sensors
 
 ---
 
 ## Summary
 
-Repo containing code for humidity and temperature logging and monitoring on a Raspberry Pi, using [Adafruit DHT22 sensors](https://pimylifeup.com/raspberry-pi-humidity-sensor-dht22/) connected to the GPIO pins.
-See the [installation guide](./install.md) for instructions on the setup process
+Tool for humidity and temperature logging and webpage visualisation on a Raspberry Pi, using [Adafruit DHT22 sensors](https://pimylifeup.com/raspberry-pi-humidity-sensor-dht22/).
+See the [install guide](#install-guide) for instructions on the setup process
 
 ### Example use case
 
@@ -27,19 +36,19 @@ The local website is accessible [remotely](https://pi-humidity.webredirect.org/)
 
 ---
 
-## Installation instructions
+## Install guide
 
 ---
 
-### Physical installation instructions
+### Physical installation
 
 Connect Adafruit DHT22 sensors to the Raspberry Pi's GPIO pins (see [tutorial on pimylifeup.com](https://pimylifeup.com/raspberry-pi-humidity-sensor-dht22/)).
 
-Note down the GPIO pin numbers that the data pins of the DHT22 sensors are connected to.
+Note the GPIO pin numbers that the data pins of the DHT22 sensors are connected to for use in the software installation.
 
 ---
 
-### Software installation instructions (Raspberry Pi, Raspian [bullseye])
+### Software installation (Raspberry Pi, Raspian [bullseye])
 
 Update
 
@@ -88,8 +97,8 @@ Use images available on docker hub, specified in the compose file. Run the comma
 
     docker compose up -d
 
-Now, if the GPIO pins are set correctly, this will display the temperature and humidity graphs to port 80 of the Raspberry Pi, or port 443 if there is a valid website hostname specified in ```webserver.env``` that points to the Pi.
-This can be seen by entering in the local ip of the Pi into a web browser from a computer on the same LAN, e.g. ```192.168.1.123```, (or ```localhost``` on a browser in the GUI of the Raspberry Pi).
+Now, if the GPIO pins are set correctly, this will display the temperature and humidity graphs to port 80 (using ```http```) of the Raspberry Pi, or port 443 (using ```https```) if there is a valid website hostname specified in ```webserver.env``` that points to the Pi.
+This can be seen by entering in the local ip of the Pi into a web browser from a computer on the same LAN, e.g. ```http://192.168.1.123```, ```https://192.168.1.123``` (or ```localhost``` on a browser in the GUI of the Raspberry Pi).
 
 The TimescaleDB database containing the sensor data is accessible on port 5432 of the Raspberry Pi (Username ```postgres``` and password set in ```./password.env```). This also can be accessed through the Raspberry Pi command line with docker (schema and table names defined in ```./config.yaml```)
 
