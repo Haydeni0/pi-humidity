@@ -91,7 +91,7 @@ app.layout = html.Div(
                     label="History (days)",
                     labelPosition="right",
                     value=history.days,
-                    persistence=False,
+                    persistence=True,
                 )
             ],
             id="div:config",
