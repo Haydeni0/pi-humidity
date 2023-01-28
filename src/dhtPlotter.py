@@ -14,6 +14,7 @@ from collections import deque
 from my_certbot import Cert, createCertificate
 import os
 import pandas as pd
+from time import time
 
 # Make colourmap for line plots https://plotly.com/python/discrete-color/
 GREEN_HEX = "#74A122"
@@ -76,14 +77,16 @@ app.layout = html.Div(
     [Output("humidity-graph", "figure"), Output("temperature-graph", "figure"), Output("graph-update-time", "data")],
     Input("graph-update-tick", "n_intervals"),
 )
-def updateGraph(n: int) -> tuple[dict, dict, datetime]:
-    logger.debug("Started graph update")
+def updateGraphs(n: int) -> tuple[dict, dict, datetime]:
+    t = time()
     H_traces = []
     T_traces = []
-
+    
+    logger.debug(f"Updating sensor data from database...")
     sensor_data.update()
-    logger.debug(f"Updated sensor data")
+    t_update = time() - t
 
+    logger.debug(f"Plotting...")
     colour_idx = 0
     for sensor_name, data in sensor_data._sensors.items():
         df = pd.DataFrame(data)
@@ -111,6 +114,8 @@ def updateGraph(n: int) -> tuple[dict, dict, datetime]:
     T_layout = copy.deepcopy(H_layout)
     H_layout.yaxis = go.layout.YAxis(title="Humidity (%RH)")
     T_layout.yaxis = go.layout.YAxis(title="Temperature (<sup>o</sup>C)")
+    t_plotting = time() - t_update
+    logger.debug(f"Done [{t_update:2g}, {t_plotting:2g}]")
 
     # Only update elements of the figure, rather than returning a whole new figure. This is much faster.
     return {"data": H_traces, "layout": H_layout}, {

@@ -19,6 +19,7 @@
 - Do some sort of postprocessing?
   - Smoothing on the temperature
 - Turn off animations for the moment, mt might be the cause of this issue where the graph stays on old values if left in the background for a while?
+- Can the plotting be done clientside? querying is fast, but plotting is slow...
 
 ### Optimise plotter
 
