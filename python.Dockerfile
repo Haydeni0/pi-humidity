@@ -12,3 +12,5 @@ RUN python -m pip install pyopenssl
 RUN python -m pip install gunicorn
 RUN python -m pip install certbot
 RUN apt-get install -y cron
+
+RUN python -m pip install dash_daq
