@@ -49,7 +49,7 @@ full_table_name = db.joinNames(schema_name, table_name)
 # Num bins shouldn't be too big such that the time it takes to draw > the update interval
 # Num bins shouldn't be too small such that every time we update, nothing happens.
 # Also update interval should be longer than the sensor retry seconds, send a logger warning message about this?
-max_buckets = 8000
+max_buckets = 800
 history = timedelta(days=2)
 sensor_data = SensorData(db, full_table_name, max_buckets=max_buckets, history=history)
 
@@ -63,10 +63,10 @@ server = app.server
 
 app.layout = html.Div(
     children=[
-        dcc.Graph(id="humidity-graph", figure=fig_H, animate=True),
+        dcc.Graph(id="humidity-graph", figure=fig_H, animate=False),
         dcc.Graph(
             id="temperature-graph", figure=fig_T, animate=False
-        ),  # Try no animation on one as a test
+        ),
         html.Time(id="time"),
         dcc.Interval(
             id="graph-update-tick",
