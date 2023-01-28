@@ -61,8 +61,8 @@ if ! test -f "$CONFIG_FILE"; then
     done
 
     # Save default values
-    echo "sensor_retry_seconds: 2" >> $CONFIG_FILE
-    echo "figure_update_interval_seconds: 10" >> $CONFIG_FILE
+    echo "sensor_retry_seconds: 10" >> $CONFIG_FILE
+    echo "figure_update_interval_seconds: 30" >> $CONFIG_FILE
     echo "schema_name:" >> $CONFIG_FILE
     echo "table_name: dht" >> $CONFIG_FILE
 
