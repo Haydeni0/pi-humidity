@@ -62,34 +62,17 @@ class SensorData:
         current_dtime = datetime.datetime.now()
         discard_times_before = current_dtime - self._history
 
-        # Use percentile_cont to get the median within each time bucket
-        query_data = sql.SQL(
-            f"""
-            SELECT 
-                time_bucket(%s, dtime, %s) as time_bucket, 
-                percentile_cont(0.5) WITHIN GROUP (ORDER BY humidity) as humidity, 
-                percentile_cont(0.5) WITHIN GROUP (ORDER BY temperature) as temperature
-            FROM {{table_name}}
-            WHERE 
-                dtime BETWEEN %s AND %s 
-                AND sensor_name=%s
-            GROUP BY time_bucket
-            ORDER BY time_bucket ASC;
-            """
-        ).format(table_name=sql.Identifier(self.table_name))
-
-        sensor_names = self.getSensorNames(start=self._last_updated, end=current_dtime)
+        sensor_names = self.querySensorNames(
+            start=self._last_updated, end=current_dtime
+        )
 
         for sensor_name in sensor_names:
-            df = self.db.executeDf(
-                query_data,
-                (
-                    self._bucket_width,
-                    self._origin_dtime,
-                    self._last_updated,
-                    current_dtime,
-                    sensor_name,
-                ),
+            df = self.queryBuckets(
+                sensor_name=sensor_name,
+                start=self._last_updated,
+                end=current_dtime,
+                bucket_width=self._bucket_width,
+                origin=self._origin_dtime,
             )
             # Just in case of NaN values
             df.set_index("time_bucket", inplace=True)
@@ -125,7 +108,45 @@ class SensorData:
 
         self._last_updated = current_dtime
 
-    def getSensorNames(
+    def queryBuckets(
+        self,
+        sensor_name: str,
+        start: datetime.datetime,
+        end: datetime.datetime,
+        bucket_width: datetime.timedelta,
+        origin: datetime.datetime,
+    ) -> pd.DataFrame:
+
+        # Use percentile_cont to get the median within each time bucket
+        query = sql.SQL(
+            f"""
+            SELECT 
+                time_bucket(%s, dtime, %s) as time_bucket, 
+                percentile_cont(0.5) WITHIN GROUP (ORDER BY humidity) as humidity, 
+                percentile_cont(0.5) WITHIN GROUP (ORDER BY temperature) as temperature
+            FROM {{table_name}}
+            WHERE 
+                dtime BETWEEN %s AND %s 
+                AND sensor_name=%s
+            GROUP BY time_bucket
+            ORDER BY time_bucket ASC;
+            """
+        ).format(table_name=sql.Identifier(self.table_name))
+
+        df = self.db.executeDf(
+            query,
+            (
+                bucket_width,
+                origin,
+                start,
+                end,
+                sensor_name,
+            ),
+        )
+
+        return df
+
+    def querySensorNames(
         self,
         start: datetime.datetime,
         end: datetime.datetime,
