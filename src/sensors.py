@@ -62,28 +62,41 @@ class SensorData:
         current_dtime = datetime.datetime.now()
         discard_times_before = current_dtime - self._history
 
+        # Use percentile_cont to get the median within each time bucket
         query_data = sql.SQL(
             f"""
-            SELECT time_bucket(%s, dtime, %s) as time_bucket, avg(humidity) as humidity, avg(temperature) as temperature 
-                FROM {{table_name}}
-                WHERE 
-                    dtime BETWEEN %s AND %s 
-                    AND sensor_name=%s
-                GROUP BY time_bucket
-                ORDER BY time_bucket ASC;
+            SELECT 
+                time_bucket(%s, dtime, %s) as time_bucket, 
+                percentile_cont(0.5) WITHIN GROUP (ORDER BY humidity) as humidity, 
+                percentile_cont(0.5) WITHIN GROUP (ORDER BY temperature) as temperature
+            FROM {{table_name}}
+            WHERE 
+                dtime BETWEEN %s AND %s 
+                AND sensor_name=%s
+            GROUP BY time_bucket
+            ORDER BY time_bucket ASC;
             """
         ).format(table_name=sql.Identifier(self.table_name))
 
         sensor_names = self.getSensorNames(start=self._last_updated, end=current_dtime)
 
         for sensor_name in sensor_names:
-            df = self.db.executeDf(query_data, (self._bucket_width, self._origin_dtime, self._last_updated, current_dtime, sensor_name))
+            df = self.db.executeDf(
+                query_data,
+                (
+                    self._bucket_width,
+                    self._origin_dtime,
+                    self._last_updated,
+                    current_dtime,
+                    sensor_name,
+                ),
+            )
             # Just in case of NaN values
             df.set_index("time_bucket", inplace=True)
             df.ffill(inplace=True)
             df.bfill(inplace=True)
 
-            # Use deques for easy popleft for old data, and extend for new data. I'm not sure if this is the best 
+            # Use deques for easy popleft for old data, and extend for new data. I'm not sure if this is the best
             # idea (performance-wise) if we convert back to a pd.DataFrame later anyway, but it makes the code simpler?
             # Probably doesn't matter here about performance as the compute time is negligible overall...
             newdata = deque(df.itertuples(index=True, name="SensorDht"))
@@ -95,7 +108,7 @@ class SensorData:
                 while self._sensors[sensor_name][0][0] < discard_times_before:
                     # Remove old data
                     self._sensors[sensor_name].popleft()
-                
+
                 # If the new time bucket is the same as the old one, just replace it.
                 # Stops problems where the latest time bucket is added on every update
                 if self._sensors[sensor_name][-1][0] == newdata[0][0]:
@@ -104,7 +117,7 @@ class SensorData:
                 self._sensors[sensor_name].extend(newdata)
             else:
                 self._sensors[sensor_name] = newdata
-            
+
             # Remove sensors with no data
             for key, val in self._sensors.items():
                 if len(val) == 0:
@@ -155,7 +168,7 @@ if __name__ == "__main__":
     full_table_name = db.joinNames(schema_name, table_name)
 
     sensor_data = SensorData(db, full_table_name)
-    
+
     while True:
         t = time.time()
         sensor_data.update()

@@ -46,12 +46,12 @@ table_name = config["table_name"]
 full_table_name = db.joinNames(schema_name, table_name)
 
 # Find a way of choosing num_bins optimally based on the length of sensor history and the update interval
-# Num bins shouldn't be too big such that the time it takes to draw > the update interval 
+# Num bins shouldn't be too big such that the time it takes to draw > the update interval
 # Num bins shouldn't be too small such that every time we update, nothing happens.
 # Also update interval should be longer than the sensor retry seconds, send a logger warning message about this?
-num_bins = 800
-sensor_history=timedelta(days=2)
-sensor_data = SensorData(db, full_table_name, max_buckets = num_bins, history=sensor_history)
+max_buckets = 8000
+history = timedelta(days=2)
+sensor_data = SensorData(db, full_table_name, max_buckets=max_buckets, history=history)
 
 
 fig_H = go.Figure()
@@ -64,24 +64,34 @@ server = app.server
 app.layout = html.Div(
     children=[
         dcc.Graph(id="humidity-graph", figure=fig_H, animate=True),
-        dcc.Graph(id="temperature-graph", figure=fig_T, animate=False), # Try no animation on one as a test
+        dcc.Graph(
+            id="temperature-graph", figure=fig_T, animate=False
+        ),  # Try no animation on one as a test
         html.Time(id="time"),
-        dcc.Interval(id="graph-update-tick", interval=figure_update_interval_seconds * 1000, n_intervals=0),
+        dcc.Interval(
+            id="graph-update-tick",
+            interval=figure_update_interval_seconds * 1000,
+            n_intervals=0,
+        ),
         dcc.Interval(id="time-update-tick", interval=100, n_intervals=0),
-
-        dcc.Store(id="graph-update-time")
+        dcc.Store(id="graph-update-time"),
     ]
 )
 
+
 @app.callback(
-    [Output("humidity-graph", "figure"), Output("temperature-graph", "figure"), Output("graph-update-time", "data")],
+    [
+        Output("humidity-graph", "figure"),
+        Output("temperature-graph", "figure"),
+        Output("graph-update-time", "data"),
+    ],
     Input("graph-update-tick", "n_intervals"),
 )
 def updateGraphs(n: int) -> tuple[dict, dict, datetime]:
     t = time()
     H_traces = []
     T_traces = []
-    
+
     logger.debug(f"Updating sensor data from database...")
     sensor_data.update()
     t_update = time() - t
@@ -96,15 +106,18 @@ def updateGraphs(n: int) -> tuple[dict, dict, datetime]:
 
         colour_idx = colour_idx % len(colourmap)
         colour = colourmap[colour_idx]
-        
-        H_traces.append(go.Scatter(x=dtime, y=humidity, marker_color=colour, name=sensor_name))
-        T_traces.append(go.Scatter(x=dtime, y=temperature, marker_color=colour, name=sensor_name))
 
-        
+        H_traces.append(
+            go.Scatter(x=dtime, y=humidity, marker_color=colour, name=sensor_name)
+        )
+        T_traces.append(
+            go.Scatter(x=dtime, y=temperature, marker_color=colour, name=sensor_name)
+        )
+
         colour_idx += 1
 
     current_time = datetime.now()
-    xaxis_range = [current_time - sensor_history, current_time]
+    xaxis_range = [current_time - history, current_time]
     H_layout = go.Layout(
         xaxis=go.layout.XAxis(range=xaxis_range),
         font=go.layout.Font(size=18),
@@ -118,25 +131,38 @@ def updateGraphs(n: int) -> tuple[dict, dict, datetime]:
     logger.debug(f"Done [{t_update:2g}, {t_plotting:2g}]")
 
     # Only update elements of the figure, rather than returning a whole new figure. This is much faster.
-    return {"data": H_traces, "layout": H_layout}, {
-        "data": T_traces,
-        "layout": T_layout,
-    }, current_time
+    return (
+        {"data": H_traces, "layout": H_layout},
+        {
+            "data": T_traces,
+            "layout": T_layout,
+        },
+        current_time,
+    )
 
 
-@app.callback([Output("time", "children"), Output("time", "dateTime")], [Input("time-update-tick", "n_intervals"), Input("graph-update-time", "data")])
+@app.callback(
+    [Output("time", "children"), Output("time", "dateTime")],
+    [Input("time-update-tick", "n_intervals"), Input("graph-update-time", "data")],
+)
 def updateTimeDisplay(n: int, graph_last_updated: str) -> tuple[str, datetime]:
 
     current_time = datetime.now()
     rounded_time = datetime.strftime(current_time, "%H:%M:%S")
     if graph_last_updated is not None:
-        time_passed = current_time - datetime.strptime(graph_last_updated, "%Y-%m-%dT%H:%M:%S.%f")
+        time_passed = current_time - datetime.strptime(
+            graph_last_updated, "%Y-%m-%dT%H:%M:%S.%f"
+        )
     else:
         time_passed = current_time - start_time
-        
-    return f"""
+
+    return (
+        f"""
     {rounded_time}.{str(current_time.microsecond)[0]} (last updated {time_passed.seconds} seconds ago)
-    """, current_time
+    """,
+        current_time,
+    )
+
 
 if __name__ == "__main__":
     # Set up a cronjob to renew the certificate every day at 0230
