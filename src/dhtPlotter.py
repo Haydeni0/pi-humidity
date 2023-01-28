@@ -158,7 +158,7 @@ def updateTimeDisplay(n: int, graph_last_updated: str) -> tuple[str, datetime]:
 
     return (
         f"""
-    {rounded_time}.{str(current_time.microsecond)[0]} (last updated {time_passed.seconds} seconds ago)
+    {current_time.date()} {rounded_time}.{str(current_time.microsecond)[0]} (last updated {time_passed.seconds} seconds ago)
     """,
         current_time,
     )
