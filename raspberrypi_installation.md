@@ -1,5 +1,5 @@
 
-# A sort of guide to how the raspberry pi is set up
+# A sort of guide to how the Raspberry Pi is set up
 I can't really remember, most of this was written after I fully set up everything. I'll write down what I think I did in the correct order, along with some links to the tutorials if possible.
 
 ### Useful tools on secondary computer
@@ -15,8 +15,8 @@ I can't really remember, most of this was written after I fully set up everythin
 - ```screen``` (Multiple consistent terminal screens)
 - ```unattended-upgrades``` (automatic upgrades)
 
-### Ordered guide for raspberry pi installation
-1. Install raspberry pi OS
+### Ordered guide for Raspberry Pi installation
+1. Install Raspberry Pi OS
 2. Add SSH capabilities (to login remotely)
    1. Use an [ssh key](https://pimylifeup.com/raspberry-pi-ssh-keys/) to log in automatically
    2. Configure that with PuTTY

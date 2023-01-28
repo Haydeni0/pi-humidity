@@ -6,6 +6,7 @@
   - Something to do with ssl?
   - Look at ```docker compose logs -f```
 - Have the plotter repeatedly check for updates to config files so they can be updated without restarting container
+- Increase update interval
 
 ### Use python asyncio to do asynchronous logging
 
@@ -23,6 +24,9 @@
 ### Optimise plotter
 
 - Figure out how to make the plotting faster, or run clientside?
+- ```app.run_server(..., threaded=True)``` threaded?
+- dhtplotter at the moment just appends data to the figure. If the program runs for an extended period of time, will this get too big?
+  - Reset figure?
 
 ### Use timescaledb features
 

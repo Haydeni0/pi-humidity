@@ -1,107 +1,98 @@
-# pi-humidity
+# pi-humidity v2
 
-Repo containing code for humidity and temperature logging and monitoring on a (very performance limited) Raspberry Pi Zero WH, using two DHT22 sensors.
+## Updates
 
-Plots are displayed on a display connected to the Pi Zero and is done using an easy to run python script, as the Zero can barely open a browser.
+- Upgrade to a docker-based implementation for easy install
+- Use TimescaleDB, time series optimised database
+- Improve webpage, using the Dash Plotly framework
 
-Raspberry pi setup installation instructions (for me when the pi/microSD eventually breaks) are given in [this guide](raspberrypi_installation.md).
+---
 
-## Use case
+## Summary
+
+Repo containing code for humidity and temperature logging and monitoring on a Raspberry Pi, using [Adafruit DHT22 sensors](https://pimylifeup.com/raspberry-pi-humidity-sensor-dht22/) connected to the GPIO pins.
+See the [installation guide](./install.md) for instructions on the setup process
+
+### Example use case
 
 Logging and plotting the inside and outside humidity/temperature of an indoor terrarium that houses environment sensitive Nepenthes plants.
 
-The graph is shown on the raspberry pi desktop, and also on a locally hosted website.
-The local website is accessible on the internet through the use of a dynamic DNS update service.
+The locally hosted webpage is shown on the Raspberry Pi GUI connected to a screen.
 
-### Setup
-
-![Fish tank terrarium setup](Media/FishTankTerrarium.jpg "Fish tank terrarium setup")
-
-### The graph
+The local website is accessible [remotely](https://pi-humidity.webredirect.org/) on the internet through the use of a dynamic DNS update service (e.g. [dynu](https://www.dynu.com/en-US/)).
 
 ![DHT graph example](Media/DHT_graph_example.png "DHT graph example")
 
----
-
-## Files
-
-### Data logging
-
-Run ```dhtLogger.py``` at boot, configured to the local SQL server and DHT22 sensors.
-
-### Plotting
-
-The file ```dhtPlotting.py``` contains the plotting code.
-Run this on secondary PC to debug (as raspizeroWH is very slow), set the config inside here to point at the replica SQL server for fast querying.
-
-Run ```plotRaspiDHT.py``` at desktop startup on the rpi. The SQL server config should point to the local server.
-
-### MySQL server backups
-
-The bash scripts ```dbBackup.sh``` and ```send_mysqldump.sh``` use rclone to backup to google drive.
-
-### Other
-
-```DHTutils.py```
-
-- Utility code for reading sensors
-
-```DHT_MySQL_interface.py```
-
-- Module containing MySQL API
-
-```Sensors.py```
-
-- Module containing class to handle data pulled from the server.
-
-```html/```
-
-- Directory containing basic website
+![Fish tank terrarium setup](Media/FishTankTerrarium.jpg "Fish tank terrarium setup")
 
 ---
 
-## To-do
+## Installation instructions
 
-- Make it all docker integrated so it's really easy and reliable to set up (once I have access to a more powerful pi4)
-  - Web app inside docker mapped to port 80
-  - set up a mysql or postgreSQL server inside the container
-  - How to get it to display onto the attached monitor?
-    - Maybe just from a browser on the pi
+---
 
-### Ideas
+### Physical installation instructions
 
-- Make a detector that detects when the top door is open (high variance in humidity data)
-- Model the humidity/temp relationship between inside and outside, most likely with some sort of differential equation, stochastic pde?
+Connect Adafruit DHT22 sensors to the Raspberry Pi's GPIO pins (see [tutorial on pimylifeup.com](https://pimylifeup.com/raspberry-pi-humidity-sensor-dht22/)).
 
-### Other
+Note down the GPIO pin numbers that the data pins of the DHT22 sensors are connected to.
 
-- When the raspberry pi or install breaks, use a docker container next time that can be easily backed up.
+---
 
-### Database
+### Software installation instructions (Raspberry Pi, Raspian [bullseye])
 
-- Better secure SQL server, password shouldn't be written in code (even though its purely local)
-  - Use an ini file with an ini reader module in python
+Update
 
-### Data processing
+    sudo apt-get update
 
-- do smoothing on the bins, particularly on temperature, as it looks jagged due to low resolution
-  - Be able to easily configure smoothness, maybe have it as a class instance variable for both H and T
+Install docker
 
-### Codebase
+    sudo apt-get remove docker docker-engine docker.io containerd runc
+    curl -fsSL https://get.docker.com -o get-docker.sh
+    sudo sh get-docker.sh
 
-- General quality testing, especially with data logging, as that shouldn't fail
+Clone and ```cd``` into this repository
 
-### Visualisation
+    git clone git@github.com:Haydeni0/pi-humidity.git
+    cd pi-humidity
 
-- ~~Change how many minor ticks are shown based on the amount of history~~
-- Change how many major ticks are shown based on the amount of history
-  - maybe use weeks instead of days when axis gets too long
+Run ```./setup.bash``` to
 
-### Website
+- Set the database password
+- Set up initial configuration (including DHT22 sensor names and their corresponding GPIO pins)
+- Write default configuration parameters (sensor update)
+- Write webserver hostname and email address
+  - This is optional, and used to generate an SSL certificate for the website if hosted.
 
-- Use javascript or something to make the image refresh by itself, not refresh the whole page. Ideally only when the a new image is made by the python script.
-- <https://arstechnica.com/civis/viewtopic.php?t=772329>
+This writes to ```./password.env```, ```./shared/config.yaml``` ```./webserver.env``` respectively, which can be also edited by hand to change parameters.
 
-### Fan
+    ./setup.bash
 
-- Maybe control fan using raspberry pi, regulate humidity
+Run Docker
+
+> ***Development notes***
+>
+> To build the container use the docker file [```./python.Dockerfile```](./python.Dockerfile)
+>
+> The build may take a *long* time on a Raspberry Pi, due to many python precompiled wheels not being available for ```arm/v7```.
+> > It is recommended to use a faster computer using ```docker buildx build``` to build for ```linux/arm/v7```, and optionally for ```linux/amd64``` to use in development from an amd64 based computer.
+> >
+> >     docker buildx create --name mybuilder --driver docker-container --bootstrap
+> >     docker buildx use mybuilder
+> >     docker buildx build -f python.Dockerfile . -t haydeni0/pi-humidity:python --platform linux/arm/v7,linux/amd64
+>
+>     docker build -f python.Dockerfile . -t haydeni0/pi-humidity:python
+>     docker push haydeni0/pi-humidity:python
+
+Use images available on docker hub, specified in the compose file. Run the command:
+
+    docker compose up -d
+
+Now, if the GPIO pins are set correctly, this will display the temperature and humidity graphs to port 80 of the Raspberry Pi, or port 443 if there is a valid website hostname specified in ```webserver.env``` that points to the Pi.
+This can be seen by entering in the local ip of the Pi into a web browser from a computer on the same LAN, e.g. ```192.168.1.123```, (or ```localhost``` on a browser in the GUI of the Raspberry Pi).
+
+The TimescaleDB database containing the sensor data is accessible on port 5432 of the Raspberry Pi (Username ```postgres``` and password set in ```./password.env```). This also can be accessed through the Raspberry Pi command line with docker (schema and table names defined in ```./config.yaml```)
+
+    docker exec -it pi-humidity-timescaledb /bin/bash -c 'psql -U postgres -d ${POSTGRES_DB}'
+
+    SELECT * FROM dht ORDER BY dtime DESC LIMIT 10;

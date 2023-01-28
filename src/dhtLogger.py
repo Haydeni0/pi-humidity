@@ -29,7 +29,7 @@ class DhtSensor(adafruit_dht.DHT22):
 
     Args:
         name (str): Name of the sensor
-        pin (int): GPIO pin number on the raspberry pi that the data line of the sensor is connected to
+        pin (int): GPIO pin number on the Raspberry Pi that the data line of the sensor is connected to
         use_pulsio (bool): False to force bitbang when pulseio available (only with Blinka)
     """
 
