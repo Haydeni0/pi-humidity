@@ -84,14 +84,15 @@ Run Docker
 > To build the container use the docker file [```./python.Dockerfile```](./python.Dockerfile)
 >
 > The build may take a *long* time on a Raspberry Pi, due to many python precompiled wheels not being available for ```arm/v7```.
+>
+>     docker build -f python.Dockerfile . -t haydeni0/pi-humidity:python
+>     docker push haydeni0/pi-humidity:python
+>
 > > It is recommended to use a faster computer using ```docker buildx build``` to build for ```linux/arm/v7```, and optionally for ```linux/amd64``` to use in development from an amd64 based computer.
 > >
 > >     docker buildx create --name mybuilder --driver docker-container --bootstrap
 > >     docker buildx use mybuilder
 > >     docker buildx build -f python.Dockerfile . -t haydeni0/pi-humidity:python --platform linux/arm/v7,linux/amd64
->
->     docker build -f python.Dockerfile . -t haydeni0/pi-humidity:python
->     docker push haydeni0/pi-humidity:python
 
 Use images available on docker hub, specified in the compose file. Run the command:
 
