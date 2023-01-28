@@ -111,7 +111,9 @@ app.layout = html.Div(
 )
 
 
-# @app.callback([Output("")])
+@app.callback(Output("div:config", "hidden"), Input("boolswitch:config", "on"))
+def toggleConfig(on: bool):
+    return not on
 
 @app.callback(
     [
