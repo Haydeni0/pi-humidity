@@ -1,6 +1,8 @@
 from database_api import DatabaseApi
 from sensors import SensorData
 from dash import Dash, dcc, html
+from dash_daq.NumericInput import NumericInput
+from dash_daq.BooleanSwitch import BooleanSwitch
 from dash.dependencies import Input, Output
 import plotly.graph_objects as go
 import plotly.express as px
@@ -63,29 +65,61 @@ server = app.server
 
 app.layout = html.Div(
     children=[
-        dcc.Graph(id="humidity-graph", figure=fig_H, animate=False),
-        dcc.Graph(
-            id="temperature-graph", figure=fig_T, animate=False
+        # Graphs
+        html.Div(
+            children=[
+                dcc.Graph(id="graph:humidity", figure=fig_H, animate=False),
+                dcc.Graph(id="graph:temperature", figure=fig_T, animate=False),
+            ],
         ),
-        html.Time(id="time"),
-        dcc.Interval(
-            id="graph-update-tick",
-            interval=figure_update_interval_seconds * 1000,
-            n_intervals=0,
+        # Display info and buttons
+        html.Div(
+            children=[
+                html.Time(id="time"),
+                BooleanSwitch(id="boolswitch:config", label="Config", persistence=True, on=True),
+                html.Button("Pause updates", id="btn:toggle-pause", n_clicks=0),
+            ],
         ),
-        dcc.Interval(id="time-update-tick", interval=100, n_intervals=0),
-        dcc.Store(id="graph-update-time"),
+        # Config
+        html.Div(
+            children=[
+                NumericInput(
+                    id="numinput:history",
+                    min=0,
+                    max=100,
+                    label="History (days)",
+                    labelPosition="right",
+                    value=history.days,
+                    persistence=True,
+                )
+            ],
+            id="div:config"
+        ),
+        # Other
+        html.Div(
+            children=[
+                dcc.Interval(
+                    id="interval:graph-update-tick",
+                    interval=figure_update_interval_seconds * 1000,
+                    n_intervals=0,
+                ),
+                dcc.Interval(id="interval:time-update-tick", interval=100, n_intervals=0),
+                dcc.Store(id="graph-update-time"),
+            ],
+        ),
     ]
 )
 
 
+# @app.callback([Output("")])
+
 @app.callback(
     [
-        Output("humidity-graph", "figure"),
-        Output("temperature-graph", "figure"),
+        Output("graph:humidity", "figure"),
+        Output("graph:temperature", "figure"),
         Output("graph-update-time", "data"),
     ],
-    Input("graph-update-tick", "n_intervals"),
+    Input("interval:graph-update-tick", "n_intervals"),
 )
 def updateGraphs(n: int) -> tuple[dict, dict, datetime]:
     t = time()
@@ -143,7 +177,7 @@ def updateGraphs(n: int) -> tuple[dict, dict, datetime]:
 
 @app.callback(
     [Output("time", "children"), Output("time", "dateTime")],
-    [Input("time-update-tick", "n_intervals"), Input("graph-update-time", "data")],
+    [Input("interval:time-update-tick", "n_intervals"), Input("graph-update-time", "data")],
 )
 def updateTimeDisplay(n: int, graph_last_updated: str) -> tuple[str, datetime]:
 
