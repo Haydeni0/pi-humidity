@@ -106,7 +106,7 @@ app.layout = html.Div(
                     n_intervals=0,
                 ),
                 dcc.Interval(
-                    id="interval:time-update-tick", interval=100, n_intervals=0
+                    id="interval:time-update-tick", interval=0.6, n_intervals=0
                 ),
                 dcc.Store(id="graph-update-time"),
                 html.Div(id="manual-graph-update", n_clicks=0)

@@ -1,16 +1,10 @@
 # Ideas
 
 ## To do
-  
-- Fix dhtplotter crash when two instances connect at the same time, e.g. opening two tabs with raspidht.webredirect.org
-  - Something to do with ssl?
-  - Look at ```docker compose logs -f```
+
 - Have the plotter repeatedly check for updates to config files so they can be updated without restarting container
 - Increase update interval
-
-### Use python asyncio to do asynchronous logging
-
-- Would be better than the current logging implementation, but only necessary for high frequency logging with many sensors...
+- Be able to change bucket width using the webpage
 
 ### Plotly Dash
 
@@ -41,7 +35,8 @@
 ### Clean up code
 
 - Clean up [raspberrypi_installation.md](raspberrypi_installation.md)
-- Remove test files, other useless things
+- Add docstrings
+- 
 
 ### Improve and generalise install process
 
