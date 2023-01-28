@@ -76,10 +76,11 @@ app.layout = html.Div(
         html.Div(
             children=[
                 html.Time(id="time"),
-                BooleanSwitch(id="boolswitch:config", label="Config", persistence=True, on=True),
-                html.Button("Pause updates", id="btn:toggle-pause", n_clicks=0),
+                # html.Button("Pause updates", id="btn:toggle-pause", n_clicks=0), # Allow pause to be able to investigate data manually using the graph
             ],
+            style={"width:": "30%", "display": "inline-block"},
         ),
+        html.Div(),
         # Config
         html.Div(
             children=[
@@ -93,7 +94,8 @@ app.layout = html.Div(
                     persistence=True,
                 )
             ],
-            id="div:config"
+            id="div:config",
+            style={"display": "inline-block"},
         ),
         # Other
         html.Div(
@@ -103,17 +105,14 @@ app.layout = html.Div(
                     interval=figure_update_interval_seconds * 1000,
                     n_intervals=0,
                 ),
-                dcc.Interval(id="interval:time-update-tick", interval=100, n_intervals=0),
+                dcc.Interval(
+                    id="interval:time-update-tick", interval=100, n_intervals=0
+                ),
                 dcc.Store(id="graph-update-time"),
             ],
         ),
     ]
 )
-
-
-@app.callback(Output("div:config", "hidden"), Input("boolswitch:config", "on"))
-def toggleConfig(on: bool):
-    return not on
 
 @app.callback(
     [
@@ -179,7 +178,10 @@ def updateGraphs(n: int) -> tuple[dict, dict, datetime]:
 
 @app.callback(
     [Output("time", "children"), Output("time", "dateTime")],
-    [Input("interval:time-update-tick", "n_intervals"), Input("graph-update-time", "data")],
+    [
+        Input("interval:time-update-tick", "n_intervals"),
+        Input("graph-update-time", "data"),
+    ],
 )
 def updateTimeDisplay(n: int, graph_last_updated: str) -> tuple[str, datetime]:
 
