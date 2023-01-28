@@ -5,6 +5,7 @@
 - Fix dhtplotter crash when two instances connect at the same time, e.g. opening two tabs with raspidht.webredirect.org
   - Something to do with ssl?
   - Look at ```docker compose logs -f```
+- Have the plotter repeatedly check for updates to config files so they can be updated without restarting container
 
 ### Use python asyncio to do asynchronous logging
 

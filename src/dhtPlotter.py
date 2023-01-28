@@ -13,6 +13,7 @@ import yaml
 from collections import deque
 from my_certbot import Cert, createCertificate
 import os
+import pandas as pd
 
 # Make colourmap for line plots https://plotly.com/python/discrete-color/
 GREEN_HEX = "#74A122"
@@ -49,7 +50,7 @@ full_table_name = db.joinNames(schema_name, table_name)
 # Also update interval should be longer than the sensor retry seconds, send a logger warning message about this?
 num_bins = 800
 sensor_history=timedelta(days=2)
-sensor_data = SensorData(db, full_table_name, num_bins = num_bins, sensor_history=sensor_history)
+sensor_data = SensorData(db, full_table_name, max_buckets = num_bins, history=sensor_history)
 
 
 fig_H = go.Figure()
@@ -84,16 +85,17 @@ def updateGraph(n: int) -> tuple[dict, dict, datetime]:
     logger.debug(f"Updated sensor data")
 
     colour_idx = 0
-    for sensor in sensor_data.sensors:
-        dtime = np.array(sensor.data.index)
-        humidity = np.array(sensor.data["humidity"])
-        temperature = np.array(sensor.data["temperature"])
+    for sensor_name, data in sensor_data._sensors.items():
+        df = pd.DataFrame(data)
+        dtime = np.array(df["Index"])
+        humidity = np.array(df["humidity"])
+        temperature = np.array(df["temperature"])
 
         colour_idx = colour_idx % len(colourmap)
         colour = colourmap[colour_idx]
         
-        H_traces.append(go.Scatter(x=dtime, y=humidity, marker_color=colour, name=sensor.name))
-        T_traces.append(go.Scatter(x=dtime, y=temperature, marker_color=colour, name=sensor.name))
+        H_traces.append(go.Scatter(x=dtime, y=humidity, marker_color=colour, name=sensor_name))
+        T_traces.append(go.Scatter(x=dtime, y=temperature, marker_color=colour, name=sensor_name))
 
         
         colour_idx += 1

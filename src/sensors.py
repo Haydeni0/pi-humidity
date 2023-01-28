@@ -12,25 +12,9 @@ from database_api import DatabaseApi
 import yaml
 from psycopg2 import sql
 import logging
+import math
 
 logger = logging.getLogger("__name__")
-
-@dataclass
-class SensorDht:
-    name: str
-    data: pd.DataFrame = pd.DataFrame()
-
-    # Hash implementation from https://stackoverflow.com/a/2909119
-    def __key(self) -> str:
-        return self.name
-
-    def __hash__(self) -> int:
-        return hash(self.__key())
-
-    def __eq__(self, other) -> bool:
-        if isinstance(other, SensorDht):
-            return self.__key() == other.__key()
-        return NotImplemented
 
 
 @dataclass
@@ -39,121 +23,106 @@ class SensorData:
     db: DatabaseApi
     table_name: str
 
-    sensor_history: datetime.timedelta
-    num_bins: int
-    grid_frequency: datetime.timedelta
+    _history: datetime.timedelta
+    _max_buckets: int
+    _bucket_width: datetime.timedelta
+    _origin_dtime: datetime.datetime
 
-    sensors: list[SensorDht]
+    _sensors: dict[str, deque]
 
-    last_updated: datetime.datetime
+    _last_updated: datetime.datetime
 
     def __init__(
         self,
         db: DatabaseApi,
         table_name: str,
-        num_bins: int = 800,
-        sensor_history: datetime.timedelta = datetime.timedelta(minutes=200),
+        max_buckets: int = 800,
+        history: datetime.timedelta = datetime.timedelta(days=2),
     ):
         self.db = db
         self.table_name = table_name
-        self.num_bins = num_bins
-        self.sensor_history = sensor_history
 
-        # Frequency that bins within the grid occur at
-        self.grid_frequency = (sensor_history / num_bins)  
+        self._max_buckets = max_buckets
+        self._history = history
+
+        # Width of the buckets such that the number of buckets within the history time window is less than the maximum
+        self._bucket_width = history / max_buckets
+
+        # Get a reference origin time so that buckets are aligned relative to this
+        current_dtime = datetime.datetime.now()
+        self._origin_dtime = current_dtime - history
+        self._last_updated = self._origin_dtime
+
+        self._sensors = dict()
 
         # Update humidity and temperature data for each sensor from the database
         self.update()
-        pass
 
     def update(self):
         current_dtime = datetime.datetime.now()
-        start_dtime = current_dtime - self.sensor_history
-
-        self.sensors = self.loadData(start_dtime=start_dtime, end_dtime=current_dtime)
-        self.last_updated = current_dtime
-
-    def loadData(
-        self, start_dtime: datetime.datetime, end_dtime: datetime.datetime
-    ) -> list[SensorDht]:
-        sensors = []
-        sensor_names = self.getSensorNames(start_dtime, end_dtime)
-        for sensor_name in sensor_names:
-            # Load from the database
-            logger.debug(f"({sensor_name}) Start")
-            df = self.getObservations(sensor_name, start_dtime, end_dtime)
-            logger.debug(f"({sensor_name}) Queried")
-
-            df.set_index("dtime", inplace=True)
-
-            # Group data for each period in time, and aggregate by median
-            df_grouped = df.groupby(pd.Grouper(level="dtime", freq=self.grid_frequency))
-            df = df_grouped[["humidity", "temperature"]].agg("median")
-            logger.debug(f"({sensor_name}) Grouped")
-
-            # Realign the data with regular indices, and a fixed amount of points
-            bin_dtimes = pd.date_range(start_dtime, end_dtime, periods=self.num_bins)
-            df = df.reindex(bin_dtimes, method="ffill")
-            logger.debug(f"({sensor_name}) Reindexed")
-
-            
-            # This reindexing will create NaNs if we are missing data from the beginning
-            # Backfill them with real values
-            df.fillna(method="ffill", inplace=True)
-            df.fillna(method="bfill", inplace=True)
-
-            # Check, just in case
-            assert len(df.index) == self.num_bins
-
-            sensors.append(SensorDht(name=sensor_name, data=df))
-
-        return sensors
-
-
-
-    def getObservations(
-        self,
-        sensor_name: str,
-        start_dtime: datetime.datetime,
-        end_dtime: datetime.datetime,
-    ) -> pd.DataFrame:
-        """Query the database for DHT observations between two times
-
-        Args:
-            start_dtime (datetime.datetime): Start time to query from
-            end_dtime (datetime.datetime): End time to query to
-
-        Returns:
-            pd.DataFrame: Query result
-        """
+        discard_times_before = current_dtime - self._history
 
         query_data = sql.SQL(
             f"""
-            SELECT dtime, humidity, temperature 
+            SELECT time_bucket(%s, dtime, %s) as time_bucket, avg(humidity) as humidity, avg(temperature) as temperature 
                 FROM {{table_name}}
                 WHERE 
                     dtime BETWEEN %s AND %s 
                     AND sensor_name=%s
-                ORDER BY dtime DESC;
+                GROUP BY time_bucket
+                ORDER BY time_bucket ASC;
             """
         ).format(table_name=sql.Identifier(self.table_name))
 
-        df = self.db.executeDf(query_data, (start_dtime, end_dtime, sensor_name))
+        sensor_names = self.getSensorNames(start=self._last_updated, end=current_dtime)
 
-        return df
+        for sensor_name in sensor_names:
+            df = self.db.executeDf(query_data, (self._bucket_width, self._origin_dtime, self._last_updated, current_dtime, sensor_name))
+            # Just in case of NaN values
+            df.set_index("time_bucket", inplace=True)
+            df.ffill(inplace=True)
+            df.bfill(inplace=True)
+
+            # Use deques for easy popleft for old data, and extend for new data. I'm not sure if this is the best 
+            # idea (performance-wise) if we convert back to a pd.DataFrame later anyway, but it makes the code simpler?
+            # Probably doesn't matter here about performance as the compute time is negligible overall...
+            newdata = deque(df.itertuples(index=True, name="SensorDht"))
+            if len(newdata) == 0:
+                logger.warning(f"[{sensor_name}] No data... continuing")
+                continue
+
+            if sensor_name in self._sensors:
+                while self._sensors[sensor_name][0][0] < discard_times_before:
+                    # Remove old data
+                    self._sensors[sensor_name].popleft()
+                
+                # If the new time bucket is the same as the old one, just replace it.
+                # Stops problems where the latest time bucket is added on every update
+                if self._sensors[sensor_name][-1][0] == newdata[0][0]:
+                    self._sensors[sensor_name][-1] = newdata.popleft()
+
+                self._sensors[sensor_name].extend(newdata)
+            else:
+                self._sensors[sensor_name] = newdata
+            
+            # Remove sensors with no data
+            for key, val in self._sensors.items():
+                if len(val) == 0:
+                    self._sensors.pop(key)
+
+        self._last_updated = current_dtime
 
     def getSensorNames(
         self,
-        start_dtime: datetime.datetime,
-        end_dtime: datetime.datetime,
+        start: datetime.datetime,
+        end: datetime.datetime,
     ) -> tuple[str, ...]:
         """
         Get unique sensors within the table for a specific timeframe.
-        It's probably quicker to do this in SQL than using pandas.
 
         Args:
-            start_dtime (datetime.datetime): Start time to query from
-            end_dtime (datetime.datetime): End time to query to
+            start (datetime.datetime): Start time to query from
+            end (datetime.datetime): End time to query to
 
         Returns:
             pd.DataFrame: Query result
@@ -166,16 +135,13 @@ class SensorData:
                 WHERE dtime BETWEEN %s AND %s;
         """
         ).format(table_name=sql.Identifier(self.table_name))
-        result = self.db.execute(query_names, (start_dtime, end_dtime))
-
+        result = self.db.execute(query_names, (start, end))
 
         if result and result[0]:
             unique_sensors = tuple([_[0] for _ in result])
             return unique_sensors
         else:
             return ()
-
-        
 
 
 if __name__ == "__main__":
@@ -188,4 +154,11 @@ if __name__ == "__main__":
     table_name = config["table_name"]
     full_table_name = db.joinNames(schema_name, table_name)
 
-    SensorData(db, full_table_name)
+    sensor_data = SensorData(db, full_table_name)
+    
+    while True:
+        t = time.time()
+        sensor_data.update()
+        print(pd.DataFrame(sensor_data._sensors["inside"]).iloc[-10:])
+        while time.time() - t < 5:
+            time.sleep(0.1)
