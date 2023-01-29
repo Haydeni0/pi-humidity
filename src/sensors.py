@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from pandas.core import frame
 
-from database_api import DatabaseApi
+from database_api import DatabaseApi, DatabasePoolManager
 import yaml
 from psycopg2 import sql
 import logging
@@ -20,6 +20,7 @@ logger = logging.getLogger("__name__")
 @dataclass
 class SensorData:
     # Declarations
+    _db_pool: DatabasePoolManager
     db: DatabaseApi
     table_name: str
 
@@ -97,12 +98,12 @@ class SensorData:
 
     def __init__(
         self,
-        db: DatabaseApi,
+        db_pool: DatabasePoolManager,
         table_name: str,
         max_buckets: int = 800,
         history: datetime.timedelta = datetime.timedelta(days=2),
     ):
-        self.db = db
+        self._db_pool = db_pool
         self.table_name = table_name
 
         self._max_buckets = max_buckets
@@ -198,16 +199,17 @@ class SensorData:
             """
         ).format(table_name=sql.Identifier(self.table_name))
 
-        df = self.db.executeDf(
-            query,
-            (
-                bucket_width,
-                origin,
-                start,
-                end,
-                sensor_name,
-            ),
-        )
+        with DatabaseApi(self._db_pool) as db:
+            df = db.executeDf(
+                query,
+                (
+                    bucket_width,
+                    origin,
+                    start,
+                    end,
+                    sensor_name,
+                ),
+            )
 
         return df
 
@@ -234,7 +236,9 @@ class SensorData:
                 WHERE dtime BETWEEN %s AND %s;
         """
         ).format(table_name=sql.Identifier(self.table_name))
-        result = self.db.execute(query_names, (start, end))
+
+        with DatabaseApi(self._db_pool) as db:
+            result = db.execute(query_names, (start, end))
 
         if result and result[0]:
             unique_sensors = tuple([_[0] for _ in result])
@@ -244,16 +248,19 @@ class SensorData:
 
 
 if __name__ == "__main__":
-    db = DatabaseApi()
+    
+    db_pool = DatabasePoolManager()
+    
+    
 
     with open("/shared/config.yaml", "r") as f:
         config: dict = yaml.load(f, yaml.Loader)
 
     schema_name = config["schema_name"]
     table_name = config["table_name"]
-    full_table_name = db.joinNames(schema_name, table_name)
+    full_table_name = DatabaseApi.joinNames(schema_name, table_name)
 
-    sensor_data = SensorData(db, full_table_name)
+    sensor_data = SensorData(db_pool, full_table_name)
 
     while True:
         t = time.time()

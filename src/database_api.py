@@ -11,6 +11,7 @@ import pandas as pd
 import psycopg2
 import psycopg2.extensions
 from psycopg2 import Error, errors, sql
+from psycopg2.pool import ThreadedConnectionPool
 
 logger = logging.getLogger(__name__)
 
@@ -27,6 +28,32 @@ class DhtObservation:
 ConnectionConfig = namedtuple(
     "ConnectionConfig", ["host", "port", "dbname", "user", "password"]
 )
+CONNECTION_CONFIG = ConnectionConfig(
+    host=os.environ.get("POSTGRES_HOST"),
+    port=os.environ.get("POSTGRES_PORT"),
+    dbname=os.environ.get("POSTGRES_DB"),
+    user=os.environ.get("POSTGRES_USER"),
+    password=os.environ.get("POSTGRES_PASSWORD"),
+)
+
+
+class DatabasePoolManager:
+    _connection_pool: ThreadedConnectionPool
+
+    def __init__(self, min_connections: int = 1, max_connections: int = 20):
+
+        self._connection_pool = ThreadedConnectionPool(
+            minconn=min_connections,
+            maxconn=max_connections,
+            **CONNECTION_CONFIG._asdict(),
+        )
+
+    def getconn(self) -> psycopg2.extensions.connection:
+        connection: psycopg2.extensions.connection = self._connection_pool.getconn()
+        return connection
+
+    def putconn(self, connection: psycopg2.extensions.connection):
+        self._connection_pool.putconn(connection)
 
 
 @dataclass(init=False)
@@ -35,37 +62,35 @@ class DatabaseApi:
     A sort of API that connects to the DHT table in the MySQL server for easy, high-level access.
     """
 
-    connection: psycopg2.extensions.connection
-    connection_config: ConnectionConfig
+    _db_pool: DatabasePoolManager | None
+    _connection: psycopg2.extensions.connection
 
+    def __init__(self, db_pool: DatabasePoolManager | None = None):
+        self._db_pool = db_pool
 
-    def __init__(self):
-        # Start connection
-
-        self.connection_config = ConnectionConfig(
-            host=os.environ.get("POSTGRES_HOST"),
-            port=os.environ.get("POSTGRES_PORT"),
-            dbname=os.environ.get("POSTGRES_DB"),
-            user=os.environ.get("POSTGRES_USER"),
-            password=os.environ.get("POSTGRES_PASSWORD"),
-        )
-
-        # Connect to server and database
-        self.connection = psycopg2.connect(**self.connection_config._asdict())
+        # If a connection pool is supplied, get a connection from the pool, otherwise just make a new connection.
+        if self._db_pool is not None:
+            self._connection = self._db_pool.getconn()
+        else:
+            self._connection = psycopg2.connect(**CONNECTION_CONFIG._asdict())
 
         logger.debug(f"Connected to server: {self.version()}")
         dbname = self.execute("SELECT current_database();")[0][0]
         logger.debug(f"Connected to database: {dbname}")
 
     def __del__(self):
-        # Close the server connection when instance is destroyed
-        if not self.connection.closed:
-            self.connection.close()
-            logger.debug(f"Connection closed ({datetime.datetime.now()})")
+        if self._db_pool is None:
+            if not self._connection.closed:
+                self._connection.close()
+            return
 
-    # Context manager
+        # Use the `_rused` member of AbstractConnectionPool to check if we have put back the connection to the pool already
+        # This happens if __del__ is called twice, due to __exit__ calling it...
+        if self._db_pool._connection_pool._rused: # type: ignore
+            self._db_pool.putconn(self._connection)
+
     def __enter__(self):
-        return DatabaseApi()
+        return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.__del__()
@@ -124,7 +149,7 @@ class DatabaseApi:
         Returns:
             list[tuple[Any, ...]]: List of records returned by the executed statement.
         """
-        with self.connection.cursor() as cursor:
+        with self._connection.cursor() as cursor:
             return self._execute(cursor, query, parameters)
 
     def executeDf(
@@ -141,7 +166,7 @@ class DatabaseApi:
         Returns:
             pd.DataFrame: Result of the query
         """
-        with self.connection.cursor() as cursor:
+        with self._connection.cursor() as cursor:
             result = self._execute(cursor, query, parameters)
             desc = cursor.description
 
@@ -156,13 +181,13 @@ class DatabaseApi:
 
     def commit(self):
         try:
-            self.connection.commit()
+            self._connection.commit()
         except Error as err:
             logger.error(err)
 
     def rollback(self):
         try:
-            self.connection.rollback()
+            self._connection.rollback()
         except Error as err:
             logger.error(err)
 
@@ -257,10 +282,10 @@ class DatabaseApi:
             if human_readable:
                 query = sql.SQL(
                     "SELECT pg_size_pretty( pg_database_size({dbname}));"
-                ).format(dbname=sql.Literal(self.connection.info.dbname))
+                ).format(dbname=sql.Literal(self._connection.info.dbname))
             else:
                 query = sql.SQL("SELECT pg_database_size({dbname});").format(
-                    dbname=sql.Literal(self.connection.info.dbname)
+                    dbname=sql.Literal(self._connection.info.dbname)
                 )
 
             result = self.execute(query)
@@ -277,22 +302,26 @@ class DatabaseApi:
         else:
             return table_name
 
+
 # >>> Development testing >>>
 
+
 def test1():
-    db = DatabaseApi()
+    db_pool = DatabasePoolManager()
+    with DatabaseApi(db_pool) as db:
+        random_dht = DhtObservation(
+            datetime.datetime.now(), np.random.normal(1), np.random.normal(1)
+        )
 
-    random_dht = DhtObservation(
-        datetime.datetime.now(), np.random.normal(1), np.random.normal(1)
-    )
+        db.createDhtTable("test")
+        db.sendObservation("test", sensor_name="testsensor", dht=random_dht)
 
-    db.createDhtTable("test")
-    db.sendObservation("test", sensor_name="testsensor", dht=random_dht)
 
 def test2():
-    with DatabaseApi() as db:
-        db.connection.close()
-    
+    db_pool = DatabasePoolManager()
+    with DatabaseApi(db_pool) as db:
+        print(db.version())
+
 
 if __name__ == "__main__":
     test2()
