@@ -52,8 +52,6 @@ full_table_name = DatabaseApi.joinNames(schema_name, table_name)
 # Num bins shouldn't be too small such that every time we update, nothing happens.
 # Also update interval should be longer than the sensor retry seconds, send a logger warning message about this?
 max_buckets = 800
-
-
 db = DatabaseApi()
 sensor_data = SensorData(db, full_table_name, max_buckets=max_buckets)
 

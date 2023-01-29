@@ -35,7 +35,6 @@ class DatabaseApi:
     A sort of API that connects to the DHT table in the MySQL server for easy, high-level access.
     """
 
-    __connection_established: bool
     connection: psycopg2.extensions.connection
     connection_config: ConnectionConfig
 
@@ -51,7 +50,6 @@ class DatabaseApi:
             password=os.environ.get("POSTGRES_PASSWORD"),
         )
 
-        self.__connection_established = True
         # Connect to server and database
         try:
             self.connection = psycopg2.connect(**self.connection_config._asdict())
