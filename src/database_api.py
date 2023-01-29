@@ -51,21 +51,7 @@ class DatabaseApi:
         )
 
         # Connect to server and database
-        try:
-            self.connection = psycopg2.connect(**self.connection_config._asdict())
-        except psycopg2.OperationalError:
-            # Create database if it doesn't exist
-            temp_connection_config = self.connection_config._asdict()
-            temp_connection_config["dbname"] = "postgres"
-            self.connection = psycopg2.connect(**temp_connection_config)
-            pg_db = os.environ.get("POSTGRES_DB")
-            self.execute(
-                f"SELECT 'CREATE DATABASE {pg_db}' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '{pg_db}')\\gexec"
-            )
-            self.connection.close()
-
-            # Reconnect to the server and correct database
-            self.connection = psycopg2.connect(**self.connection_config._asdict())
+        self.connection = psycopg2.connect(**self.connection_config._asdict())
 
         logger.debug(f"Connected to server: {self.version()}")
         dbname = self.execute("SELECT current_database();")[0][0]
