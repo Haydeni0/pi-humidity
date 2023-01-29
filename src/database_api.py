@@ -39,6 +39,7 @@ class DatabaseApi:
     connection: psycopg2.extensions.connection
     connection_config: ConnectionConfig
 
+
     def __init__(self):
         # Start connection
 
@@ -74,10 +75,16 @@ class DatabaseApi:
 
     def __del__(self):
         # Close the server connection when instance is destroyed
-        # Only if the connection was successful
-        if self.__connection_established:
+        if not self.connection.closed:
             self.connection.close()
             logger.debug(f"Connection closed ({datetime.datetime.now()})")
+
+    # Context manager
+    def __enter__(self):
+        return DatabaseApi()
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.__del__()
 
     def _execute(
         self,
@@ -266,10 +273,10 @@ class DatabaseApi:
             if human_readable:
                 query = sql.SQL(
                     "SELECT pg_size_pretty( pg_database_size({dbname}));"
-                ).format(dbname=sql.Literal(db.connection.info.dbname))
+                ).format(dbname=sql.Literal(self.connection.info.dbname))
             else:
                 query = sql.SQL("SELECT pg_database_size({dbname});").format(
-                    dbname=sql.Literal(db.connection.info.dbname)
+                    dbname=sql.Literal(self.connection.info.dbname)
                 )
 
             result = self.execute(query)
@@ -286,8 +293,9 @@ class DatabaseApi:
         else:
             return table_name
 
+# >>> Development testing >>>
 
-if __name__ == "__main__":
+def test1():
     db = DatabaseApi()
 
     random_dht = DhtObservation(
@@ -296,3 +304,11 @@ if __name__ == "__main__":
 
     db.createDhtTable("test")
     db.sendObservation("test", sensor_name="testsensor", dht=random_dht)
+
+def test2():
+    with DatabaseApi() as db:
+        db.connection.close()
+    
+
+if __name__ == "__main__":
+    test2()

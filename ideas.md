@@ -8,6 +8,12 @@
 - Increase update interval
 - Be able to change bucket width using the webpage
 - Also output static images of each graph that can be retrieved from the webserver
+- Make the interval ticks client-side, so that if I have more than one connection to the dash server they dont activate callbacks all at once
+- Try out gunicorn again, to be able to use more than one process
+  - Make things thread-safe
+  - Look at the old gunicorn commits to see how I set up gunicorn the first time
+  - Try to remove global variables, as they aren't that safe to use with Dash/threading
+  - Useful [forum discussion](https://github.com/plotly/dash/issues/94)
 
 ### Plotly Dash
 
