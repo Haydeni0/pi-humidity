@@ -1,23 +1,26 @@
-from database_api import DatabaseApi
-from sensors import SensorData
-from dash import Dash, dcc, html
-from dash_daq.NumericInput import NumericInput
-from dash_daq.BooleanSwitch import BooleanSwitch
-from dash.dependencies import Input, Output, State
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
-import plotly.express as px
-import numpy as np
-from datetime import timedelta, datetime
-import sys
-import logging
 import copy
-import yaml
-from collections import deque
-from my_certbot import Cert, createCertificate
+import logging
 import os
-import pandas as pd
+import sys
+from collections import deque
+from datetime import datetime, timedelta
 from time import time
+
+import numpy as np
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+import yaml
+from dash import Dash, dcc, html
+from dash.dependencies import Input, Output, State
+from dash_daq.BooleanSwitch import BooleanSwitch
+from dash_daq.NumericInput import NumericInput
+from plotly.subplots import make_subplots
+from werkzeug.middleware.profiler import ProfilerMiddleware
+
+from database_api import DatabaseApi
+from my_certbot import Cert, createCertificate
+from sensors import SensorData
 
 # Make colourmap for line plots https://plotly.com/python/discrete-color/
 GREEN_HEX = "#74A122"
@@ -110,18 +113,23 @@ app.layout = html.Div(
                     id="interval:time-update-tick", interval=800, n_intervals=0
                 ),
                 dcc.Store(id="graph-update-time"),
-                html.Div(id="manual-graph-update", n_clicks=0)
+                html.Div(id="manual-graph-update", n_clicks=0),
             ],
         ),
     ]
 )
 
 
-@app.callback(Output("manual-graph-update", "n_clicks"), Input("numinput:history", "value"), prevent_initial_call=False)
+@app.callback(
+    Output("manual-graph-update", "n_clicks"),
+    Input("numinput:history", "value"),
+    prevent_initial_call=False,
+)
 def changeHistory(value: float):
     sensor_data.history = timedelta(days=value)
     # Return something so that graphs are updated
     return 0
+
 
 @app.callback(
     [
@@ -129,7 +137,10 @@ def changeHistory(value: float):
         Output("graph:temperature", "figure"),
         Output("graph-update-time", "data"),
     ],
-    [Input("interval:graph-update-tick", "n_intervals"), Input("manual-graph-update", "n_clicks")],
+    [
+        Input("interval:graph-update-tick", "n_intervals"),
+        Input("manual-graph-update", "n_clicks"),
+    ],
 )
 def updateGraphs(n: int, manual_update_clicks: int) -> tuple[dict, dict, datetime]:
     t = time()
@@ -212,6 +223,8 @@ def updateTimeDisplay(n: int, graph_last_updated: str) -> tuple[str, datetime]:
     )
 
 
+
+
 if __name__ == "__main__":
     # Set up a cronjob to renew the certificate every day at 0230
     # os.system("crontab -l > my_cron")
@@ -235,4 +248,11 @@ if __name__ == "__main__":
 
     # Use Dash instead of gunicorn for the webserver
     ssl_context = cert.getSslContext()
+
+    if os.getenv("PROFILE", False):
+        # Optional profiler that prints to the command line
+        app.server.config["PROFILE"] = True  # type: ignore
+        app.server.wsgi_app = ProfilerMiddleware(  # type: ignore
+            app.server.wsgi_app, sort_by=("cumtime", "tottime"), restrictions=[50]  # type: ignore
+        )
     app.run_server(host="0.0.0.0", port=port, debug=True, ssl_context=ssl_context)
