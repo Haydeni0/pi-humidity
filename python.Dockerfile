@@ -14,3 +14,4 @@ RUN python -m pip install certbot
 RUN apt-get install -y cron
 
 RUN python -m pip install dash_daq
+RUN python -m pip install Flask-Caching
