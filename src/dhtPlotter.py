@@ -6,6 +6,8 @@ from collections import deque
 from datetime import datetime, timedelta
 from time import time
 
+from app_layout import app_layout
+
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -13,8 +15,7 @@ import plotly.graph_objects as go
 import yaml
 from dash import Dash, dcc, html
 from dash.dependencies import Input, Output, State
-from dash_daq.BooleanSwitch import BooleanSwitch
-from dash_daq.NumericInput import NumericInput
+from flask_caching import Cache
 from plotly.subplots import make_subplots
 from werkzeug.middleware.profiler import ProfilerMiddleware
 
@@ -40,85 +41,26 @@ logging.basicConfig(
 )
 logger = logging.getLogger("__name__")
 
-db = DatabaseApi()
-
 with open("/shared/config.yaml", "r") as f:
     config: dict = yaml.load(f, yaml.Loader)
-
-figure_update_interval_seconds = config["figure_update_interval_seconds"]
-sensor_retry_seconds = config["sensor_retry_seconds"]
 schema_name = config["schema_name"]
 table_name = config["table_name"]
-full_table_name = db.joinNames(schema_name, table_name)
+full_table_name = DatabaseApi.joinNames(schema_name, table_name)
 
 # Find a way of choosing num_bins optimally based on the length of sensor history and the update interval
 # Num bins shouldn't be too big such that the time it takes to draw > the update interval
 # Num bins shouldn't be too small such that every time we update, nothing happens.
 # Also update interval should be longer than the sensor retry seconds, send a logger warning message about this?
 max_buckets = 800
-history = timedelta(days=2)
-sensor_data = SensorData(db, full_table_name, max_buckets=max_buckets, history=history)
 
 
-fig_H = go.Figure()
-fig_T = go.Figure()
+db = DatabaseApi()
+sensor_data = SensorData(db, full_table_name, max_buckets=max_buckets)
 
 
 app = Dash(name=__name__, update_title="", title="pi-humidity")
 server = app.server
-
-app.layout = html.Div(
-    children=[
-        # Graphs
-        html.Div(
-            children=[
-                dcc.Graph(id="graph:humidity", figure=fig_H, animate=False),
-                dcc.Graph(id="graph:temperature", figure=fig_T, animate=False),
-            ],
-        ),
-        # Display info and buttons
-        html.Div(
-            children=[
-                html.Time(id="time"),
-                # html.Button("Pause updates", id="btn:toggle-pause", n_clicks=0), # Allow pause to be able to investigate data manually using the graph
-            ],
-            style={"width:": "30%", "display": "inline-block"},
-        ),
-        html.Div(),
-        # Config
-        html.Div(
-            children=[
-                NumericInput(
-                    id="numinput:history",
-                    min=1,
-                    max=100,
-                    label="History (days)",
-                    labelPosition="right",
-                    value=history.days,
-                    persistence=True,
-                )
-            ],
-            id="div:config",
-            style={"display": "inline-block"},
-        ),
-        # Other
-        html.Div(
-            children=[
-                dcc.Interval(
-                    id="interval:graph-update-tick",
-                    interval=figure_update_interval_seconds * 1000,
-                    n_intervals=0,
-                ),
-                dcc.Interval(
-                    id="interval:time-update-tick", interval=800, n_intervals=0
-                ),
-                dcc.Store(id="graph-update-time"),
-                html.Div(id="manual-graph-update", n_clicks=0),
-            ],
-        ),
-    ]
-)
-
+app.layout = app_layout
 
 @app.callback(
     Output("manual-graph-update", "n_clicks"),

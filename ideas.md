@@ -4,7 +4,7 @@
 
 - Resize graphs to better fit the screen on fish tank
   - or maybe zoom in
-- Have the plotter repeatedly check for updates to config files so they can be updated without restarting container
+- Add figure update interval to the webpage as a changeable parameter
 - Increase update interval
 - Be able to change bucket width using the webpage
 - Also output static images of each graph that can be retrieved from the webserver
@@ -48,7 +48,7 @@
 
 - Clean up [raspberrypi_installation.md](raspberrypi_installation.md)
 - Add docstrings
-- 
+- Clean up dhtPlotter, maybe move into multiple files
 
 ### Improve and generalise install process
 
