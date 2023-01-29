@@ -168,8 +168,8 @@ def updateGraphs(n: int, manual_update_clicks: int) -> tuple[dict, dict, datetim
         height=400,
     )
     T_layout = copy.deepcopy(H_layout)
-    H_layout.yaxis = go.layout.YAxis(title="Humidity (%RH)")
-    T_layout.yaxis = go.layout.YAxis(title="Temperature (<sup>o</sup>C)")
+    H_layout.yaxis = go.layout.YAxis(title="Humidity (%RH)", side="right")
+    T_layout.yaxis = go.layout.YAxis(title="Temperature (<sup>o</sup>C)", side="right")
     t_plotting = time() - (t + t_update)
     logger.debug(f"Done [{t_update:2g}, {t_plotting:2g}]")
 
