@@ -3,8 +3,9 @@ from sensors import SensorData
 from dash import Dash, dcc, html
 from dash_daq.NumericInput import NumericInput
 from dash_daq.BooleanSwitch import BooleanSwitch
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 import plotly.express as px
 import numpy as np
 from datetime import timedelta, datetime
@@ -115,7 +116,8 @@ app.layout = html.Div(
     ]
 )
 
-@app.callback(Output("manual-graph-update", "n_clicks"), Input("numinput:history", "value"), prevent_initial_call=True)
+
+@app.callback(Output("manual-graph-update", "n_clicks"), Input("numinput:history", "value"), prevent_initial_call=False)
 def changeHistory(value: float):
     sensor_data.history = timedelta(days=value)
     # Return something so that graphs are updated

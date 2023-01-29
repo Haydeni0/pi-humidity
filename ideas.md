@@ -2,9 +2,12 @@
 
 ## To do
 
+- Resize graphs to better fit the screen on fish tank
+  - or maybe zoom in
 - Have the plotter repeatedly check for updates to config files so they can be updated without restarting container
 - Increase update interval
 - Be able to change bucket width using the webpage
+- Also output static images of each graph that can be retrieved from the webserver
 
 ### Plotly Dash
 
@@ -21,6 +24,9 @@
 - ```app.run_server(..., threaded=True)``` threaded?
 - dhtplotter at the moment just appends data to the figure. If the program runs for an extended period of time, will this get too big?
   - Reset figure?
+- Use C for the logger for higher performance, lightweight container
+  - Container built just for logging
+  - Still keep the python one though as backup
 
 ### Use timescaledb features
 
