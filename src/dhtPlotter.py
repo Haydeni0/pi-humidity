@@ -23,6 +23,8 @@ from database_api import DatabaseApi, DatabasePoolManager
 from my_certbot import Cert, createCertificate
 from sensors import SensorData
 
+logger = logging.getLogger("__name__")
+
 # Make colourmap for line plots https://plotly.com/python/discrete-color/
 GREEN_HEX = "#74A122"
 RED_HEX = "#D3042F"
@@ -30,16 +32,6 @@ colourmap = [GREEN_HEX, RED_HEX] + px.colors.qualitative.G10
 
 # Set up logging
 start_time = datetime.now()
-start_time_formatted = datetime.now().strftime("%Y-%m-%d_%H%M%S")
-# Worry about this potentially clogging up the device storage
-# if the container keeps restarting or too many things are logged...
-logging.basicConfig(
-    filename=f"/shared/logs/dhtPlotter_{start_time_formatted}.log",
-    filemode="w",
-    format="[%(asctime)s - %(levelname)s] %(funcName)20s: %(message)s",
-    level=logging.DEBUG,
-)
-logger = logging.getLogger("__name__")
 
 with open("/shared/config.yaml", "r") as f:
     config: dict = yaml.load(f, yaml.Loader)
@@ -166,33 +158,21 @@ def updateTimeDisplay(n: int, graph_last_updated: str) -> tuple[str, datetime]:
 
 
 if __name__ == "__main__":
-    # Set up a cronjob to renew the certificate every day at 0230
-    # os.system("crontab -l > my_cron")
-    os.system(r"echo 30 2 \* \* \* python /src/my_certbot.py  >> /tmp/my_cron")
-    os.system("crontab /tmp/my_cron")
-    os.system("rm /tmp/my_cron")
+    """
+    Dash webserver for development
+    Only runs on a single process
+    """
 
-    cert = Cert()
+    start_time_formatted = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+    # Worry about this potentially clogging up the device storage
+    # if the container keeps restarting or too many things are logged...
+    logging.basicConfig(
+        filename=f"/shared/logs/dhtPlotter_{start_time_formatted}.log",
+        filemode="w",
+        format="[%(asctime)s - %(levelname)s] %(funcName)20s: %(message)s",
+        level=logging.DEBUG,
+    )
+    
+    from webserver import startWebserver
+    startWebserver(dev=True)
 
-    # Create a certificate if one doesn't already exist and a hostname is given
-    if not cert and cert.getHostname():
-        createCertificate()
-        cert = Cert()
-
-    if cert:
-        # Certificate exists, use https
-        port = 443
-    else:
-        # Certificate doesn't exist, use http
-        port = 80
-
-    # Use Dash instead of gunicorn for the webserver
-    ssl_context = cert.getSslContext()
-
-    if os.getenv("PROFILE", False):
-        # Optional profiler that prints to the command line
-        app.server.config["PROFILE"] = True  # type: ignore
-        app.server.wsgi_app = ProfilerMiddleware(  # type: ignore
-            app.server.wsgi_app, sort_by=("cumtime", "tottime"), restrictions=[50]  # type: ignore
-        )
-    app.run_server(host="0.0.0.0", port=port, debug=True, ssl_context=ssl_context)
