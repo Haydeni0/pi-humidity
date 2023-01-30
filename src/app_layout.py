@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 from datetime import timedelta
 
 default_history = timedelta(days=2)
-default_figure_update_interval_seconds = 10
+default_figure_update_interval_seconds = 5
 
 fig_H = go.Figure()
 fig_T = go.Figure()
@@ -22,6 +22,7 @@ app_layout = html.Div(
         html.Div(
             children=[
                 html.Time(id="time"),
+                html.Div(id="debug-text"),
                 # html.Button("Pause updates", id="btn:toggle-pause", n_clicks=0), # Allow pause to be able to investigate data manually using the graph
             ],
             style={"width:": "30%", "display": "inline-block"},

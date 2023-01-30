@@ -45,12 +45,15 @@ full_table_name = DatabaseApi.joinNames(schema_name, table_name)
 # Also update interval should be longer than the sensor retry seconds, send a logger warning message about this?
 max_buckets = 800
 db_pool = DatabasePoolManager()
-sensor_data = SensorData(db_pool=db_pool, table_name=full_table_name, max_buckets=max_buckets)
+sensor_data = SensorData(
+    db_pool=db_pool, table_name=full_table_name, max_buckets=max_buckets
+)
 
 
 app = Dash(name=__name__, update_title="", title="pi-humidity")
 server = app.server
 app.layout = app_layout
+
 
 @app.callback(
     Output("manual-graph-update", "n_clicks"),
@@ -130,13 +133,17 @@ def updateGraphs(n: int, manual_update_clicks: int) -> tuple[dict, dict, datetim
 
 
 @app.callback(
-    [Output("time", "children"), Output("time", "dateTime")],
+    [
+        Output("time", "children"),
+        Output("time", "dateTime"),
+        Output("debug-text", "children"),
+    ],
     [
         Input("interval:time-update-tick", "n_intervals"),
         Input("graph-update-time", "data"),
     ],
 )
-def updateTimeDisplay(n: int, graph_last_updated: str) -> tuple[str, datetime]:
+def updateTimeDisplay(n: int, graph_last_updated: str) -> tuple[str, datetime, str]:
 
     current_time = datetime.now()
     rounded_time = datetime.strftime(current_time, "%H:%M:%S")
@@ -147,14 +154,16 @@ def updateTimeDisplay(n: int, graph_last_updated: str) -> tuple[str, datetime]:
     else:
         time_passed = current_time - start_time
 
+    # Some text for debugging
+    debug_text = f"Worker pid: {os.getpid()}"
+
     return (
         f"""
     {current_time.date()} {rounded_time}.{str(current_time.microsecond)[0]} (last updated {time_passed.seconds} seconds ago)
     """,
         current_time,
+        debug_text,
     )
-
-
 
 
 if __name__ == "__main__":
@@ -172,7 +181,7 @@ if __name__ == "__main__":
         format="[%(asctime)s - %(levelname)s] %(funcName)20s: %(message)s",
         level=logging.DEBUG,
     )
-    
-    from webserver import startWebserver
-    startWebserver(dev=True)
 
+    from webserver import startWebserver
+
+    startWebserver(dev=True)
