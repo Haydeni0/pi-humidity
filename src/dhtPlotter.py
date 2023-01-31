@@ -19,7 +19,7 @@ from flask_caching import Cache
 from plotly.subplots import make_subplots
 from werkzeug.middleware.profiler import ProfilerMiddleware
 
-from database_api import DatabaseApi, DatabasePoolManager
+from database_api import DatabaseApi, MyConnectionPool
 from my_certbot import Cert, createCertificate
 from sensors import SensorData
 
@@ -44,7 +44,7 @@ full_table_name = DatabaseApi.joinNames(schema_name, table_name)
 # Num bins shouldn't be too small such that every time we update, nothing happens.
 # Also update interval should be longer than the sensor retry seconds, send a logger warning message about this?
 max_buckets = 800
-db_pool = DatabasePoolManager()
+db_pool = MyConnectionPool()
 sensor_data = SensorData(
     db_pool=db_pool, table_name=full_table_name, max_buckets=max_buckets
 )

@@ -37,24 +37,19 @@ CONNECTION_CONFIG = ConnectionConfig(
 )
 
 
-class DatabasePoolManager:
-    _connection_pool: ThreadedConnectionPool
+class MyConnectionPool(ThreadedConnectionPool):
+    """
+    A derived class for ThreadedConnectionPool that automatically supplies connection configuration
+    """
 
     def __init__(self, min_connections: int = 1, max_connections: int = 20):
 
-        self._connection_pool = ThreadedConnectionPool(
+        ThreadedConnectionPool.__init__(
+            self,
             minconn=min_connections,
             maxconn=max_connections,
             **CONNECTION_CONFIG._asdict(),
         )
-
-    def getconn(self) -> psycopg2.extensions.connection:
-        connection: psycopg2.extensions.connection = self._connection_pool.getconn()
-        return connection
-
-    def putconn(self, connection: psycopg2.extensions.connection):
-        self._connection_pool.putconn(connection)
-
 
 @dataclass(init=False)
 class DatabaseApi:
@@ -62,10 +57,10 @@ class DatabaseApi:
     A sort of API that connects to the DHT table in the MySQL server for easy, high-level access.
     """
 
-    _db_pool: DatabasePoolManager | None
+    _db_pool: MyConnectionPool | None
     _connection: psycopg2.extensions.connection
 
-    def __init__(self, db_pool: DatabasePoolManager | None = None):
+    def __init__(self, db_pool: MyConnectionPool | None = None):
         self._db_pool = db_pool
 
         # If a connection pool is supplied, get a connection from the pool, otherwise just make a new connection.
@@ -86,7 +81,7 @@ class DatabaseApi:
 
         # Use the `_rused` member of AbstractConnectionPool to check if we have put back the connection to the pool already
         # This happens if __del__ is called twice, due to __exit__ calling it...
-        if self._db_pool._connection_pool._rused: # type: ignore
+        if self._db_pool._rused: # type: ignore
             self._db_pool.putconn(self._connection)
 
     def __enter__(self):
@@ -307,7 +302,7 @@ class DatabaseApi:
 
 
 def test1():
-    db_pool = DatabasePoolManager()
+    db_pool = MyConnectionPool()
     with DatabaseApi(db_pool) as db:
         random_dht = DhtObservation(
             datetime.datetime.now(), np.random.normal(1), np.random.normal(1)
@@ -318,7 +313,7 @@ def test1():
 
 
 def test2():
-    db_pool = DatabasePoolManager()
+    db_pool = MyConnectionPool()
     with DatabaseApi(db_pool) as db:
         print(db.version())
 

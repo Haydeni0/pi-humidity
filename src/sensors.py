@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 from pandas.core import frame
 
-from database_api import DatabaseApi, DatabasePoolManager
+from database_api import DatabaseApi, MyConnectionPool
 import yaml
 from psycopg2 import sql
 import logging
@@ -20,7 +20,7 @@ logger = logging.getLogger("__name__")
 @dataclass
 class SensorData:
     # Declarations
-    _db_pool: DatabasePoolManager
+    _db_pool: MyConnectionPool
     db: DatabaseApi
     table_name: str
 
@@ -98,7 +98,7 @@ class SensorData:
 
     def __init__(
         self,
-        db_pool: DatabasePoolManager,
+        db_pool: MyConnectionPool,
         table_name: str,
         max_buckets: int = 800,
         history: datetime.timedelta = datetime.timedelta(days=2),
@@ -249,7 +249,7 @@ class SensorData:
 
 if __name__ == "__main__":
     
-    db_pool = DatabasePoolManager()
+    db_pool = MyConnectionPool()
     
     
 
