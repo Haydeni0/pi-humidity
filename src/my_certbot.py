@@ -15,8 +15,8 @@ EMAIL = os.environ.get("EMAIL")
 
 @dataclass
 class Cert:
-    certfile: Path | None
-    keyfile: Path | None
+    certfile: str | None
+    keyfile: str | None
 
     def __init__(self):
 
@@ -28,8 +28,8 @@ class Cert:
             certfile = None
             keyfile = None
 
-        self.certfile = certfile
-        self.keyfile = keyfile
+        self.certfile = str(certfile)
+        self.keyfile = str(keyfile)
 
     def getSslContext(self):
         if self:
