@@ -25,11 +25,11 @@ class Cert:
         keyfile = certbot_path.joinpath(f"privkey.pem")
 
         if not (certfile.exists() and keyfile.exists()):
-            certfile = None
-            keyfile = None
-
-        self.certfile = str(certfile)
-        self.keyfile = str(keyfile)
+            self.certfile = None
+            self.keyfile = None
+        else:
+            self.certfile = str(certfile)
+            self.keyfile = str(keyfile)
 
     def getSslContext(self):
         if self:
