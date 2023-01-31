@@ -11,8 +11,13 @@
 - Make the interval ticks client-side, so that if I have more than one connection to the dash server they dont activate callbacks all at once
 - Try out gunicorn again, to be able to use more than one process
   - Make things thread-safe
-  - Look at the old gunicorn commits to see how I set up gunicorn the first time
   - Try to remove global variables, as they aren't that safe to use with Dash/threading
+    - Using a global SensorData is not safe, even with the use of pscyopg2 ThreadedConnectionPools
+      - Each worker will have a forked copy of this, so if the history changes for one worker, the others wont be affected
+      - This leads to the graph changing history length on an update when the worker changes
+      - Need to use some sort of data sharing system between workers, or clientside caching
+        - dcc.Store, or flask_caching ?
+        - history probably needs to be stored, so that it will apply on every worker
   - Useful [forum discussion](https://github.com/plotly/dash/issues/94)
 
 ### Plotly Dash

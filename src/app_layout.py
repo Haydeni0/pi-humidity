@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 from datetime import timedelta
 
 default_history = timedelta(days=2)
-default_figure_update_interval_seconds = 5
+default_figure_update_interval_seconds = 30
 
 fig_H = go.Figure()
 fig_T = go.Figure()
