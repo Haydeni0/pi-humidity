@@ -18,7 +18,7 @@
 
 *Version 1.0*
 
-- Very lightweight (for use on a low-power Raspberry Pi Zero) implementation which outputs the temeprature and humidity graphs as a static image.
+- Very lightweight (for use on a low-power Raspberry Pi Zero) implementation which outputs the temperature and humidity graphs as a static image.
 - Works with two DHT22 sensors
 
 ---
