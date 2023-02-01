@@ -20,8 +20,6 @@ logger = logging.getLogger("__name__")
 @dataclass
 class SensorData:
     # Declarations
-    _db_pool: MyConnectionPool
-    db: DatabaseApi
     table_name: str
 
     _history: datetime.timedelta
@@ -29,7 +27,8 @@ class SensorData:
     _bucket_width: datetime.timedelta
     _origin_dtime: datetime.datetime
 
-    _sensors: dict[str, deque]
+    # Key: sensor names, Value: deque(pd.DataFrame.itertuples of the data for that sensor)
+    _sensors: dict[str, deque[tuple]]
 
     _last_bucket: datetime.datetime
 
@@ -80,7 +79,7 @@ class SensorData:
             df.ffill(inplace=True)
             df.bfill(inplace=True)
 
-            newdata = deque(df.itertuples(index=True, name="SensorDht"))
+            newdata = deque(df.itertuples(index=True, name=None))
             # Must be reversed to extendleft
             newdata.reverse() 
 
@@ -98,12 +97,11 @@ class SensorData:
 
     def __init__(
         self,
-        db_pool: MyConnectionPool,
         table_name: str,
         max_buckets: int = 800,
         history: datetime.timedelta = datetime.timedelta(days=2),
     ):
-        self._db_pool = db_pool
+        # self._db_pool = db_pool
         self.table_name = table_name
 
         self._max_buckets = max_buckets
@@ -141,7 +139,7 @@ class SensorData:
         df.ffill(inplace=True)
         df.bfill(inplace=True)
 
-        newdata = deque(df.itertuples(index=True, name="SensorDht"))
+        newdata = deque(df.itertuples(index=True, name=None))
 
         if sensor_name not in self._sensors:
             self._sensors[sensor_name] = newdata
@@ -199,7 +197,7 @@ class SensorData:
             """
         ).format(table_name=sql.Identifier(self.table_name))
 
-        with DatabaseApi(self._db_pool) as db:
+        with DatabaseApi() as db:
             df = db.executeDf(
                 query,
                 (
@@ -237,7 +235,7 @@ class SensorData:
         """
         ).format(table_name=sql.Identifier(self.table_name))
 
-        with DatabaseApi(self._db_pool) as db:
+        with DatabaseApi() as db:
             result = db.execute(query_names, (start, end))
 
         if result and result[0]:
@@ -248,10 +246,6 @@ class SensorData:
 
 
 if __name__ == "__main__":
-    
-    db_pool = MyConnectionPool()
-    
-    
 
     with open("/shared/config.yaml", "r") as f:
         config: dict = yaml.load(f, yaml.Loader)
@@ -260,7 +254,7 @@ if __name__ == "__main__":
     table_name = config["table_name"]
     full_table_name = DatabaseApi.joinNames(schema_name, table_name)
 
-    sensor_data = SensorData(db_pool, full_table_name)
+    sensor_data = SensorData(table_name=full_table_name)
 
     while True:
         t = time.time()

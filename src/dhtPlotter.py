@@ -13,8 +13,16 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import yaml
-from dash import Dash, dcc, html
-from dash.dependencies import Input, Output, State
+from dash_extensions.enrich import (
+    DashProxy,
+    ServersideOutputTransform,
+    ServersideOutput,
+    Input,
+    Output,
+    State,
+    FileSystemStore
+)
+from dash import no_update
 from flask_caching import Cache
 from plotly.subplots import make_subplots
 from werkzeug.middleware.profiler import ProfilerMiddleware
@@ -35,35 +43,68 @@ start_time = datetime.now()
 
 with open("/shared/config.yaml", "r") as f:
     config: dict = yaml.load(f, yaml.Loader)
-schema_name = config["schema_name"]
-table_name = config["table_name"]
-full_table_name = DatabaseApi.joinNames(schema_name, table_name)
+SCHEMA_NAME = config["schema_name"]
+TABLE_NAME = config["table_name"]
+FULL_TABLE_NAME = DatabaseApi.joinNames(SCHEMA_NAME, TABLE_NAME)
 
 # Find a way of choosing num_bins optimally based on the length of sensor history and the update interval
 # Num bins shouldn't be too big such that the time it takes to draw > the update interval
 # Num bins shouldn't be too small such that every time we update, nothing happens.
 # Also update interval should be longer than the sensor retry seconds, send a logger warning message about this?
 max_buckets = 800
-db_pool = MyConnectionPool()
-sensor_data = SensorData(
-    db_pool=db_pool, table_name=full_table_name, max_buckets=max_buckets
+# db_pool = MyConnectionPool()
+
+my_backend = FileSystemStore(cache_dir="/dash_filesystemstore")
+
+app = DashProxy(
+    name=__name__,
+    update_title="",
+    title="pi-humidity",
+    transforms=[ServersideOutputTransform(backend=my_backend)],
 )
-
-
-app = Dash(name=__name__, update_title="", title="pi-humidity")
 server = app.server
 app.layout = app_layout
 
 
+# @app.callback(
+#     [Output("manual-data-update", "n_clicks"), Output("numinput:history", "value")],
+#     [Input("numinput:history", "value"), State("store:sensor-data", "data")],
+#     prevent_initial_call=False,
+# )
+# def changeHistory(value: float, sensor_data: SensorData | None):
+#     if sensor_data is not None:
+#         sensor_data.history = timedelta(days=value)
+#         return "please update data", no_update
+#     else:
+#         # Try to update history again
+#         return no_update, no_update, value
+
+
 @app.callback(
-    Output("manual-graph-update", "n_clicks"),
-    Input("numinput:history", "value"),
-    prevent_initial_call=False,
+    ServersideOutput("store:sensor-data", "data"),
+    [
+        State("store:sensor-data", "data"),
+        Input("numinput:history", "value"),
+        Input("button:update", "n_clicks"),
+        Input("interval:graph-update-tick", "n_intervals"),
+    ],
 )
-def changeHistory(value: float):
-    sensor_data.history = timedelta(days=value)
-    # Return something so that graphs are updated
-    return 0
+def updateSensorData(
+    sensor_data: SensorData | None, new_history_value: int, update_button_clicks: int, n_intervals: int
+):
+    t = time()
+    if sensor_data is None:
+        sensor_data = SensorData(table_name=FULL_TABLE_NAME, max_buckets=max_buckets)
+
+    history = timedelta(days=new_history_value)
+    if history != sensor_data.history:
+        # Setting a new history value updates the sensor data
+        sensor_data.history = history
+    else:
+        sensor_data.update()
+
+    logger.debug(f"Sensor data updated in {time() - t:.2g} seconds")
+    return sensor_data
 
 
 @app.callback(
@@ -72,28 +113,25 @@ def changeHistory(value: float):
         Output("graph:temperature", "figure"),
         Output("graph-update-time", "data"),
     ],
-    [
-        Input("interval:graph-update-tick", "n_intervals"),
-        Input("manual-graph-update", "n_clicks"),
-    ],
+    Input("store:sensor-data", "data"),
+    prevent_initial_call=True,
 )
-def updateGraphs(n: int, manual_update_clicks: int) -> tuple[dict, dict, datetime]:
+def updateGraphs(sensor_data: SensorData | None):
+
+    if sensor_data is None:
+        return no_update
+
     t = time()
     H_traces = []
     T_traces = []
 
-    logger.debug(f"Updating sensor data from database...")
-    sensor_data.update()
-    t_update = time() - t
-
-    logger.debug(f"Plotting...")
     colour_idx = 0
     # STOP USING _sensors, use sensors instead
     for sensor_name, data in sensor_data._sensors.items():
         df = pd.DataFrame(data)
-        dtime = np.array(df["Index"])
-        humidity = np.array(df["humidity"])
-        temperature = np.array(df["temperature"])
+        dtime = np.array(df.iloc[:, 0])
+        humidity = np.array(df.iloc[:, 1])
+        temperature = np.array(df.iloc[:, 2])
 
         colour_idx = colour_idx % len(colourmap)
         colour = colourmap[colour_idx]
@@ -118,8 +156,8 @@ def updateGraphs(n: int, manual_update_clicks: int) -> tuple[dict, dict, datetim
     T_layout = copy.deepcopy(H_layout)
     H_layout.yaxis = go.layout.YAxis(title="Humidity (%RH)", side="right")
     T_layout.yaxis = go.layout.YAxis(title="Temperature (<sup>o</sup>C)", side="right")
-    t_plotting = time() - (t + t_update)
-    logger.debug(f"Done [{t_update:2g}, {t_plotting:2g}]")
+
+    logger.debug(f"Updated figure in {time() - t: .2g} seconds")
 
     # Only update elements of the figure, rather than returning a whole new figure. This is much faster.
     return (

@@ -1,4 +1,4 @@
-from dash import dcc, html
+from dash_extensions.enrich import dcc, html
 from dash_daq.NumericInput import NumericInput
 import plotly.graph_objects as go
 from datetime import timedelta
@@ -39,7 +39,8 @@ app_layout = html.Div(
                     labelPosition="right",
                     value=default_history.days,
                     persistence=True,
-                )
+                ),
+                html.Button("Update", id="button:update", n_clicks=0),
             ],
             id="div:config",
             style={"display": "inline-block"},
@@ -56,7 +57,10 @@ app_layout = html.Div(
                     id="interval:time-update-tick", interval=800, n_intervals=0
                 ),
                 dcc.Store(id="graph-update-time"),
-                html.Div(id="manual-graph-update", n_clicks=0),
+                dcc.Store(id="store:fig-humidity"),
+                dcc.Store(id="store:fig-temperature"),
+                dcc.Store(id="store:sensor-data"),
+                html.Div(id="manual-data-update", n_clicks=0),
             ],
         ),
     ]
