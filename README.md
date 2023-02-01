@@ -25,7 +25,7 @@
 
 ## Summary
 
-Tool for humidity and temperature logging and webpage visualisation on a Raspberry Pi, using [Adafruit DHT22 sensors](https://pimylifeup.com/raspberry-pi-humidity-sensor-dht22/).
+Tool for humidity and temperature logging and webpage visualisation on a Raspberry Pi, using [Adafruit DHT22 sensors](https://learn.adafruit.com/dht).
 See the [install guide](#install-guide) for instructions on the setup process
 
 ### Example use case
