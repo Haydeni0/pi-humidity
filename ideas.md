@@ -29,8 +29,8 @@
 - Add buttons to increase/decrease parameters
 - Test parameter limits
 - Do some sort of postprocessing?
-  - Smoothing on the temperature
-- Turn off animations for the moment, mt might be the cause of this issue where the graph stays on old values if left in the background for a while?
+- Use plotly-resampler to be able to plot more data?
+- use the webgl versions of plotly for faster rendering, e.g. go.Scattergl
 
 ### Optimise plotter
 

@@ -2,6 +2,12 @@
 
 ## Updates
 
+*Version 2.1*
+
+- Upgrade production system to use Gunicorn WSGI
+- Use thread-safe caching and database calls with multiple worker threads for snappier responses
+- Add in-browser configuration options for the graphs
+
 *Version 2.0*
 
 - Upgrade to a docker-based implementation for simple install (tested on a Raspberry Pi 4)
