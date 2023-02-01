@@ -1,7 +1,8 @@
-from dash_extensions.enrich import dcc, html
-from dash_daq.NumericInput import NumericInput
-import plotly.graph_objects as go
 from datetime import timedelta
+
+import plotly.graph_objects as go
+from dash_daq.NumericInput import NumericInput
+from dash_extensions.enrich import dcc, html
 
 default_history = timedelta(days=2)
 default_figure_update_interval_seconds = 30

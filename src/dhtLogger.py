@@ -1,13 +1,12 @@
-import board
-import adafruit_dht
-import time
-import yaml
-import dataclasses
 import logging
-from database_api import DatabaseApi, DhtObservation
+import time
 from datetime import datetime
-
 from pathlib import Path
+
+import adafruit_dht
+import yaml
+
+from database_api import DatabaseApi, DhtObservation
 
 Path("/shared/logs").mkdir(parents=True, exist_ok=True)
 
@@ -79,9 +78,7 @@ def main():
                 pass
             except RuntimeError as error:
                 if error.args[0] == "DHT sensor not found, check wiring":
-                    logger.error(
-                        f"[{sensor.name}] DHT sensor not found, check wiring"
-                    )
+                    logger.error(f"[{sensor.name}] DHT sensor not found, check wiring")
                 # If it's a regular runtime error, this is normal behaviour
                 # for a DHT22 device so continue
                 continue

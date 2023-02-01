@@ -19,6 +19,9 @@
         - dcc.Store, or flask_caching ?
         - history probably needs to be stored, so that it will apply on every worker
   - Useful [forum discussion](https://github.com/plotly/dash/issues/94)
+- Do something about cached variables piling up
+  - Run some sort of cleanup regularly on old pickles?
+  - Or every time sensordata is overwritten
 
 ### Plotly Dash
 

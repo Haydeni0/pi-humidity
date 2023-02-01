@@ -1,18 +1,16 @@
 import datetime
+import logging
+import math
 import time
-import warnings
 from collections import deque
 from dataclasses import dataclass
 
 import numpy as np
 import pandas as pd
-from pandas.core import frame
-
-from database_api import DatabaseApi, MyConnectionPool
 import yaml
 from psycopg2 import sql
-import logging
-import math
+
+from database_api import DatabaseApi
 
 logger = logging.getLogger("__name__")
 
@@ -81,7 +79,7 @@ class SensorData:
 
             newdata = deque(df.itertuples(index=True, name=None))
             # Must be reversed to extendleft
-            newdata.reverse() 
+            newdata.reverse()
 
             if sensor_name not in self._sensors:
                 self._sensors[sensor_name] = newdata

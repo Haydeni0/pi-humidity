@@ -1,34 +1,27 @@
 import copy
 import logging
 import os
-import sys
-from collections import deque
 from datetime import datetime, timedelta
 from time import time
-
-from app_layout import app_layout
 
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import yaml
+from dash import no_update
 from dash_extensions.enrich import (
     DashProxy,
-    ServersideOutputTransform,
-    ServersideOutput,
+    FileSystemStore,
     Input,
     Output,
+    ServersideOutput,
+    ServersideOutputTransform,
     State,
-    FileSystemStore
 )
-from dash import no_update
-from flask_caching import Cache
-from plotly.subplots import make_subplots
-from werkzeug.middleware.profiler import ProfilerMiddleware
 
-from database_api import DatabaseApi, MyConnectionPool
-from my_certbot import Cert, createCertificate
+from app_layout import app_layout
+from database_api import DatabaseApi
 from sensors import SensorData
 
 logger = logging.getLogger("__name__")
@@ -47,13 +40,6 @@ SCHEMA_NAME = config["schema_name"]
 TABLE_NAME = config["table_name"]
 FULL_TABLE_NAME = DatabaseApi.joinNames(SCHEMA_NAME, TABLE_NAME)
 
-# Find a way of choosing num_bins optimally based on the length of sensor history and the update interval
-# Num bins shouldn't be too big such that the time it takes to draw > the update interval
-# Num bins shouldn't be too small such that every time we update, nothing happens.
-# Also update interval should be longer than the sensor retry seconds, send a logger warning message about this?
-max_buckets = 800
-# db_pool = MyConnectionPool()
-
 my_backend = FileSystemStore(cache_dir="/dash_filesystemstore")
 
 app = DashProxy(
@@ -64,20 +50,8 @@ app = DashProxy(
 )
 server = app.server
 app.layout = app_layout
-
-
-# @app.callback(
-#     [Output("manual-data-update", "n_clicks"), Output("numinput:history", "value")],
-#     [Input("numinput:history", "value"), State("store:sensor-data", "data")],
-#     prevent_initial_call=False,
-# )
-# def changeHistory(value: float, sensor_data: SensorData | None):
-#     if sensor_data is not None:
-#         sensor_data.history = timedelta(days=value)
-#         return "please update data", no_update
-#     else:
-#         # Try to update history again
-#         return no_update, no_update, value
+# Flask requires a secret key, just use the postgres password
+app.server.secret_key = os.getenv("POSTGRES_PASSWORD")  # type:ignore
 
 
 @app.callback(
@@ -90,11 +64,14 @@ app.layout = app_layout
     ],
 )
 def updateSensorData(
-    sensor_data: SensorData | None, new_history_value: int, update_button_clicks: int, n_intervals: int
+    sensor_data: SensorData | None,
+    new_history_value: int,
+    update_button_clicks: int,
+    n_intervals: int,
 ):
     t = time()
     if sensor_data is None:
-        sensor_data = SensorData(table_name=FULL_TABLE_NAME, max_buckets=max_buckets)
+        sensor_data = SensorData(table_name=FULL_TABLE_NAME, max_buckets=800)
 
     history = timedelta(days=new_history_value)
     if history != sensor_data.history:
@@ -103,7 +80,7 @@ def updateSensorData(
     else:
         sensor_data.update()
 
-    logger.debug(f"Sensor data updated in {time() - t:.2g} seconds")
+    logger.info(f"Sensor data updated in {time() - t:.2g} seconds")
     return sensor_data
 
 
@@ -157,7 +134,7 @@ def updateGraphs(sensor_data: SensorData | None):
     H_layout.yaxis = go.layout.YAxis(title="Humidity (%RH)", side="right")
     T_layout.yaxis = go.layout.YAxis(title="Temperature (<sup>o</sup>C)", side="right")
 
-    logger.debug(f"Updated figure in {time() - t: .2g} seconds")
+    logger.info(f"Updated figure in {time() - t: .2g} seconds")
 
     # Only update elements of the figure, rather than returning a whole new figure. This is much faster.
     return (
@@ -217,7 +194,7 @@ if __name__ == "__main__":
         filename=f"/shared/logs/dhtPlotter_{start_time_formatted}.log",
         filemode="w",
         format="[%(asctime)s - %(levelname)s] %(funcName)20s: %(message)s",
-        level=logging.DEBUG,
+        level=logging.INFO,
     )
 
     from webserver import startWebserver

@@ -1,18 +1,15 @@
-from dhtPlotter import app
-import os
-from my_certbot import Cert, createCertificate
-from datetime import datetime
-import yaml
 import logging
-
-import gunicorn.app.base
-from gunicorn.app.wsgiapp import WSGIApplication
-from gunicorn.config import Config
 import multiprocessing
 import os
+from datetime import datetime
+
+import gunicorn.app.base
+from gunicorn.config import Config
+
+from dhtPlotter import app
+from my_certbot import Cert, createCertificate
 
 logger = logging.getLogger("__name__")
-start_time = datetime.now()
 
 # Based on https://stackoverflow.com/a/72186728
 class StandaloneApplication(gunicorn.app.base.BaseApplication):
@@ -73,11 +70,11 @@ def startWebserver(dev: bool = False):
         # Use gunicorn
         options = {
             "bind": f"0.0.0.0:{port}",
-            "workers": 1, # (multiprocessing.cpu_count() * 2) + 1,
+            "workers": (multiprocessing.cpu_count() * 2) + 1,
             "certfile": cert.certfile,
             "keyfile": cert.keyfile,
             # "reload": True,
-            # "preload_app" :False,
+            "preload_app": False,
         }
         StandaloneApplication(app.server, options).run()
 
@@ -96,7 +93,7 @@ if __name__ == "__main__":
         filename=f"/shared/logs/webserver_{start_time_formatted}.log",
         filemode="w",
         format="[%(asctime)s - %(levelname)s] %(funcName)20s: %(message)s",
-        level=logging.DEBUG,
+        level=logging.INFO,
     )
 
     startWebserver()

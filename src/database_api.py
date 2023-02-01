@@ -69,9 +69,8 @@ class DatabaseApi:
         else:
             self._connection = psycopg2.connect(**CONNECTION_CONFIG._asdict())
 
-        logger.debug(f"Connected to server: {self.version()}")
         dbname = self.execute("SELECT current_database();")[0][0]
-        logger.debug(f"Connected to database: {dbname}")
+        logger.debug(f"Connected to database: '{dbname}' on server version: {self.version()}")
 
     def __del__(self):
         if self._db_pool is None:
