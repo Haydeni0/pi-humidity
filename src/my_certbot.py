@@ -1,12 +1,11 @@
+import logging
 import os
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-import sys
 
-from certbot.main import main
 from certbot.errors import Error
 
-import logging
 logger = logging.getLogger(__name__)
 
 WEBSITE_HOSTNAME = os.environ.get("WEBSITE_HOSTNAME")
@@ -57,7 +56,10 @@ def createCertificate():
         "--non-interactive",
     ]
     try:
-        main(args)
+        # Certbot isn't meant to be run through another python script it seems (from certbot.main import main)
+        # This messes up logging (and probably some other things).
+        # Just run certbot using command line:
+        subprocess.run(["certbot"] + args)
     except Error as err:
         logger.error(err)
 
