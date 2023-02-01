@@ -2,6 +2,7 @@ import copy
 import logging
 import os
 from datetime import datetime, timedelta
+from pathlib import Path
 from time import time
 
 import numpy as np
@@ -40,7 +41,19 @@ SCHEMA_NAME = config["schema_name"]
 TABLE_NAME = config["table_name"]
 FULL_TABLE_NAME = DatabaseApi.joinNames(SCHEMA_NAME, TABLE_NAME)
 
-my_backend = FileSystemStore(cache_dir="/dash_filesystemstore")
+backend_dir = "/dash_filesystemstore"
+my_backend = FileSystemStore(cache_dir=backend_dir)
+
+
+def deleteOldCache(since: timedelta = timedelta(hours=1)):
+    """Delete old dash cached files"""
+    path = Path(backend_dir)
+    for f in path.iterdir():
+        is_file = f.is_file()
+        last_modified = datetime.fromtimestamp(f.lstat().st_mtime)
+        if is_file and last_modified < (datetime.now() - since):
+            os.remove(f)
+
 
 app = DashProxy(
     name=__name__,
@@ -79,6 +92,8 @@ def updateSensorData(
         sensor_data.history = history
     else:
         sensor_data.update()
+
+    deleteOldCache()
 
     logger.info(f"Sensor data updated in {time() - t:.2g} seconds")
     return sensor_data
