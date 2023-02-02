@@ -99,20 +99,7 @@ def updateSensorData(
     return sensor_data
 
 
-@app.callback(
-    [
-        Output("graph:humidity", "figure"),
-        Output("graph:temperature", "figure"),
-        Output("graph-update-time", "data"),
-    ],
-    Input("store:sensor-data", "data"),
-    prevent_initial_call=True,
-)
-def updateGraphs(sensor_data: SensorData | None):
-
-    if sensor_data is None:
-        return no_update
-
+def makeFigures(sensor_data: SensorData) -> tuple[go.Figure, go.Figure]:
     t = time()
 
     fig_H = go.Figure()
@@ -138,8 +125,7 @@ def updateGraphs(sensor_data: SensorData | None):
 
         colour_idx += 1
 
-    current_time = datetime.now()
-    xaxis_range = [current_time - sensor_data.history, current_time]
+    xaxis_range = [sensor_data._last_bucket - sensor_data.history, sensor_data._last_bucket]
 
     for fig in [fig_H, fig_T]:
         fig.layout = go.Layout(
@@ -147,21 +133,57 @@ def updateGraphs(sensor_data: SensorData | None):
             font=go.layout.Font(size=18),
             margin={"t": 0},  # https://plotly.com/javascript/reference/#layout-margin
             height=400,
-            plot_bgcolor='rgba(100,149,237,0)'
+            plot_bgcolor="rgba(100,149,237,0)",
         )
         fig.update_xaxes(range=xaxis_range, gridcolor="rgba(86,95,110,0.2)")
-    fig_H.update_yaxes(title="Humidity (%RH)", side="right", gridcolor="rgba(86,95,110,0.2)")
-    fig_T.update_yaxes(title="Temperature (<sup>o</sup>C)", side="right", gridcolor="rgba(86,95,110,0.2)")
+    fig_H.update_yaxes(
+        title="Humidity (%RH)", side="right", gridcolor="rgba(86,95,110,0.2)"
+    )
+    fig_T.update_yaxes(
+        title="Temperature (<sup>o</sup>C)",
+        side="right",
+        gridcolor="rgba(86,95,110,0.2)",
+    )
 
-    logger.info(f"Updated figure in {time() - t: .2g} seconds")
+    logger.info(f"Created figures in {time() - t: .2g} seconds")
 
-    # Only update elements of the figure, rather than returning a whole new figure. This is much faster.
+    return fig_H, fig_T
+
+@app.callback(
+    [
+        Output("graph:humidity", "figure"),
+        Output("graph:temperature", "figure"),
+        Output("graph-update-time", "data"),
+    ],
+    Input("store:sensor-data", "data"),
+    prevent_initial_call=True,
+)
+def updateGraphs(sensor_data: SensorData | None):
+
+    if sensor_data is None:
+        return no_update
+
+    fig_H, fig_T = makeFigures(sensor_data)
+
+    # Write an image to disk every minute
+    filepath_H = Path(__file__).parent.joinpath("pages/fig_humidity.png")
+    filepath_T = Path(__file__).parent.joinpath("pages/fig_temperature.png")
+    if not filepath_H.exists() or (
+        datetime.fromtimestamp(filepath_H.lstat().st_mtime)
+        > datetime.now() - timedelta(minutes=10)
+    ):  
+        temp_sensor_data = SensorData(table_name=FULL_TABLE_NAME)
+        temp_sensor_data.history = timedelta(days=2)
+        temp_fig_H, temp_fig_T = makeFigures(temp_sensor_data)
+        temp_fig_H.write_image(filepath_H)
+        temp_fig_T.write_image(filepath_T)
+
+    current_time = datetime.now()
     return (
         fig_H,
         fig_T,
         current_time,
     )
-
 
 @app.callback(
     [
