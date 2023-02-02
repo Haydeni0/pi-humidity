@@ -7,16 +7,13 @@ from dash_extensions.enrich import dcc, html
 default_history = timedelta(days=2)
 default_figure_update_interval_seconds = 30
 
-fig_H = go.Figure()
-fig_T = go.Figure()
-
 app_layout = html.Div(
     children=[
         # Graphs
         html.Div(
             children=[
-                dcc.Graph(id="graph:humidity", figure=fig_H, animate=False),
-                dcc.Graph(id="graph:temperature", figure=fig_T, animate=False),
+                dcc.Graph(id="graph:humidity", animate=False),
+                dcc.Graph(id="graph:temperature", animate=False),
             ],
         ),
         # Display info and buttons

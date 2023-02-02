@@ -1,7 +1,7 @@
 import datetime
 import logging
 import math
-import time
+from time import time
 from collections import deque
 from dataclasses import dataclass
 
@@ -36,6 +36,9 @@ class SensorData:
 
     @history.setter
     def history(self, new_history: datetime.timedelta):
+        """If history is increased, we need to add older data to self._sensors because
+        self.update() only looks for new data.
+        """
         # Try to merge this somehow with update() or updateExtend()
         if new_history < self._history:
             # If the history is smaller, we don't need to do anything
@@ -119,7 +122,13 @@ class SensorData:
         self.update()
 
     def updateExtend(self, sensor_name: str, current_dtime: datetime.datetime):
+        """Extend the sensor data deque (for a specific sensor) with new data,
+        or replace the last one with an updated bucket
 
+        Args:
+            sensor_name (str): Sensor to extend data for
+            current_dtime (datetime.datetime): The time used by the calling function, to keep things synchronised
+        """
         df = self.queryBuckets(
             sensor_name=sensor_name,
             start=self._last_bucket,
@@ -152,6 +161,7 @@ class SensorData:
         self._sensors[sensor_name].extend(newdata)
 
     def update(self):
+        """Update sensor data from the database, and remove old data"""
         current_dtime = datetime.datetime.now()
 
         sensor_names = self.querySensorNames(start=self._last_bucket, end=current_dtime)
@@ -178,6 +188,20 @@ class SensorData:
         bucket_width: datetime.timedelta,
         origin: datetime.datetime,
     ) -> pd.DataFrame:
+        """Do a time_bucket based query for humidity and temperature (for a specific sensor)
+        between a start and an end time. Uses median as an aggregate within each bucket.
+        bucket_width and origin are the TimescaleDB time_bucket() arguments.
+
+        Args:
+            sensor_name (str): Name of the sensor to query
+            start (datetime.datetime): Start time
+            end (datetime.datetime): End time
+            bucket_width (datetime.timedelta): Time bucket width
+            origin (datetime.datetime): Reference time for time_bucket (align buckets with this time)
+
+        Returns:
+            pd.DataFrame: Dataframe of the time buckets
+        """
 
         # Use percentile_cont to get the median within each time bucket
         query = sql.SQL(
@@ -255,10 +279,10 @@ if __name__ == "__main__":
     sensor_data = SensorData(table_name=full_table_name)
 
     while True:
-        t = time.time()
+        t = time()
         sensor_data.update()
         df = pd.DataFrame(sensor_data._sensors["inside"])
         print(df.iloc[:10])
         print(df.iloc[-10:])
-        while time.time() - t < 5:
-            time.sleep(0.1)
+        while time() - t < 5:
+            sleep(0.1)

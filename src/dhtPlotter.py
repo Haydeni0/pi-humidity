@@ -114,8 +114,9 @@ def updateGraphs(sensor_data: SensorData | None):
         return no_update
 
     t = time()
-    H_traces = []
-    T_traces = []
+
+    fig_H = go.Figure()
+    fig_T = go.Figure()
 
     colour_idx = 0
     # STOP USING _sensors, use sensors instead
@@ -128,36 +129,36 @@ def updateGraphs(sensor_data: SensorData | None):
         colour_idx = colour_idx % len(colourmap)
         colour = colourmap[colour_idx]
 
-        H_traces.append(
-            go.Scatter(x=dtime, y=humidity, marker_color=colour, name=sensor_name)
+        fig_H.add_trace(
+            go.Scattergl(x=dtime, y=humidity, marker_color=colour, name=sensor_name)
         )
-        T_traces.append(
-            go.Scatter(x=dtime, y=temperature, marker_color=colour, name=sensor_name)
+        fig_T.add_trace(
+            go.Scattergl(x=dtime, y=temperature, marker_color=colour, name=sensor_name)
         )
 
         colour_idx += 1
 
     current_time = datetime.now()
     xaxis_range = [current_time - sensor_data.history, current_time]
-    H_layout = go.Layout(
-        xaxis=go.layout.XAxis(range=xaxis_range),
-        font=go.layout.Font(size=18),
-        margin={"t": 0},  # https://plotly.com/javascript/reference/#layout-margin
-        height=400,
-    )
-    T_layout = copy.deepcopy(H_layout)
-    H_layout.yaxis = go.layout.YAxis(title="Humidity (%RH)", side="right")
-    T_layout.yaxis = go.layout.YAxis(title="Temperature (<sup>o</sup>C)", side="right")
+
+    for fig in [fig_H, fig_T]:
+        fig.layout = go.Layout(
+            xaxis=go.layout.XAxis(range=xaxis_range),
+            font=go.layout.Font(size=18),
+            margin={"t": 0},  # https://plotly.com/javascript/reference/#layout-margin
+            height=400,
+            plot_bgcolor='rgba(100,149,237,0)'
+        )
+        fig.update_xaxes(range=xaxis_range, gridcolor="rgba(86,95,110,0.2)")
+    fig_H.update_yaxes(title="Humidity (%RH)", side="right", gridcolor="rgba(86,95,110,0.2)")
+    fig_T.update_yaxes(title="Temperature (<sup>o</sup>C)", side="right", gridcolor="rgba(86,95,110,0.2)")
 
     logger.info(f"Updated figure in {time() - t: .2g} seconds")
 
     # Only update elements of the figure, rather than returning a whole new figure. This is much faster.
     return (
-        {"data": H_traces, "layout": H_layout},
-        {
-            "data": T_traces,
-            "layout": T_layout,
-        },
+        fig_H,
+        fig_T,
         current_time,
     )
 
