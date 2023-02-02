@@ -21,7 +21,6 @@ app_layout = html.Div(
             children=[
                 html.Time(id="time"),
                 html.Div(id="debug-text"),
-                # html.Button("Pause updates", id="btn:toggle-pause", n_clicks=0), # Allow pause to be able to investigate data manually using the graph
             ],
             style={"width:": "30%", "display": "inline-block"},
         ),
