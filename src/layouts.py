@@ -8,7 +8,10 @@ default_history = timedelta(days=2)
 default_figure_update_interval_seconds = 30
 
 
-def app():
+def app() -> html.Div:
+    """
+    Base app layout that shows on the main page
+    """
     return html.Div(
         children=[
             html.Div(
@@ -27,7 +30,10 @@ def app():
     )
 
 
-def dhtPlotter():
+def dhtPlotter() -> html.Div:
+    """
+    Graphs for DHT plotting
+    """
     return html.Div(
         children=[
             # Graphs
@@ -85,7 +91,10 @@ def dhtPlotter():
     )
 
 
-def static():
+def static() -> html.Div:
+    """
+    Static graphs
+    """
     return html.Div(
         children=[
             html.H1("aosihdoaishd")

@@ -35,12 +35,14 @@ colourmap = [GREEN_HEX, RED_HEX] + px.colors.qualitative.G10
 # Set up logging
 start_time = datetime.now()
 
+# Get config
 with open("/shared/config.yaml", "r") as f:
     config: dict = yaml.load(f, yaml.Loader)
 SCHEMA_NAME = config["schema_name"]
 TABLE_NAME = config["table_name"]
 FULL_TABLE_NAME = DatabaseApi.joinNames(SCHEMA_NAME, TABLE_NAME)
 
+# Initialise server-side caching of data
 backend_dir = "/dash_filesystemstore"
 my_backend = FileSystemStore(cache_dir=backend_dir)
 
@@ -60,7 +62,7 @@ app = DashProxy(
     update_title="",
     title="pi-humidity",
     transforms=[ServersideOutputTransform(backend=my_backend)],
-    use_pages=True
+    use_pages=True,
 )
 server = app.server
 app.layout = layouts.app()
@@ -83,6 +85,12 @@ def updateSensorData(
     update_button_clicks: int,
     n_intervals: int,
 ):
+    """
+    Query new sensor data when called, and store it.
+
+    Use ServersideOutput to store the data in form of a FileSystemStore so that the sensor data is
+    stored locally on the server and can be any data type (not just JSON)
+    """
     t = time()
     if sensor_data is None:
         sensor_data = SensorData(table_name=FULL_TABLE_NAME, max_buckets=800)
@@ -94,6 +102,7 @@ def updateSensorData(
     else:
         sensor_data.update()
 
+    # Delete old cached values of the stored sensor data
     deleteOldCache()
 
     logger.info(f"Sensor data updated in {time() - t:.2g} seconds")
@@ -101,6 +110,14 @@ def updateSensorData(
 
 
 def makeFigures(sensor_data: SensorData) -> tuple[go.Figure, go.Figure]:
+    """Make Plotly figures from the sensor data
+
+    Args:
+        sensor_data (SensorData): Data queried from the SQL server that stores sensor data
+
+    Returns:
+        tuple[go.Figure, go.Figure]: The humidity and temperature graphs
+    """
     t = time()
 
     fig_H = go.Figure()
@@ -126,7 +143,10 @@ def makeFigures(sensor_data: SensorData) -> tuple[go.Figure, go.Figure]:
 
         colour_idx += 1
 
-    xaxis_range = [sensor_data._last_bucket - sensor_data.history, sensor_data._last_bucket]
+    xaxis_range = [
+        sensor_data._last_bucket - sensor_data.history,
+        sensor_data._last_bucket,
+    ]
 
     for fig in [fig_H, fig_T]:
         fig.layout = go.Layout(
@@ -150,6 +170,7 @@ def makeFigures(sensor_data: SensorData) -> tuple[go.Figure, go.Figure]:
 
     return fig_H, fig_T
 
+
 @app.callback(
     [
         Output("graph:humidity", "figure"),
@@ -160,7 +181,9 @@ def makeFigures(sensor_data: SensorData) -> tuple[go.Figure, go.Figure]:
     prevent_initial_call=True,
 )
 def updateGraphs(sensor_data: SensorData | None):
-
+    """
+    When there is new sensor data available, update the graphs
+    """
     if sensor_data is None:
         return no_update
 
@@ -172,7 +195,7 @@ def updateGraphs(sensor_data: SensorData | None):
     if not filepath_H.exists() or (
         datetime.fromtimestamp(filepath_H.lstat().st_mtime)
         > datetime.now() - timedelta(minutes=10)
-    ):  
+    ):
         temp_sensor_data = SensorData(table_name=FULL_TABLE_NAME)
         temp_sensor_data.history = timedelta(days=2)
         temp_fig_H, temp_fig_T = makeFigures(temp_sensor_data)
@@ -186,6 +209,7 @@ def updateGraphs(sensor_data: SensorData | None):
         current_time,
     )
 
+
 @app.callback(
     [
         Output("time", "children"),
@@ -198,7 +222,9 @@ def updateGraphs(sensor_data: SensorData | None):
     ],
 )
 def updateTimeDisplay(n: int, graph_last_updated: str) -> tuple[str, datetime, str]:
-
+    """
+    Every time tick, or when the graph updates, write the time to a display.
+    """
     current_time = datetime.now()
     rounded_time = datetime.strftime(current_time, "%H:%M:%S")
     if graph_last_updated is not None:
