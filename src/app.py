@@ -21,7 +21,7 @@ from dash_extensions.enrich import (
     State,
 )
 
-from app_layout import app_layout
+import layouts
 from database_api import DatabaseApi
 from sensors import SensorData
 
@@ -63,7 +63,7 @@ app = DashProxy(
     use_pages=True
 )
 server = app.server
-app.layout = app_layout
+app.layout = layouts.app()
 # Flask requires a secret key, just use the postgres password
 app.server.secret_key = os.getenv("POSTGRES_PASSWORD")  # type:ignore
 

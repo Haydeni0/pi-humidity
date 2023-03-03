@@ -6,7 +6,7 @@ from datetime import datetime
 import gunicorn.app.base
 from gunicorn.config import Config
 
-from dhtPlotter import app
+from app import app
 from my_certbot import Cert, createCertificate
 
 logger = logging.getLogger("__name__")
