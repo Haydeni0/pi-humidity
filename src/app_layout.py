@@ -2,7 +2,7 @@ from datetime import timedelta
 
 import plotly.graph_objects as go
 from dash_daq.NumericInput import NumericInput
-from dash_extensions.enrich import dcc, html
+from dash_extensions.enrich import dcc, html, page_container, page_registry
 
 default_history = timedelta(days=2)
 default_figure_update_interval_seconds = 30
@@ -60,5 +60,17 @@ app_layout = html.Div(
                 html.Div(id="manual-data-update", n_clicks=0),
             ],
         ),
+        # For more web pages
+        html.Div(
+            [
+                html.Div(
+                    dcc.Link(
+                        f"{page['name']} - {page['path']}", href=page["relative_path"]
+                    )
+                )
+                for page in page_registry.values()
+            ]
+        ),
+        page_container,
     ]
 )

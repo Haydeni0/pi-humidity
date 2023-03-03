@@ -8,3 +8,4 @@ password.env
 webserver.env
 
 shared/
+/src/assets/*.png

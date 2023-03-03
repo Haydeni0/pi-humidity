@@ -60,6 +60,7 @@ app = DashProxy(
     update_title="",
     title="pi-humidity",
     transforms=[ServersideOutputTransform(backend=my_backend)],
+    use_pages=True
 )
 server = app.server
 app.layout = app_layout
@@ -165,9 +166,9 @@ def updateGraphs(sensor_data: SensorData | None):
 
     fig_H, fig_T = makeFigures(sensor_data)
 
-    # Write an image to disk every minute
-    filepath_H = Path(__file__).parent.joinpath("pages/fig_humidity.png")
-    filepath_T = Path(__file__).parent.joinpath("pages/fig_temperature.png")
+    # Fully regenerate an image of each figure to disk every 10 minutes
+    filepath_H = Path(__file__).parent.joinpath("assets/fig_humidity.png")
+    filepath_T = Path(__file__).parent.joinpath("assets/fig_temperature.png")
     if not filepath_H.exists() or (
         datetime.fromtimestamp(filepath_H.lstat().st_mtime)
         > datetime.now() - timedelta(minutes=10)
