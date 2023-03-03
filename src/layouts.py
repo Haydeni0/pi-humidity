@@ -91,13 +91,17 @@ def dhtPlotter() -> html.Div:
     )
 
 
-def static() -> html.Div:
-    """
-    Static graphs
-    """
+def static_humidity() -> html.Div:
     return html.Div(
         children=[
-            html.H1("aosihdoaishd")
-            # html.Img(src="assets.fig_humidity.png")
+            html.Img(src="assets/fig_humidity.png"),
+        ]
+    )
+
+
+def static_temperature() -> html.Div:
+    return html.Div(
+        children=[
+            html.Img(src="assets/fig_temperature.png"),
         ]
     )
