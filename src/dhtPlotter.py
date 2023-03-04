@@ -196,11 +196,15 @@ def updateGraphs(sensor_data: SensorData | None):
         datetime.fromtimestamp(filepath_H.lstat().st_mtime)
         > datetime.now() - timedelta(minutes=10)
     ):
+        t = time()
         temp_sensor_data = SensorData(table_name=FULL_TABLE_NAME)
         temp_sensor_data.history = timedelta(days=2)
         temp_fig_H, temp_fig_T = makeFigures(temp_sensor_data)
         temp_fig_H.write_image(filepath_H, width=1000, height=300)
         temp_fig_T.write_image(filepath_T, width=1000, height=300)
+        logger.info(
+            f"Sensor data written to static images in {time() - t: .2g} seconds"
+        )
 
     current_time = datetime.now()
     return (
