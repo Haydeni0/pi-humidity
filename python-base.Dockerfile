@@ -5,6 +5,6 @@ RUN apt-get update
 
 RUN python -m pip install --upgrade pip
 
-# Typical libraries
+# Typical libraries (takes a *long* time to build for arm/v7 due to having to build python wheels)
 COPY ./requirements.txt .
 RUN python -m pip install -r ./requirements.txt
