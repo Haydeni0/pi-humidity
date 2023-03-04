@@ -9,11 +9,16 @@ RUN python -m pip install --upgrade pip
 RUN apt-get install -y build-essential libssl-dev libffi-dev python3-dev cargo pkg-config
 RUN python -m pip install pyopenssl
 
+# Webserver related
 RUN python -m pip install gunicorn
 RUN python -m pip install certbot
 RUN apt-get install -y cron
 
+# Dash extra stuff
 RUN python -m pip install dash_daq
 RUN python -m pip install Flask-Caching
 RUN python -m pip install dash-extensions
+
+# Requirements for kaleido
 RUN python -m pip install kaleido
+RUN apt-get install -y libnss3-dev
