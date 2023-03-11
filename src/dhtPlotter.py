@@ -194,7 +194,7 @@ def updateGraphs(sensor_data: SensorData | None):
     filepath_T = Path(__file__).parent.joinpath("assets/fig_temperature.png")
     if not filepath_H.exists() or (
         datetime.fromtimestamp(filepath_H.lstat().st_mtime)
-        > datetime.now() - timedelta(minutes=10)
+        < datetime.now() - timedelta(minutes=10)
     ):
         t = time()
         temp_sensor_data = SensorData(table_name=FULL_TABLE_NAME)
