@@ -2,6 +2,10 @@
 
 ## Updates
 
+*Version 2.2*
+
+- Add non-interactive graphs on website subpages for simple/quick access (e.g. from smartphone widget)
+
 *Version 2.1*
 
 - Upgrade production system to use Gunicorn WSGI
