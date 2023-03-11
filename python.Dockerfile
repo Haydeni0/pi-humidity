@@ -21,4 +21,4 @@ RUN python -m pip install dash-extensions
 
 # Requirements for kaleido
 RUN python -m pip install kaleido
-RUN apt-get install -y libnss3-dev
+RUN apt-get install -y libnss3-dev libgdk-pixbuf2.0-dev libgtk-3-dev libxss-dev
