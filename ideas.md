@@ -2,9 +2,8 @@
 
 ## To do
 
-- Resize graphs to better fit the screen on fish tank
-  - or maybe zoom in
-- Also output static images of each graph that can be retrieved from the webserver
+- Add a logging service, perhaps like Papertrail but local, to easily view logs
+- Add some security features to stop something like accidental DDOS on the pi from too many active sessions?
 
 ### Plotly Dash
 
@@ -14,9 +13,9 @@
 
 ### Optimise plotter
 
-- Use C for the logger for higher performance, lightweight container
+- Use C for the logger for higher performance, on a lightweight container
   - Container built just for logging
-  - Still keep the python one though as backup
+  - Still keep the python one running as backup, but at a much lower rate?
 
 ### Use timescaledb features
 
