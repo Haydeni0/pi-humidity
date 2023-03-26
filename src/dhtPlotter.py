@@ -25,7 +25,6 @@ import layouts
 from database_api import DatabaseApi
 from sensors import SensorData
 
-
 logger = logging.getLogger("__name__")
 
 # Make colourmap for line plots https://plotly.com/python/discrete-color/
@@ -110,28 +109,6 @@ def updateSensorData(
     return sensor_data
 
 
-import plotly.io as pio
-
-scope = pio.kaleido.scope
-
-
-def saveStaticFigures():
-    # Fully regenerate an image of each figure to disk
-    filepath_H = Path(__file__).parent.joinpath("assets/fig_humidity.png")
-    filepath_T = Path(__file__).parent.joinpath("assets/fig_temperature.png")
-
-    t = time()
-    temp_sensor_data = SensorData(table_name=FULL_TABLE_NAME)
-    temp_sensor_data.history = timedelta(days=2)
-
-    # Make the figures in the exact same way as the webpage does
-    temp_fig_H, temp_fig_T = makeFigures(temp_sensor_data)
-    temp_fig_H.write_image(filepath_H, width=1000, height=300)
-    temp_fig_T.write_image(filepath_T, width=1000, height=300)
-    scope._shutdown_kaleido()
-    logger.info(f"Sensor data written to static images in {time() - t: .2g} seconds")
-
-
 def makeFigures(sensor_data: SensorData) -> tuple[go.Figure, go.Figure]:
     """Make Plotly figures from the sensor data
 
@@ -211,8 +188,6 @@ def updateGraphs(sensor_data: SensorData | None):
         return no_update
 
     fig_H, fig_T = makeFigures(sensor_data)
-
-    saveStaticFigures()
 
     current_time = datetime.now()
     return (

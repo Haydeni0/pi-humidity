@@ -24,6 +24,23 @@ services:
       - /dev/gpiomem
     restart: always
 
+  dhtplotter-static:
+    container_name: pi-humidity-dhtplotter-static
+    image: haydeni0/pi-humidity:python
+    tty: true
+    stdin_open: true
+    depends_on:
+      - timescaledb
+    volumes:
+      - ./src:/src
+      - ./shared:/shared
+    env_file:
+      - postgres.env
+      - password.env
+      - webserver.env
+    restart: always
+    entrypoint: ["python", "/src/dhtPlotterStatic.py"]
+
   dhtplotter:
     container_name: pi-humidity-dhtplotter
     image: haydeni0/pi-humidity:python
@@ -31,6 +48,7 @@ services:
     stdin_open: true
     depends_on:
       - timescaledb
+      - dhtplotter-static
     volumes:
       - ./src:/src
       - ./shared:/shared
