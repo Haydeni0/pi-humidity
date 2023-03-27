@@ -4,6 +4,7 @@
 
 - Add a logging service, perhaps like Papertrail but local, to easily view logs
 - Add some security features to stop something like accidental DDOS on the pi from too many active sessions?
+- Fix timezones
 
 ### Plotly Dash
 
