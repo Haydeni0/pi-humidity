@@ -34,6 +34,10 @@ class StandaloneApplication(gunicorn.app.base.BaseApplication):
 
 
 def startWebserver(dev: bool = False):
+    # Save the environment variables to a file that can be read by cron, as cron runs jobs in its own environment
+    # See this SO Q/A: https://stackoverflow.com/questions/27771781/how-can-i-access-docker-set-environment-variables-from-a-cron-job
+    os.system("printenv | grep -v \"no_proxy\" >> /etc/environment")
+
     # Set up a cronjob to renew the certificate every day at 0230
     # os.system("crontab -l > my_cron")
     os.system(r"echo 30 2 \* \* \* python /src/my_certbot.py  >> /tmp/my_cron")
