@@ -64,9 +64,11 @@ def createCertificate():
         logger.error(err)
 
 
-
-
-
 if __name__ == "__main__":
     if (WEBSITE_HOSTNAME is not None) and (EMAIL is not None):
         createCertificate()
+    else:
+        raise ValueError(
+            f"""Either WEBSITE_HOSTNAME ({WEBSITE_HOSTNAME}) or EMAIL ({EMAIL}) are not set.
+            Certificate has not been renewed."""
+        )
