@@ -39,10 +39,11 @@ def startWebserver(dev: bool = False):
     os.system("printenv | grep -v \"no_proxy\" >> /etc/environment")
 
     # Set up a cronjob to renew the certificate every day at 0230
-    # os.system("crontab -l > my_cron")
-    os.system(r"echo '30 2 \* \* \* python /src/my_certbot.py >> /var/log/cron.log 2>&1' >> /tmp/my_cron")
+    # This completely overrides all other cronjobs - shouldn't be a problem as this is running in a container
+    os.system(r"echo '30 2 * * * python /src/my_certbot.py >> /var/log/cron.log 2>&1' >> /tmp/my_cron")
     os.system("crontab /tmp/my_cron")
     os.system("rm /tmp/my_cron")
+    os.system("cron")
 
     cert = Cert()
 
