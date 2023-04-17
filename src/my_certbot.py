@@ -59,7 +59,7 @@ def createCertificate():
         # Certbot isn't meant to be run through another python script it seems (from certbot.main import main)
         # This messes up logging (and probably some other things).
         # Just run certbot using command line:
-        subprocess.run(["certbot"] + args)
+        subprocess.run(["/usr/local/bin/certbot"] + args)
     except Error as err:
         logger.error(err)
 
