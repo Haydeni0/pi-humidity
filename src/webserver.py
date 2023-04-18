@@ -42,16 +42,6 @@ def startWebserver(dev: bool = False):
         createCertificate()
         cert = Cert()
 
-    # Save the environment variables to a file that can be read by cron, as cron runs jobs in its own environment
-    # See this SO Q/A: https://stackoverflow.com/questions/27771781/how-can-i-access-docker-set-environment-variables-from-a-cron-job
-    os.system("printenv | grep -v \"no_proxy\" >> /etc/environment")
-    # Set up a cronjob to renew the certificate every Sunday at 0230
-    # This completely overrides all other cronjobs - shouldn't be a problem as this is running in a container
-    os.system(r"echo '30 2 * * 0 /usr/local/bin/python3 /src/my_certbot.py >> /var/log/cron.log 2>&1' >> /tmp/my_cron")
-    os.system("crontab /tmp/my_cron")
-    os.system("rm /tmp/my_cron")
-    os.system("cron")
-
     if cert:
         # Certificate exists, use https
         port = 443

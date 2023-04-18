@@ -61,7 +61,7 @@ services:
     ports:
       - 80:80
       - 443:443
-    entrypoint: ["python", "/src/webserver.py"]
+    entrypoint: ["/src/dhtplotter_entrypoint.bash"]
 
   timescaledb:
     container_name: pi-humidity-timescaledb
