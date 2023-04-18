@@ -70,6 +70,7 @@ services:
       - 5432:5432
     volumes:
       - tsdb_data:/var/lib/postgresql/data
+      - ./db_dump:/db_dump
     env_file:
       - postgres.env
       - password.env
