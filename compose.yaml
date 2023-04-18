@@ -31,7 +31,6 @@ services:
     stdin_open: true
     depends_on:
       - timescaledb
-      # - dhtplotter-static
     volumes:
       - ./src:/src
       - ./shared:/shared
