@@ -4,13 +4,16 @@
 # See this SO Q/A: https://stackoverflow.com/questions/27771781/how-can-i-access-docker-set-environment-variables-from-a-cron-job
 printenv | grep -v \"no_proxy\" >> /etc/environment
 
-# Set up a cronjob to renew the certificate every Sunday at 0230
-# This completely overrides all other cronjobs - shouldn't be a problem as this is running in a container
-# Specify exact path to python for cron
-echo '30 2 * * 0 /usr/local/bin/python3 /src/my_certbot.py >> /var/log/cron.log 2>&1' >> /tmp/my_cron
+
+# Specify exact path to python for cron, as it doesn't use it by default
+# Renew the SSL certificate every Sunday at 0230
+echo '30 2 * * 0 /usr/local/bin/python3 /src/my_certbot.py >> /var/log/cron.log 2>&1' > /tmp/my_cron
+# Generate static images of the graphs every 10 minutes
+echo '*/10 * * * * /usr/local/bin/python3 /src/dhtPlotterStatic.py' > /tmp/my_cron
 crontab /tmp/my_cron
 rm /tmp/my_cron
 cron
 
 python /src/my_certbot.py >> /var/log/cron.log 2>&1
+python /src/dhtPlotterStatic.py
 python /src/webserver.py

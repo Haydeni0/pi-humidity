@@ -6,15 +6,18 @@ from datetime import datetime, timedelta
 from time import time, sleep
 import logging
 
+logging.basicConfig(
+    filename=f"/shared/logs/dhtPlotterStatic.log",
+    filemode="w",
+    format="[%(asctime)s - %(levelname)s] %(funcName)20s: %(message)s",
+    level=logging.INFO,
+)
 logger = logging.getLogger("__name__")
 
 scope = pio.kaleido.scope
 
 FILEPATH_H = Path(__file__).parent.joinpath("assets/fig_humidity.png")
 FILEPATH_T = Path(__file__).parent.joinpath("assets/fig_temperature.png")
-
-SLEEP_TIMER_SECONDS = 10 * 60
-
 
 def saveStaticFigures():
     # Fully regenerate an image of each figure to disk
@@ -29,7 +32,7 @@ def saveStaticFigures():
     temp_fig_T.write_image(FILEPATH_T, width=1000, height=300)
 
     # Manually shutdown kaleido, which is used to write plotly images to file,
-    # due to memory leak concerns with chromium and multithreading in dhtPlotter.py (gunicorn/dash)
+    # due to memory leak concerns with chromium and multithreading (e.g., when used with gunicorn/dash)
     # See https://github.com/plotly/Kaleido/issues/49 and https://github.com/plotly/Kaleido/issues/42
     scope._shutdown_kaleido()
 
@@ -37,7 +40,4 @@ def saveStaticFigures():
 
 
 if __name__ == "__main__":
-
-    while True:
-        saveStaticFigures()
-        sleep(SLEEP_TIMER_SECONDS)
+    saveStaticFigures()
