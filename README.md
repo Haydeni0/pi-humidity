@@ -92,8 +92,9 @@ This writes to ```./password.env```, ```./shared/config.yaml``` ```./webserver.e
 
 Run Docker
 
-> ***Development notes***
->
+<details>
+<summary>Development notes</summary>
+
 > To build the container use the docker file [```./python.Dockerfile```](./python.Dockerfile)
 >
 > The build may take a *long* time on a Raspberry Pi, due to many python precompiled wheels not being available for ```arm/v7```.
@@ -106,6 +107,8 @@ Run Docker
 > >     docker buildx create --name mybuilder --driver docker-container --bootstrap
 > >     docker buildx use mybuilder
 > >     docker buildx build -f python.Dockerfile . -t haydeni0/pi-humidity:python --platform linux/arm/v7,linux/amd64
+
+</details>
 
 Use images available on docker hub, specified in the compose file. Run the command:
 
