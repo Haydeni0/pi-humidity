@@ -22,6 +22,6 @@
 
 Run the backup script to dump the database to a file
 
-    ./db_backups/backup_db.bash
+    ./db_backups/dump_db.bash
 
 Maybe set up a cronjob to do this, and then back up the dump to somewhere safe (e.g., to Google Drive using ```rclone```)
