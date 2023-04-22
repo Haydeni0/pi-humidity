@@ -270,7 +270,7 @@ class DatabaseApi:
                 """
             )
             self.execute(
-                f"SELECT add_compression_policy('{table_name}', INTERVAL '2 weeks', if_not_exists => TRUE);"
+                f"SELECT add_compression_policy('{table_name}', INTERVAL '2 weeks');"
             )
 
     def sendObservation(
