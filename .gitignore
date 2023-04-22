@@ -7,6 +7,6 @@ tempCodeRunnerFile.py
 password.env
 webserver.env
 
-db_dump/
+db_backups/*.bak
 shared/
 /src/assets/*.png

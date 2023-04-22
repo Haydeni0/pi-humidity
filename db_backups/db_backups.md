@@ -1,4 +1,4 @@
-# How to do backups of timescale
+# How to do backups of a TimescaleDB database
 
 ## Back up and restore the entire database using ```pg_dump```
 

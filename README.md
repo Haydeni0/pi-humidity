@@ -122,3 +122,11 @@ The TimescaleDB database containing the sensor data is accessible on port 5432 o
     docker exec -it pi-humidity-timescaledb /bin/bash -c 'psql -U postgres -d ${POSTGRES_DB}'
 
     SELECT * FROM dht ORDER BY dtime DESC LIMIT 10;
+
+---
+
+## Database backups
+
+The TimescaleDB database can be backed up running the script [backup_db.bash](./db_backups/backup_db.bash)
+
+    ./db_backups/backup_db.bash
