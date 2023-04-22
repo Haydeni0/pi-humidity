@@ -51,10 +51,23 @@ class MyConnectionPool(ThreadedConnectionPool):
             **CONNECTION_CONFIG._asdict(),
         )
 
+
 @dataclass(init=False)
 class DatabaseApi:
     """
     A sort of API that connects to the DHT table in the MySQL server for easy, high-level access.
+
+    Example usage:
+
+    ```python
+
+    # Use a context manager to automatically close the database connection after we're done
+    with DatabaseApi() as db:
+        # Get a pandas dataframe as a result from a query
+        df = db.executeDf("SELECT * FROM dht ORDER BY dtime DESC LIMIT 10;")
+
+    ```
+
     """
 
     _db_pool: MyConnectionPool | None
@@ -70,7 +83,9 @@ class DatabaseApi:
             self._connection = psycopg2.connect(**CONNECTION_CONFIG._asdict())
 
         dbname = self.execute("SELECT current_database();")[0][0]
-        logger.debug(f"Connected to database: '{dbname}' on server version: {self.version()}")
+        logger.debug(
+            f"Connected to database: '{dbname}' on server version: {self.version()}"
+        )
 
     def __del__(self):
         if self._db_pool is None:
@@ -80,7 +95,7 @@ class DatabaseApi:
 
         # Use the `_rused` member of AbstractConnectionPool to check if we have put back the connection to the pool already
         # This happens if __del__ is called twice, due to __exit__ calling it...
-        if self._db_pool._rused: # type: ignore
+        if self._db_pool._rused:  # type: ignore
             self._db_pool.putconn(self._connection)
 
     def __enter__(self):
@@ -109,8 +124,7 @@ class DatabaseApi:
         result = []
         try:
             cursor.execute(query, parameters)
-            # How to properly check if results exist and we aren't going to get a "psycopg2.ProgrammingError: no results to fetch" error?
-            # results_exist = cursor.rowcount >= 0 and cursor.description is not None
+            # Check if results exist and we aren't going to get a "psycopg2.ProgrammingError: no results to fetch" error
             results_exist = cursor.pgresult_ptr is not None
             if results_exist:
                 result = cursor.fetchall()
@@ -228,13 +242,36 @@ class DatabaseApi:
             );
             """
         )
-        self.execute(
+        create_hypertable_result = self.execute(
             f"""
             SELECT create_hypertable(
                 '{table_name}', 'dtime', if_not_exists => TRUE
             );
             """
         )
+
+        # The function create_hypertable() returns a table with columns:
+        # {hypertable_id, schema_name, table_name, created} 
+        # but psycopg2 doesn't format it correctly for some reason.
+        # Check if the table was created, by using the value of the last column, "created".
+        table_was_created = (
+            str(create_hypertable_result[0][0]).strip("()").split(",")[3] == "t"
+        )
+
+        # The following queries might error if the table is not created because it already exists
+        if table_was_created:
+            self.execute(
+                f"""
+                ALTER TABLE {table_name} SET (
+                    timescaledb.compress,
+                    timescaledb.compress_orderby = 'dtime',
+                    timescaledb.compress_segmentby = 'sensor_name'
+                );
+                """
+            )
+            self.execute(
+                f"SELECT add_compression_policy('{table_name}', INTERVAL '2 weeks', if_not_exists => TRUE);"
+            )
 
     def sendObservation(
         self,
@@ -292,9 +329,14 @@ class DatabaseApi:
     def joinNames(schema_name: str | None, table_name: str):
         assert table_name, f"Cannot join table name '{table_name}'"
         if schema_name:
-            return f"{schema_name}.{table_name}"
+            out = f"{schema_name}.{table_name}"
         else:
-            return table_name
+            out = table_name
+
+        assert out == out.replace(
+            " ", ""
+        ), f"'Table name {out} is not valid - remove spaces"
+        return out
 
 
 # >>> Development testing >>>
