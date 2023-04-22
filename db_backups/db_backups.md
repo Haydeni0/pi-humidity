@@ -1,32 +1,30 @@
 # How to do backups of a TimescaleDB database
 
-## Back up and restore the entire database using ```pg_dump``` and ```pg_restore```
+## Manual steps
 
-### Manual steps
+Back up and restore the entire database using ```pg_dump``` and ```pg_restore``` ([TimescaleDB docs](https://docs.timescale.com/self-hosted/latest/backup-and-restore/pg-dump-and-restore/))
 
-> [TimescaleDB docs](https://docs.timescale.com/self-hosted/latest/backup-and-restore/pg-dump-and-restore/)
->
-> Run the ```pg_dump``` command inside the database container:
->
->     docker exec pi-humidity-timescaledb /bin/bash -c 'pg_dump -U postgres -Fc -f /db_backups/${POSTGRES_DB}.bak $> {POSTGRES_DB}'
->
-> And restore to a new database using ```pg_restore``` (within psql):
->
->     CREATE DATABASE restored_pi_humidity;
->     \c restored_pi_humidity
->     SELECT timescaledb_pre_restore();
->     \! pg_restore -U postgres -Fc -d restored_pi_humidity /db_backups/${POSTGRES_DB}.bak
->     SELECT timescaledb_post_restore();
+Run the ```pg_dump``` command inside the database container:
+
+    docker exec pi-humidity-timescaledb /bin/bash -c 'pg_dump -U postgres -Fc -f /db_backups/${POSTGRES_DB}.bak $> {POSTGRES_DB}'
+
+And restore to a new database using ```pg_restore``` (within psql):
+
+    CREATE DATABASE restored_pi_humidity;
+    \c restored_pi_humidity
+    SELECT timescaledb_pre_restore();
+    \! pg_restore -U postgres -Fc -d restored_pi_humidity /db_backups/${POSTGRES_DB}.bak
+    SELECT timescaledb_post_restore();
 
 ---
 
-### Use the script
+## Use the script
 
 Run the backup script to dump the database to a file
 
     ./db_backups/dump_db.bash
 
-Or, use the ```rclone``` script (after doing the setup for ```rclone``` Google Drive backups in the section below)
+Or, use the ```rclone``` script (which itself runs ```dump_db.bash```) after doing the setup for ```rclone``` Google Drive backups in the [section below](#rclone-setup)
 
     ./db_backups/rclone_backup.bash
 
@@ -36,7 +34,7 @@ This script is intended to be run every month using ```cron```:
 
 ---
 
-### ```rclone``` setup
+## rclone setup
 
 Based on [this guide](https://www.howtogeek.com/451262/how-to-use-rclone-to-back-up-to-google-drive-on-linux/), but using a custom Google Drive ```Client ID``` and ```Client secret```:
 
