@@ -18,6 +18,8 @@
 >     \! pg_restore -U postgres -Fc -d restored_pi_humidity /db_backups/${POSTGRES_DB}.bak
 >     SELECT timescaledb_post_restore();
 
+---
+
 ### Use the script
 
 Run the backup script to dump the database to a file
@@ -31,6 +33,8 @@ Or, use the ```rclone``` script (after doing the setup for ```rclone``` Google D
 This script is intended to be run every month using ```cron```:
 
     0 0 1 * * /absolute/path/to/rclone_backup.bash
+
+---
 
 ### ```rclone``` setup
 
