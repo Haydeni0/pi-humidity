@@ -6,23 +6,12 @@
 
 Run a command inside the database container:
 
-    docker exec pi-humidity-timescaledb pg_dump -U postgres -Fc -f /db_dump/dumpfile pi_humidity
+    docker exec pi-humidity-timescaledb pg_dump -U postgres -Fc -f /db_dump/pi_humidity.bak pi_humidity
 
 And restore to a new database:
 
     CREATE DATABASE restored_pi_humidity;
     \c restored_pi_humidity
     SELECT timescaledb_pre_restore();
-    \! pg_restore -U postgres -Fc -d restored_pi_humidity /db_dump/dumpfile
+    \! pg_restore -U postgres -Fc -d restored_pi_humidity /db_dump/pi_humidity.bak
 
-## Convert from the old mysql dump to postgres
-
-[pgloader](https://pgloader.readthedocs.io/en/latest/intro.html)
-
-[pgloader github](https://github.com/dimitri/pgloader)
-
-    apt-get install pgloader
-
-Better to do it inside their docker container probably
-
-    docker run --rm -it ghcr.io/dimitri/pgloader:latest pgloader --version
