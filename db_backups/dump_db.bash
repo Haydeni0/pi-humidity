@@ -6,7 +6,7 @@ DB_NAME=$(cat $ENV_FILE | grep -Po "(?<=POSTGRES_DB\=)[\w\d]+")
 
 # Run the pg_dump command inside the timescaledb container
 # This backs up the database to a .bak file here
-echo Backing up to $DB_NAME...
+echo Backing up database $DB_NAME...
 docker exec pi-humidity-timescaledb /bin/bash -c \
     'pg_dump -U postgres -Fc -f /db_backups/${POSTGRES_DB}.bak ${POSTGRES_DB}' > /dev/null 2>&1
 # Reset permissions for outside the container

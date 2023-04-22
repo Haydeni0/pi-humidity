@@ -24,4 +24,57 @@ Run the backup script to dump the database to a file
 
     ./db_backups/dump_db.bash
 
-Maybe set up a cronjob to do this, and then back up the dump to somewhere safe (e.g., to Google Drive using ```rclone```)
+Or, use the ```rclone``` script (after doing the setup for ```rclone``` Google Drive backups in the section below)
+
+    ./db_backups/rclone_backup.bash
+
+This script is intended to be run every month using ```cron```:
+
+    0 0 1 * * /absolute/path/to/rclone_backup.bash
+
+### ```rclone``` setup
+
+Based on [this guide](https://www.howtogeek.com/451262/how-to-use-rclone-to-back-up-to-google-drive-on-linux/), but using a custom Google Drive ```Client ID``` and ```Client secret```:
+
+- Follow [this guide] to get a Google Drive ```Client ID``` and ```Client secret```, required by rclone
+
+Set up ```rclone``` with a Google Drive remote,
+
+    sudo apt update
+    sudo apt install rclone
+    rclone config
+
+    n/s/q> n
+    name> my_gdrive
+    Storage> drive
+
+Enter the Google Drive ```Client ID```, e.g. something like:
+
+    client_id> [something].apps.googleusercontent.com
+
+Enter the Google Drive ```Client secret```, e.g. something like:
+
+    client_secret> FHEJFLD-Ac-ocE2jAF229-AjgXRHSdpSJF
+
+Continue, setting the scope and leaving others default
+
+    scope> 1
+    root_folder_id> 
+    service_account_file>
+
+Don't edit the advanced config
+
+    y/n> n
+  
+But do use auto config, which will open a browser (or give a link to a webpage) and prompt for a login. Accept all.
+
+    y/n> y
+
+Don't configure as a team drive
+
+    y/n> n
+
+Finish and quit
+
+    y/e/d> y
+    e/n/d/r/c/s/q> q
