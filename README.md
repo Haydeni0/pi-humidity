@@ -127,6 +127,8 @@ The TimescaleDB database containing the sensor data is accessible on port 5432 o
 
 ## Database backups
 
-The TimescaleDB database can be backed up running the script [backup_db.bash](./db_backups/backup_db.bash)
+The TimescaleDB database can be backed up to a file by running the script [backup_db.bash](./db_backups/backup_db.bash)
 
     ./db_backups/backup_db.bash
+
+Read more [here](./db_backups/db_backups.md) or on the [TimescaleDB docs](https://docs.timescale.com/self-hosted/latest/backup-and-restore/pg-dump-and-restore/).
