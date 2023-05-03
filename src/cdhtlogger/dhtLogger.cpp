@@ -92,6 +92,7 @@ class DhtSensor
         // Print state duration, colouring 1's (state durations longer than 16 microseconds) as TEAL
         for (int elem : state_durations) {
             if (elem > 16) TEAL_TEXT
+            if (elem == BAD_VALUE) BLACK_TEXT
             printf("%3d", elem);
             DEFAULT_TEXT
             printf("|");
@@ -109,8 +110,10 @@ class DhtSensor
         }
 
         // Update members
-        // Why is this sometimes 0, but seemingly only when run in a container? 66% failure rate
-        // (not including invalid measurements) Seems to be something to do with the stateDuration
+        // This is sometimes 0, but seemingly only when run in a container? This happens 40-60% of the time a measurement is not flagged as bad
+        // This happens when stateDuration has values all below 16 (the cutoff value fo a 1 or a 0), but there still seems to be some signal there. 
+        // E.g., (3,2,3,8,3,9,8,3) rather than (7,7,7,32,7,33,32,6)
+        // Maybe this "weak signal" can be extracted using some sort of clustering algorithm to separate between 1's and 0's.
         m_humidity = humidity;
         m_temperature = temperature;
     }
