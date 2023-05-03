@@ -20,7 +20,7 @@ Compile with
 #include <iostream>
 
 #define MAX_TIMINGS 85  // Takes 84 state changes to transmit data
-#define BAD_VALUE 999.9f
+#define BAD_VALUE 999
 
 #define BLACK_TEXT printf("\033[0;30m");
 #define DEFAULT_TEXT printf("\033[0m");
@@ -46,7 +46,9 @@ class DhtSensor
         float temperature = BAD_VALUE;
 
         int data[5] = {0, 0, 0, 0, 0};
-        data[0] = data[1] = data[2] = data[3] = data[4] = 0;
+        int state_durations[40];
+        for (int &elem : state_durations)
+            elem = BAD_VALUE;
 
         /*
         Signal Sensor we're ready to read by pulling pin UP for 10 milliseconds,
@@ -79,18 +81,20 @@ class DhtSensor
             // them. Each bit is preceeded by a state change to mark its
             // beginning, ignore it too.
             if ((stateChanges > 2) && (stateChanges % 2 == 0)) {
+                state_durations[bitsRead] = stateDuration;
                 data[bitsRead / 8] <<= 1;  // Each array element has 8 bits.  Shift Left 1 bit.
                 if (stateDuration > 16)    // A State Change > 16 microseconds is a '1'.
-                {
                     data[bitsRead / 8] |= 0x00000001;
-                    TEAL_TEXT
-                }
-                printf("%3d", stateDuration);
-                DEFAULT_TEXT
-                printf("|");
-
                 bitsRead++;
             }
+        }
+
+        // Print state duration, colouring 1's (state durations longer than 16 microseconds) as TEAL
+        for (int elem : state_durations) {
+            if (elem > 16) TEAL_TEXT
+            printf("%3d", elem);
+            DEFAULT_TEXT
+            printf("|");
         }
 
         /*
@@ -105,8 +109,8 @@ class DhtSensor
         }
 
         // Update members
-        // Why is this sometimes 0, but seemingly only when run in a container?
-        // Seems to be something to do with the stateDuration
+        // Why is this sometimes 0, but seemingly only when run in a container? 66% failure rate
+        // (not including invalid measurements) Seems to be something to do with the stateDuration
         m_humidity = humidity;
         m_temperature = temperature;
     }
@@ -144,8 +148,8 @@ int main(void)
     int error_count = 0;
     int zero_count = 0;
 
-    int delay_milliseconds = 1000;
-    for (int i = 0; i < 100; i++) {
+    int delay_milliseconds = 100;
+    for (int i = 0; i < 1000; i++) {
         sensor.read();
         float humidity = sensor.m_humidity;
         float temperature = sensor.m_temperature;
