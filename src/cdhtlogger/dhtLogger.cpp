@@ -48,8 +48,8 @@ class DhtSensor
         float temperature = BAD_VALUE;
 
         int data[5] = {0, 0, 0, 0, 0};
-        int state_durations[40];
-        for (int &elem : state_durations)
+        int allStateDurations[40];
+        for (int &elem : allStateDurations)
             elem = BAD_VALUE;
 
         /*
@@ -83,7 +83,7 @@ class DhtSensor
             // them. Each bit is preceeded by a state change to mark its
             // beginning, ignore it too.
             if ((stateChanges > 2) && (stateChanges % 2 == 0)) {
-                state_durations[bitsRead] = stateDuration;
+                allStateDurations[bitsRead] = stateDuration;
                 data[bitsRead / 8] <<= 1;  // Each array element has 8 bits.  Shift Left 1 bit.
                 if (stateDuration > 16)    // A State Change > 16 microseconds is a '1'.
                     data[bitsRead / 8] |= 0x00000001;
@@ -104,9 +104,11 @@ class DhtSensor
         The group with larger mean state duration are encoded as 1's.
         */
 
+
+
 #ifdef DEBUG
         // Print state duration, colouring 1's (state durations longer than 16 microseconds) as TEAL
-        for (int elem : state_durations) {
+        for (int elem : allStateDurations) {
             if (elem > 16) TEAL_TEXT
             if (elem == BAD_VALUE) BLACK_TEXT
             printf("%3d", elem);
@@ -137,12 +139,12 @@ class DhtSensor
     }
 };
 
-std::string debug_msg = "Default debug message";
+std::string debugMsg = "Default debug message";
 
 void signalHandler(int signum)
 {
     std::cout << "Interrupt signal (" << signum << ") received.\n";
-    std::cout << debug_msg << "\n";
+    std::cout << debugMsg << "\n";
 
     exit(signum);
 }
@@ -168,10 +170,10 @@ int main(void)
 
     DhtSensor sensor{25};
 
-    int good_count = 0;
-    int zero_count = 0;
+    int goodCount = 0;
+    int zeroCount = 0;
 
-    int delay_milliseconds = 100;
+    int delayMilliseconds = 100;
     for (int i = 0; i < 1000; i++) {
         sensor.read();
         float humidity = sensor.m_humidity;
@@ -179,18 +181,18 @@ int main(void)
         printf("%-3.1f *C  Humidity: %-3.1f%%\n", temperature, humidity);
 
         if (humidity == 0 && temperature == 0)
-            zero_count++;
+            zeroCount++;
         else
-            good_count++;
+            goodCount++;
 
-        if (good_count + zero_count > 0) {
-            debug_msg =
+        if (goodCount + zeroCount > 0) {
+            debugMsg =
                 "Zero proportion after " + std::to_string(i) + " tries: " +
-                std::to_string(static_cast<float>(zero_count * 100) / (good_count + zero_count)) +
+                std::to_string(static_cast<float>(zeroCount * 100) / (goodCount + zeroCount)) +
                 "%";
         }
 
-        delay(delay_milliseconds);  // Wait between readings
+        delay(delayMilliseconds);  // Wait between readings
     }
 
     signalHandler(0);
