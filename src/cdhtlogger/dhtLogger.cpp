@@ -23,8 +23,10 @@ Main changes:
 #include <csignal>
 #include <iostream>
 
+#define PIN 25 // wiringPi pin number. Run the command ```gpio readall``` to check the wPi pin (compare to the physical pins).
+
 #define MAX_TIMINGS 85  // Takes 84 state changes to transmit data
-#define NBITS 40
+#define NBITS 40 // Total number of bits of data
 #define BAD_VALUE 999
 
 #define DEFAULT_TEXT printf("\033[0m");
@@ -34,9 +36,9 @@ Main changes:
 
 /**
  * A k-means algorithm for 1 dimensional data, with k equal to 2.
- * 
+ *
  * The two centroids are initialised at the minimum and maximum of the dataset
- * 
+ *
  * @param Input data
  * @param Centroid assignments (1 for the upper centroid, 0 for the lower)
  */
@@ -186,7 +188,8 @@ class DhtSensor
 
         for (int j = 0; j < NBITS; j++) {
             data[j / 8] <<= 1;  // Each array element has 8 bits.  Shift Left 1 bit.
-            if (stateData[j])   // A State Change > 16 microseconds is a '1'.
+            // if (stateData[j])   // A State Change > 16 microseconds is a '1'.
+            if (allStateDurations[j] > 16)  // A State Change > 16 microseconds is a '1'.
                 data[j / 8] |= 0x00000001;
         }
 
@@ -203,7 +206,11 @@ class DhtSensor
             if (allStateDurations[j] == BAD_VALUE) BLACK_TEXT
             printf("%3d", allStateDurations[j]);
             DEFAULT_TEXT
-            printf("|");
+
+            if ((j != 0) && (j % 8 == 0))
+                printf("║");
+            else
+                printf("|");
         }
 #endif
 
@@ -232,15 +239,21 @@ int main(void)
     }
 
 #ifdef DEBUG
-    for (int j{0}; j < NBITS; j++)
-        printf("%3d|", j);
+    printf("DEBUG MODE: Displaying microseconds in each state.\n");
+    for (int j{0}; j < NBITS; j++) {
+        printf("%3d", j);
+        if ((j != 0) && (j % 8 == 0))
+            printf("║");
+        else
+            printf("|");
+    }
     std::cout << "\n";
     for (int j{0}; j < NBITS; j++)
         printf("----");
     std::cout << "\n";
 #endif
 
-    DhtSensor sensor{25};
+    DhtSensor sensor{PIN};
 
     int delayMilliseconds = 500;
     for (int i = 0; i < 1000; i++) {
