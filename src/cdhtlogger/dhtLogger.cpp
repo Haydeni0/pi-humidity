@@ -1,10 +1,14 @@
 /*
 
-Compile with 
+Compile with
     g++ dhtLogger.cpp -lwiringPi -Wall -o dhtLogger.exe && ./dhtLogger.exe
 
  Based on:
  http://www.uugear.com/portfolio/read-dht1122-temperature-humidity-sensor-from-raspberry-pi/
+
+ Main changes:
+ - Fix undefined behaviour when reading too many bits in the read loop
+
  */
 
 #include <stdint.h>
@@ -17,14 +21,16 @@ Compile with
 #define MAX_TIMINGS 85  // Takes 84 state changes to transmit data
 #define BAD_VALUE 999.9f
 
-int data[5] = {0, 0, 0, 0, 0};
+#define BLACK_TEXT printf("\033[0;30m");
+#define DEFAULT_TEXT printf("\033[0m");
+#define TEAL_TEXT printf("\033[36;1m");
 
 class DhtSensor
 {
    public:
     int m_pin;
-    float m_humidity{555};
-    float m_temperature{666};
+    float m_humidity{BAD_VALUE};
+    float m_temperature{BAD_VALUE};
 
    public:
     DhtSensor(int pin) : m_pin{pin} {}
@@ -38,6 +44,7 @@ class DhtSensor
         float humidity = BAD_VALUE;
         float temperature = BAD_VALUE;
 
+        int data[5] = {0, 0, 0, 0, 0};
         data[0] = data[1] = data[2] = data[3] = data[4] = 0;
 
         /*
@@ -57,7 +64,7 @@ class DhtSensor
         pinMode(m_pin, INPUT);
 
         for ((stateChanges = 0), (stateDuration = 0);
-             (stateChanges < MAX_TIMINGS) && (stateDuration < 255);
+             (stateChanges < MAX_TIMINGS) && (stateDuration < 255) && (bitsRead < 40);
              stateChanges++) {
             stateDuration = 0;
             while ((digitalRead(m_pin) == lastState) && (stateDuration < 255)) {
