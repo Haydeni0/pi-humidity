@@ -6,54 +6,70 @@ volumes:
 services:
 
   dhtlogger:
-    container_name: pi-humidity-dhtlogger
-    image: haydeni0/pi-humidity:python
+    container_name: dev-dhtlogger
+    build: 
+      dockerfile: cpp.Dockerfile
+      context: .
     tty: true
     stdin_open: true
-    depends_on:
-      - timescaledb
+    # depends_on:
+    #   - timescaledb
     volumes:
       - ./src:/src
       - ./shared:/shared
-    entrypoint: [ "python", "-u", "/src/dhtLogger.py" ]
-    env_file:
-      - postgres.env
-      - password.env
     devices:
       # Access to GPIO pins (https://stackoverflow.com/a/48234752)
       - /dev/gpiomem
-    restart: always
 
-  dhtplotter:
-    container_name: pi-humidity-dhtplotter
-    image: haydeni0/pi-humidity:python
-    tty: true
-    stdin_open: true
-    depends_on:
-      - timescaledb
-    volumes:
-      - ./src:/src
-      - ./shared:/shared
-      - certbot:/etc/letsencrypt
-    env_file:
-      - postgres.env
-      - password.env
-      - webserver.env
-    restart: always
-    ports:
-      - 80:80
-      - 443:443
-    entrypoint: [ "/src/dhtplotter_entrypoint.bash" ]
+  # dhtlogger:
+  #   container_name: pi-humidity-dhtlogger
+  #   image: haydeni0/pi-humidity:python
+  #   tty: true
+  #   stdin_open: true
+  #   depends_on:
+  #     - timescaledb
+  #   volumes:
+  #     - ./src:/src
+  #     - ./shared:/shared
+  #   entrypoint: [ "python", "-u", "/src/dhtLogger.py" ]
+  #   env_file:
+  #     - postgres.env
+  #     - password.env
+  #   devices:
+  #     # Access to GPIO pins (https://stackoverflow.com/a/48234752)
+  #     - /dev/gpiomem
+  #   restart: always
 
-  timescaledb:
-    container_name: pi-humidity-timescaledb
-    image: timescale/timescaledb:2.10.2-pg14
-    ports:
-      - 5432:5432
-    volumes:
-      - tsdb_data:/var/lib/postgresql/data
-      - ./db_backups:/db_backups
-    env_file:
-      - postgres.env
-      - password.env
-    restart: always
+  # dhtplotter:
+  #   container_name: pi-humidity-dhtplotter
+  #   image: haydeni0/pi-humidity:python
+  #   tty: true
+  #   stdin_open: true
+  #   depends_on:
+  #     - timescaledb
+  #   volumes:
+  #     - ./src:/src
+  #     - ./shared:/shared
+  #     - certbot:/etc/letsencrypt
+  #   env_file:
+  #     - postgres.env
+  #     - password.env
+  #     - webserver.env
+  #   restart: always
+  #   ports:
+  #     - 80:80
+  #     - 443:443
+  #   entrypoint: [ "/src/dhtplotter_entrypoint.bash" ]
+
+  # timescaledb:
+  #   container_name: pi-humidity-timescaledb
+  #   image: timescale/timescaledb:2.10.2-pg14
+  #   ports:
+  #     - 5432:5432
+  #   volumes:
+  #     - tsdb_data:/var/lib/postgresql/data
+  #     - ./db_backups:/db_backups
+  #   env_file:
+  #     - postgres.env
+  #     - password.env
+  #   restart: always
