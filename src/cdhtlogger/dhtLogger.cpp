@@ -1,17 +1,18 @@
-/*
+/**
 
 Compile with
     g++ dhtLogger.cpp -lwiringPi -Wall -o dhtLogger.exe && ./dhtLogger.exe
 or for debug
     g++ dhtLogger.cpp -lwiringPi -Wall -DDEBUG -o dhtLogger.exe && ./dhtLogger.exe
 
- Based on:
- http://www.uugear.com/portfolio/read-dht1122-temperature-humidity-sensor-from-raspberry-pi/
+Based on:
+http://www.uugear.com/portfolio/read-dht1122-temperature-humidity-sensor-from-raspberry-pi/
 
- Main changes:
- - Fix undefined behaviour when reading too many bits in the read loop
+Main changes:
+- Fix undefined behaviour when reading too many bits in the read loop
+- Robustify data decoding step to allow for a bit more latency in readings
 
- */
+*/
 
 #include <stdint.h>
 #include <stdio.h>
@@ -31,8 +32,17 @@ or for debug
 #define TEAL_TEXT printf("\033[36;1m");
 #define RED_TEXT printf("\033[0;31m");
 
+/**
+ * A k-means algorithm for 1 dimensional data, with k equal to 2.
+ * 
+ * The two centroids are initialised at the minimum and maximum of the dataset
+ * 
+ * @param Input data
+ * @param Centroid assignments (1 for the upper centroid, 0 for the lower)
+ */
 void twoMeans(const int (&x)[NBITS], bool (&assignUpper)[NBITS])
-{  // The starting values for the centroids are the minimum and maximum measured durations
+{
+    // The initial values for the centroids are the minimum and maximum
     float lower = x[0];
     float upper = x[0];
     for (int elem : x) {
@@ -149,15 +159,16 @@ class DhtSensor
         }
 
         /*
-        Sometimes, particularly when run in a docker container, the state durations are a lot
-        shorter than when run directly on the Pi. Since the state durations encode the
-        humidity and temperature values (1 for a state duration > 16 microseconds), this
-        "weak signal" due to shortened state durations corrupts the data if all of them
-        are shorter than 16 milliseconds.
-         E.g., Signal A: ( 3, 2, 3, 8, 8, 9, 8, 3), a "weak signal" with no readable data
-               Signal B: ( 7, 7, 7,32,33,33,32, 6), a "strong signal" with readable data [>16]
-        */
-        /*
+        Sometimes, perhaps due to latency (e.g., running in a docker container), the state durations
+        are a lot shorter than when run directly on the Pi. Since the state durations encode the
+        humidity and temperature values (1 for a state duration > 16 microseconds), this "weak
+        signal" due to shortened state durations corrupts the data if all of them are shorter than
+        16 milliseconds.
+
+         E.g., Signal A: ( 3, 2, 3, 8, 8, 9, 8, 3), a "weak signal" with no decodable data
+               Signal B: ( 7, 7, 7,32,33,33,32, 6), a "strong signal" with decodable data [>16]
+     True decoded data:  ( 0, 0, 0, 1, 1, 1, 1, 0)
+
         Instead of encoding 1's with state duration > 16 microseconds,
         use k-means clustering (with k=2) to cluster state durations into two groups.
         The group with larger mean state duration are encoded as 1's.
