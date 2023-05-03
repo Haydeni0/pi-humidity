@@ -16,6 +16,7 @@ Compile with
 #include <stdlib.h>
 #include <wiringPi.h>
 
+#include <csignal>
 #include <iostream>
 
 #define MAX_TIMINGS 85  // Takes 84 state changes to transmit data
@@ -111,13 +112,24 @@ class DhtSensor
     }
 };
 
+std::string debug_msg;
+
+void signalHandler(int signum)
+{
+    std::cout << "Interrupt signal (" << signum << ") received.\n";
+    std::cout << debug_msg << "\n";
+
+    exit(signum);
+}
+
 int main(void)
 {
     if (wiringPiSetup() == -1) {
-        std::cout << "asd"
-                  << "\n";
+        std::cout << "wiringPi setup failed";
         exit(1);
     }
+    // register signal SIGINT and signal handler
+    signal(SIGINT, signalHandler);
 
     for (int j{0}; j < 40; j++)
         printf("%3d|", j);
@@ -128,11 +140,34 @@ int main(void)
 
     DhtSensor sensor{25};
 
-    for (int i = 0; i < 5000; i++) {
+    int good_count = 0;
+    int error_count = 0;
+    int zero_count = 0;
+
+    int delay_milliseconds = 1000;
+    for (int i = 0; i < 100; i++) {
         sensor.read();
-        printf("%-3.1f *C  Humidity: %-3.1f%%\n", sensor.m_temperature, sensor.m_humidity);
-        delay(2000); /* Wait 10 seconds between readings. */
+        float humidity = sensor.m_humidity;
+        float temperature = sensor.m_temperature;
+        printf("%-3.1f *C  Humidity: %-3.1f%%\n", temperature, humidity);
+
+        if (humidity == 0 && temperature == 0)
+            zero_count++;
+        else if (humidity == BAD_VALUE && temperature == BAD_VALUE)
+            error_count++;
+        else
+            good_count++;
+
+        if (good_count + zero_count > 0) {
+            debug_msg =
+                "Zero proportion after " + std::to_string(i) + " tries: " +
+                std::to_string(static_cast<float>(zero_count * 100) / (good_count + zero_count)) +
+                "%";
+        }
+
+        delay(delay_milliseconds);  // Wait between readings
     }
 
+    signalHandler(0);
     return (0);
 }
