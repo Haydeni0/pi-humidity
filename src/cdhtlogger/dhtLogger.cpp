@@ -2,6 +2,8 @@
 
 Compile with
     g++ dhtLogger.cpp -lwiringPi -Wall -o dhtLogger.exe && ./dhtLogger.exe
+or for debug
+    g++ dhtLogger.cpp -lwiringPi -Wall -DDEBUG -o dhtLogger.exe && ./dhtLogger.exe
 
  Based on:
  http://www.uugear.com/portfolio/read-dht1122-temperature-humidity-sensor-from-raspberry-pi/
@@ -89,6 +91,20 @@ class DhtSensor
             }
         }
 
+        /*
+        Sometimes, particularly when run in a docker container, the state durations are a lot
+        shorter than when run directly on the Pi. Since the state durations encode the
+        humidity and temperature values (1 for a state duration > 16 microseconds), this
+        "weak signal" due to shortened state durations corrupts this information.
+         E.g., (3,2,3,8,3,9,8,3) rather than (7,7,7,32,7,33,32,6)
+        */
+        /*
+        Instead of encoding 1's with state duration > 16 microseconds,
+        use k-means clustering (with k=2) to cluster state durations into two groups.
+        The group with larger mean state duration are encoded as 1's.
+        */
+
+#ifdef DEBUG
         // Print state duration, colouring 1's (state durations longer than 16 microseconds) as TEAL
         for (int elem : state_durations) {
             if (elem > 16) TEAL_TEXT
@@ -97,6 +113,7 @@ class DhtSensor
             DEFAULT_TEXT
             printf("|");
         }
+#endif
 
         /*
         Read 40 bits. (Five elements of 8 bits each)  Last element is a
@@ -110,16 +127,17 @@ class DhtSensor
         }
 
         // Update members
-        // This is sometimes 0, but seemingly only when run in a container? This happens 40-60% of the time a measurement is not flagged as bad
-        // This happens when stateDuration has values all below 16 (the cutoff value fo a 1 or a 0), but there still seems to be some signal there. 
-        // E.g., (3,2,3,8,3,9,8,3) rather than (7,7,7,32,7,33,32,6)
-        // Maybe this "weak signal" can be extracted using some sort of clustering algorithm to separate between 1's and 0's.
+        // This is sometimes 0, but seemingly only when run in a container? This happens 40-60% of
+        // the time a measurement is not flagged as bad This happens when stateDuration has values
+        // all below 16 (the cutoff value fo a 1 or a 0), but there still seems to be some signal
+        // there. E.g., (3,2,3,8,3,9,8,3) rather than (7,7,7,32,7,33,32,6) Maybe this "weak signal"
+        // can be extracted using some sort of clustering algorithm to separate between 1's and 0's.
         m_humidity = humidity;
         m_temperature = temperature;
     }
 };
 
-std::string debug_msg;
+std::string debug_msg = "Default debug message";
 
 void signalHandler(int signum)
 {
@@ -135,20 +153,22 @@ int main(void)
         std::cout << "wiringPi setup failed";
         exit(1);
     }
+
     // register signal SIGINT and signal handler
     signal(SIGINT, signalHandler);
 
+#ifdef DEBUG
     for (int j{0}; j < 40; j++)
         printf("%3d|", j);
     std::cout << "\n";
     for (int j{0}; j < 40; j++)
         printf("----");
     std::cout << "\n";
+#endif
 
     DhtSensor sensor{25};
 
     int good_count = 0;
-    int error_count = 0;
     int zero_count = 0;
 
     int delay_milliseconds = 100;
@@ -160,8 +180,6 @@ int main(void)
 
         if (humidity == 0 && temperature == 0)
             zero_count++;
-        else if (humidity == BAD_VALUE && temperature == BAD_VALUE)
-            error_count++;
         else
             good_count++;
 
