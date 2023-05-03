@@ -78,11 +78,16 @@ class DhtSensor
             // them. Each bit is preceeded by a state change to mark its
             // beginning, ignore it too.
             if ((stateChanges > 2) && (stateChanges % 2 == 0)) {
-                data[bitsRead / 8] <<=
-                    1;  // Each array element has 8 bits.  Shift Left 1 bit.
-                if (stateDuration >
-                    16)  // A State Change > 16 microseconds is a '1'.
+                data[bitsRead / 8] <<= 1;  // Each array element has 8 bits.  Shift Left 1 bit.
+                if (stateDuration > 16)    // A State Change > 16 microseconds is a '1'.
+                {
                     data[bitsRead / 8] |= 0x00000001;
+                    TEAL_TEXT
+                }
+                printf("%3d", stateDuration);
+                DEFAULT_TEXT
+                printf("|");
+
                 bitsRead++;
             }
         }
@@ -91,8 +96,7 @@ class DhtSensor
         Read 40 bits. (Five elements of 8 bits each)  Last element is a
         checksum.
         */
-        if ((bitsRead >= 40) &&
-            (data[4] == ((data[0] + data[1] + data[2] + data[3]) & 0xFF))) {
+        if ((bitsRead >= 40) && (data[4] == ((data[0] + data[1] + data[2] + data[3]) & 0xFF))) {
             humidity = (float)((data[0] << 8) + data[1]) / 10.0;
             temperature = (float)((data[2] << 8) + data[3]) / 10.0;
             if (data[2] & 0x80)  // Negative Sign Bit on.
@@ -100,6 +104,8 @@ class DhtSensor
         }
 
         // Update members
+        // Why is this sometimes 0, but seemingly only when run in a container?
+        // Seems to be something to do with the stateDuration
         m_humidity = humidity;
         m_temperature = temperature;
     }
@@ -113,13 +119,19 @@ int main(void)
         exit(1);
     }
 
+    for (int j{0}; j < 40; j++)
+        printf("%3d|", j);
+    std::cout << "\n";
+    for (int j{0}; j < 40; j++)
+        printf("----");
+    std::cout << "\n";
+
     DhtSensor sensor{25};
 
     for (int i = 0; i < 5000; i++) {
         sensor.read();
-        printf("%-3.1f *C  Humidity: %-3.1f%%\n", sensor.m_temperature,
-               sensor.m_humidity);
-        delay(1000); /* Wait 10 seconds between readings. */
+        printf("%-3.1f *C  Humidity: %-3.1f%%\n", sensor.m_temperature, sensor.m_humidity);
+        delay(2000); /* Wait 10 seconds between readings. */
     }
 
     return (0);
