@@ -26,8 +26,8 @@ or for debug
 #define NBITS 40
 #define BAD_VALUE 999
 
-#define BLACK_TEXT printf("\033[0;30m");
 #define DEFAULT_TEXT printf("\033[0m");
+#define BLACK_TEXT printf("\033[0;30m");
 #define TEAL_TEXT printf("\033[36;1m");
 #define RED_TEXT printf("\033[0;31m");
 
@@ -144,9 +144,6 @@ class DhtSensor
             // beginning, ignore it too.
             if ((stateChanges > 2) && (stateChanges % 2 == 0)) {
                 allStateDurations[bitsRead] = stateDuration;
-                data[bitsRead / 8] <<= 1;  // Each array element has 8 bits.  Shift Left 1 bit.
-                if (stateDuration > 16)    // A State Change > 16 microseconds is a '1'.
-                    data[bitsRead / 8] |= 0x00000001;
                 bitsRead++;
             }
         }
@@ -157,12 +154,14 @@ class DhtSensor
         humidity and temperature values (1 for a state duration > 16 microseconds), this
         "weak signal" due to shortened state durations corrupts the data if all of them
         are shorter than 16 milliseconds.
-         E.g., (3,2,3,8,3,9,8,3) rather than (7,7,7,32,7,33,32,6)
+         E.g., Signal A: ( 3, 2, 3, 8, 8, 9, 8, 3), a "weak signal" with no readable data
+               Signal B: ( 7, 7, 7,32,33,33,32, 6), a "strong signal" with readable data [>16]
         */
         /*
         Instead of encoding 1's with state duration > 16 microseconds,
         use k-means clustering (with k=2) to cluster state durations into two groups.
         The group with larger mean state duration are encoded as 1's.
+        This ensures that the "weak signal" A is decoded with same values as signal B
         */
         for (int elem : allStateDurations) {
             if (elem == BAD_VALUE) {
@@ -174,8 +173,16 @@ class DhtSensor
         bool stateData[NBITS];
         twoMeans(allStateDurations, stateData);
 
+        for (int j = 0; j < NBITS; j++) {
+            data[j / 8] <<= 1;  // Each array element has 8 bits.  Shift Left 1 bit.
+            if (stateData[j])   // A State Change > 16 microseconds is a '1'.
+                data[j / 8] |= 0x00000001;
+        }
+
 #ifdef DEBUG
-        // Print state duration, colouring 1's (state durations longer than 16 microseconds) as TEAL
+        // Print state duration
+        // Colour state durations longer than 16 microseconds as TEAL
+        // Colour upper clustered state durations as RED
         for (int j = 0; j < NBITS; j++) {
             if (allStateDurations[j] > 16)
                 TEAL_TEXT
@@ -201,24 +208,10 @@ class DhtSensor
         }
 
         // Update members
-        // This is sometimes 0, but seemingly only when run in a container? This happens 40-60% of
-        // the time a measurement is not flagged as bad This happens when stateDuration has values
-        // all below 16 (the cutoff value fo a 1 or a 0), but there still seems to be some signal
-        // there. E.g., (3,2,3,8,3,9,8,3) rather than (7,7,7,32,7,33,32,6) Maybe this "weak signal"
-        // can be extracted using some sort of clustering algorithm to separate between 1's and 0's.
         m_humidity = humidity;
         m_temperature = temperature;
     }
 };
-
-std::string debugMsg = "Default debug message";
-void signalHandler(int signum)
-{
-    std::cout << "Interrupt signal (" << signum << ") received.\n";
-    std::cout << debugMsg << "\n";
-
-    exit(signum);
-}
 
 int main(void)
 {
@@ -226,9 +219,6 @@ int main(void)
         std::cout << "wiringPi setup failed";
         exit(1);
     }
-
-    // register signal SIGINT and signal handler
-    signal(SIGINT, signalHandler);
 
 #ifdef DEBUG
     for (int j{0}; j < NBITS; j++)
@@ -241,30 +231,13 @@ int main(void)
 
     DhtSensor sensor{25};
 
-    int goodCount = 0;
-    int zeroCount = 0;
-
-    int delayMilliseconds = 100;
+    int delayMilliseconds = 500;
     for (int i = 0; i < 1000; i++) {
         sensor.read();
-        float humidity = sensor.m_humidity;
-        float temperature = sensor.m_temperature;
-        printf("%-3.1f *C  Humidity: %-3.1f%%\n", temperature, humidity);
-
-        if (humidity == 0 && temperature == 0)
-            zeroCount++;
-        else
-            goodCount++;
-
-        if (goodCount + zeroCount > 0) {
-            debugMsg =
-                "Zero proportion after " + std::to_string(i) + " tries: " +
-                std::to_string(static_cast<float>(zeroCount * 100) / (goodCount + zeroCount)) + "%";
-        }
+        printf("%-3.1f *C  Humidity: %-3.1f%%\n", sensor.m_temperature, sensor.m_humidity);
 
         delay(delayMilliseconds);  // Wait between readings
     }
 
-    signalHandler(0);
     return (0);
 }
