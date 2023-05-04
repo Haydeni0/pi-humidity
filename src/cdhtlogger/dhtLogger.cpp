@@ -205,12 +205,15 @@ class DhtSensor
 
 #ifdef DEBUG
         // Print state duration
-        // Colour state durations longer than 16 microseconds as TEAL
-        // Colour upper clustered state durations as RED
+        // Colour correctly decoded values by the previous method as TEAL or DEFAULT
+        // Colour incorrectly decoded values by the previous method, but correctly identified by the
+        // new method as RED
         for (int j = 0; j < NBITS; j++) {
-            if (allStateDurations[j] > 16)
+            if (allStateDurations[j] > 16 && stateData[j])
                 TEAL_TEXT
-            else if (stateData[j])
+            else if (allStateDurations[j] < 16 && stateData[j])
+                RED_TEXT
+            else if (allStateDurations[j] > 16 && !stateData[j])
                 RED_TEXT
 
             if (allStateDurations[j] == BAD_VALUE) BLACK_TEXT
@@ -250,6 +253,7 @@ int main(void)
 
 #ifdef DEBUG
     printf("DEBUG MODE: Displaying microseconds in each state.\n");
+    printf("Rows with \033[0;31mRED\033[0m text would have been previously decoded wrongly.\n");
     for (int j{0}; j < NBITS; j++) {
         printf("%3d", j);
         if ((j != 0) && (j % 8 == 0))
