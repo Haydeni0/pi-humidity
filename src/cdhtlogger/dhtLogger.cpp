@@ -47,10 +47,6 @@ Other changes:
 #include <csignal>
 #include <iostream>
 
-#define PIN \
-    25  // wiringPi pin number. Run the command ```gpio readall``` to check the wPi pin (compare to
-        // the physical pins).
-
 #define MAX_TIMINGS 85  // Takes 84 state changes to transmit data
 #define NBITS 40        // Total number of bits of data
 #define BAD_VALUE 999
@@ -267,12 +263,14 @@ int main(void)
     std::cout << "\n";
 #endif
 
-    DhtSensor sensor{PIN};
+    DhtSensor sensors[2] = {23, 25};
 
     int delayMilliseconds = 500;
     for (int i = 0; i < 1000; i++) {
-        sensor.read();
-        printf("%-3.1f *C  Humidity: %-3.1f%%\n", sensor.m_temperature, sensor.m_humidity);
+        for (DhtSensor sensor : sensors) {
+            sensor.read();
+            printf("%-3.1f *C  Humidity: %-3.1f%%\n", sensor.m_temperature, sensor.m_humidity);
+        }
 
         delay(delayMilliseconds);  // Wait between readings
     }
