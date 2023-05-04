@@ -8,9 +8,33 @@ or for debug
 Based on:
 http://www.uugear.com/portfolio/read-dht1122-temperature-humidity-sensor-from-raspberry-pi/
 
-Main changes:
+Significant changes:
+--------------------
+[Robust decoding of data]
+In the previous implementation, the data
+(5 bytes: 2 each for humidity/temperature and 1 for a checksum)
+is decoded by classifying signal states as 1 or 0 depending if the duration held by the state is
+longer than 16 microseconds or not.
+Sometimes, this classification is inaccurate and we get bad data, which is typically
+invalidated by the checksum. To see why, here is realistic example of recorded state durations in
+microseconds (1 byte only):
+
+         Signal A: ( 3, 2, 3, 8, 8, 9, 8, 3)
+         Signal B: ( 7, 7, 7,32,33,33,32, 6)
+         Signal C: (21,22,22,86,84,84,85,23)
+True decoded data: ( 0, 0, 0, 1, 1, 1, 1, 0)
+
+It is clear to see that the encoded data is present in all signals, but with the previous
+classification technique only signal B will be decoded correctly. I'm not sure exactly why
+in some circumstances the state durations are longer/shorter. I've observed consistently
+shorter durations when running this in a docker container.
+
+The newer the decoding technique uses k-means (k=2) to cluster the signal into upper and lower
+clusters and classify any states assigned to the upper cluster as a '1'. This results in all
+signals A, B and C being decoded correctly.
+
+Other changes:
 - Fix undefined behaviour when reading too many bits in the read loop
-- Robustify data decoding step to allow for a bit more latency in readings
 
 */
 
@@ -23,10 +47,12 @@ Main changes:
 #include <csignal>
 #include <iostream>
 
-#define PIN 25 // wiringPi pin number. Run the command ```gpio readall``` to check the wPi pin (compare to the physical pins).
+#define PIN \
+    25  // wiringPi pin number. Run the command ```gpio readall``` to check the wPi pin (compare to
+        // the physical pins).
 
 #define MAX_TIMINGS 85  // Takes 84 state changes to transmit data
-#define NBITS 40 // Total number of bits of data
+#define NBITS 40        // Total number of bits of data
 #define BAD_VALUE 999
 
 #define DEFAULT_TEXT printf("\033[0m");
@@ -160,22 +186,6 @@ class DhtSensor
             }
         }
 
-        /*
-        Sometimes, perhaps due to latency (e.g., running in a docker container), the state durations
-        are a lot shorter than when run directly on the Pi. Since the state durations encode the
-        humidity and temperature values (1 for a state duration > 16 microseconds), this "weak
-        signal" due to shortened state durations corrupts the data if all of them are shorter than
-        16 milliseconds.
-
-         E.g., Signal A: ( 3, 2, 3, 8, 8, 9, 8, 3), a "weak signal" with no decodable data
-               Signal B: ( 7, 7, 7,32,33,33,32, 6), a "strong signal" with decodable data [>16]
-     True decoded data:  ( 0, 0, 0, 1, 1, 1, 1, 0)
-
-        Instead of encoding 1's with state duration > 16 microseconds,
-        use k-means clustering (with k=2) to cluster state durations into two groups.
-        The group with larger mean state duration are encoded as 1's.
-        This ensures that the "weak signal" A is decoded with same values as signal B
-        */
         for (int elem : allStateDurations) {
             if (elem == BAD_VALUE) {
                 m_humidity = BAD_VALUE;
@@ -188,8 +198,8 @@ class DhtSensor
 
         for (int j = 0; j < NBITS; j++) {
             data[j / 8] <<= 1;  // Each array element has 8 bits.  Shift Left 1 bit.
-            // if (stateData[j])   // A State Change > 16 microseconds is a '1'.
-            if (allStateDurations[j] > 16)  // A State Change > 16 microseconds is a '1'.
+            // if (allStateDurations[j] > 16)  // A State Change > 16 microseconds is a '1'.
+            if (stateData[j])  // A state with a duration assigned to an upper cluster is a '1'
                 data[j / 8] |= 0x00000001;
         }
 
