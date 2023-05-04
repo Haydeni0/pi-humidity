@@ -97,3 +97,6 @@ else
     # Display the full filepath of the GPIO env file
     echo "Webserver file already exists: '$(readlink -f $WEBSERVER_FILE)'"
 fi
+
+# Make sure the dht22 submodule is loaded
+git submodule update --init --recursive
