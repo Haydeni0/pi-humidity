@@ -220,7 +220,7 @@ class DhtSensor
             printf("%3d", allStateDurations[j]);
             DEFAULT_TEXT
 
-            if ((j != 0) && (j % 8 == 0))
+            if ((j != 0) && (j % 8 == 7))
                 printf("║");
             else
                 printf("|");
@@ -256,7 +256,7 @@ int main(void)
     printf("Rows with \033[0;31mRED\033[0m text would have been previously decoded wrongly.\n");
     for (int j{0}; j < NBITS; j++) {
         printf("%3d", j);
-        if ((j != 0) && (j % 8 == 0))
+        if ((j != 0) && (j % 8 == 7))
             printf("║");
         else
             printf("|");
