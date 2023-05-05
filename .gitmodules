@@ -2,3 +2,4 @@
 	path = src/cdhtlogger/dht22
 	url = git@github.com:Haydeni0/dht22.git
 	branch = main
+    ignore = dirty
