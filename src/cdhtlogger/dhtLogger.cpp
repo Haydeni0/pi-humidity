@@ -1,3 +1,8 @@
+/*
+Compile and run with 
+    g++ src/cdhtlogger/dhtLogger.cpp src/cdhtlogger/dht22/dht22lib.cpp -lwiringPi -o dhtLogger.exe && ./dhtLogger.exe
+*/
+
 
 #include "dht22/dht22lib.h"
 
