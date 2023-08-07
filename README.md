@@ -2,7 +2,7 @@
 
 ## Summary
 
-Tool for humidity and temperature logging/visualisation using multiple [Adafruit DHT22 sensors](https://learn.adafruit.com/dht), hosted on a Raspberry Pi.
+Tool for humidity and temperature logging/visualisation using multiple [Adafruit DHT22 sensors](https://learn.adafruit.com/dht), hosted on a Raspberry Pi 4.
 
 See the [install guide](#install-guide) for instructions on the setup process.
 
