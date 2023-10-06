@@ -39,9 +39,7 @@ See the [install guide](#install-guide) for instructions on the setup process.
 
 Logging and plotting the inside and outside humidity/temperature of an indoor terrarium that houses environment sensitive Nepenthes plants.
 
-The locally hosted webpage is shown on the Raspberry Pi GUI connected to a screen.
-
-The local website is accessible [remotely](https://pi-humidity.webredirect.org/) on the internet through the use of a dynamic DNS update service (e.g. [dynu](https://www.dynu.com/en-US/)).
+The locally hosted webpage is shown on the Raspberry Pi GUI connected to a screen and accessible remotely on the internet.
 
 ![DHT graph example](Media/DHT_graph_example.png "DHT graph example")
 
